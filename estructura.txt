@@ -1,0 +1,243 @@
+# Estructura de Carpetas VetZoone Flutter
+
+```
+lib/
+├── core/
+│   ├── constants/
+│   │   ├── app_colors.dart
+│   │   ├── app_strings.dart
+│   │   ├── app_sizes.dart
+│   │   └── api_endpoints.dart
+│   ├── errors/
+│   │   ├── exceptions.dart
+│   │   └── failures.dart
+│   ├── network/
+│   │   ├── network_info.dart
+│   │   └── api_client.dart
+│   ├── utils/
+│   │   ├── date_utils.dart
+│   │   ├── validators.dart
+│   │   └── image_helper.dart
+│   └── widgets/
+│       ├── custom_button.dart
+│       ├── custom_text_field.dart
+│       ├── loading_widget.dart
+│       ├── error_widget.dart
+│       ├── success_widget.dart
+│       ├── confirmation_modal.dart
+│       ├── date_time_selector.dart
+│       └── image_viewer.dart
+│
+├── data/
+│   ├── datasources/
+│   │   ├── auth/
+│   │   │   ├── auth_local_datasource.dart
+│   │   │   └── auth_remote_datasource.dart
+│   │   ├── pet/
+│   │   │   ├── pet_local_datasource.dart
+│   │   │   └── pet_remote_datasource.dart
+│   │   ├── medical_records/
+│   │   │   ├── medical_records_local_datasource.dart
+│   │   │   └── medical_records_remote_datasource.dart
+│   │   ├── appointment/
+│   │   │   ├── appointment_local_datasource.dart
+│   │   │   └── appointment_remote_datasource.dart
+│   │   ├── notification/
+│   │   │   ├── notification_local_datasource.dart
+│   │   │   └── notification_remote_datasource.dart
+│   │   └── analytics/
+│   │       └── analytics_remote_datasource.dart
+│   ├── models/
+│   │   ├── auth/
+│   │   │   ├── user_model.dart
+│   │   │   ├── login_request_model.dart
+│   │   │   └── register_request_model.dart
+│   │   ├── pet/
+│   │   │   └── pet_model.dart
+│   │   ├── medical_records/
+│   │   │   ├── medical_record_model.dart
+│   │   │   ├── vaccination_model.dart
+│   │   │   └── treatment_model.dart
+│   │   ├── appointment/
+│   │   │   └── appointment_model.dart
+│   │   ├── veterinarian/
+│   │   │   └── veterinarian_model.dart
+│   │   └── notification/
+│   │       └── notification_model.dart
+│   └── repositories/
+│       ├── auth_repository_impl.dart
+│       ├── pet_repository_impl.dart
+│       ├── medical_records_repository_impl.dart
+│       ├── appointment_repository_impl.dart
+│       ├── veterinarian_repository_impl.dart
+│       ├── notification_repository_impl.dart
+│       └── analytics_repository_impl.dart
+│
+├── domain/
+│   ├── entities/
+│   │   ├── user.dart
+│   │   ├── pet.dart
+│   │   ├── medical_record.dart
+│   │   ├── vaccination.dart
+│   │   ├── treatment.dart
+│   │   ├── appointment.dart
+│   │   ├── veterinarian.dart
+│   │   └── notification.dart
+│   ├── repositories/
+│   │   ├── auth_repository.dart
+│   │   ├── pet_repository.dart
+│   │   ├── medical_records_repository.dart
+│   │   ├── appointment_repository.dart
+│   │   ├── veterinarian_repository.dart
+│   │   ├── notification_repository.dart
+│   │   └── analytics_repository.dart
+│   └── usecases/
+│       ├── auth/
+│       │   ├── login_usecase.dart
+│       │   ├── register_usecase.dart
+│       │   ├── logout_usecase.dart
+│       │   ├── verify_email_usecase.dart
+│       │   └── reset_password_usecase.dart
+│       ├── pet/
+│       │   ├── get_pets_usecase.dart
+│       │   ├── add_pet_usecase.dart
+│       │   ├── update_pet_usecase.dart
+│       │   └── delete_pet_usecase.dart
+│       ├── medical_records/
+│       │   ├── get_medical_records_usecase.dart
+│       │   ├── create_medical_record_usecase.dart
+│       │   ├── get_vaccinations_usecase.dart
+│       │   ├── register_vaccination_usecase.dart
+│       │   ├── get_treatments_usecase.dart
+│       │   └── prescribe_treatment_usecase.dart
+│       ├── appointment/
+│       │   ├── get_appointments_usecase.dart
+│       │   ├── schedule_appointment_usecase.dart
+│       │   ├── cancel_appointment_usecase.dart
+│       │   └── reschedule_appointment_usecase.dart
+│       ├── veterinarian/
+│       │   ├── search_veterinarians_usecase.dart
+│       │   ├── get_veterinarian_profile_usecase.dart
+│       │   ├── update_veterinarian_profile_usecase.dart
+│       │   └── configure_schedule_usecase.dart
+│       └── notification/
+│           ├── get_notifications_usecase.dart
+│           └── mark_notification_read_usecase.dart
+│
+└── presentation/
+    ├── blocs/
+    │   ├── auth/
+    │   │   ├── auth_bloc.dart
+    │   │   ├── auth_event.dart
+    │   │   └── auth_state.dart
+    │   ├── pet/
+    │   │   ├── pet_bloc.dart
+    │   │   ├── pet_event.dart
+    │   │   └── pet_state.dart
+    │   ├── medical_records/
+    │   │   ├── medical_records_bloc.dart
+    │   │   ├── medical_records_event.dart
+    │   │   └── medical_records_state.dart
+    │   ├── appointment/
+    │   │   ├── appointment_bloc.dart
+    │   │   ├── appointment_event.dart
+    │   │   └── appointment_state.dart
+    │   ├── veterinarian/
+    │   │   ├── veterinarian_bloc.dart
+    │   │   ├── veterinarian_event.dart
+    │   │   └── veterinarian_state.dart
+    │   └── notification/
+    │       ├── notification_bloc.dart
+    │       ├── notification_event.dart
+    │       └── notification_state.dart
+    ├── pages/
+    │   ├── public/
+    │   │   ├── splash_screen.dart
+    │   │   ├── landing_page.dart
+    │   │   ├── login_page.dart
+    │   │   ├── register_type_selection_page.dart
+    │   │   ├── register_owner_page.dart
+    │   │   ├── register_veterinarian_page.dart
+    │   │   ├── email_verification_page.dart
+    │   │   └── reset_password_page.dart
+    │   ├── owner/
+    │   │   ├── dashboard/
+    │   │   │   └── owner_dashboard_page.dart
+    │   │   ├── pets/
+    │   │   │   ├── my_pets_page.dart
+    │   │   │   ├── add_pet_page.dart
+    │   │   │   └── pet_detail_page.dart
+    │   │   ├── medical_records/
+    │   │   │   ├── medical_record_page.dart
+    │   │   │   ├── consultation_detail_page.dart
+    │   │   │   ├── vaccination_history_page.dart
+    │   │   │   └── active_treatments_page.dart
+    │   │   ├── veterinarians/
+    │   │   │   ├── search_veterinarians_page.dart
+    │   │   │   ├── veterinarians_list_page.dart
+    │   │   │   └── veterinarian_profile_page.dart
+    │   │   ├── appointments/
+    │   │   │   ├── schedule_appointment_page.dart
+    │   │   │   ├── my_appointments_page.dart
+    │   │   │   └── appointment_detail_page.dart
+    │   │   ├── notifications/
+    │   │   │   └── notifications_page.dart
+    │   │   └── profile/
+    │   │       └── owner_profile_page.dart
+    │   └── veterinarian/
+    │       ├── dashboard/
+    │       │   └── veterinarian_dashboard_page.dart
+    │       ├── schedule/
+    │       │   ├── my_schedule_page.dart
+    │       │   └── configure_schedule_page.dart
+    │       ├── appointments/
+    │       │   ├── appointment_detail_vet_page.dart
+    │       │   └── active_consultation_page.dart
+    │       ├── medical_records/
+    │       │   ├── create_medical_record_page.dart
+    │       │   ├── prescribe_treatment_page.dart
+    │       │   └── register_vaccination_page.dart
+    │       ├── patients/
+    │       │   ├── patients_list_page.dart
+    │       │   └── patient_history_page.dart
+    │       ├── profile/
+    │       │   └── professional_profile_page.dart
+    │       ├── analytics/
+    │       │   └── statistics_page.dart
+    │       └── settings/
+    │           └── vet_settings_page.dart
+    ├── widgets/
+    │   ├── common/
+    │   │   ├── custom_app_bar.dart
+    │   │   ├── bottom_navigation_bar.dart
+    │   │   ├── floating_action_buttons.dart
+    │   │   └── empty_state_widget.dart
+    │   ├── cards/
+    │   │   ├── pet_card.dart
+    │   │   ├── appointment_card.dart
+    │   │   ├── veterinarian_card.dart
+    │   │   └── notification_card.dart
+    │   └── forms/
+    │       ├── pet_form_widget.dart
+    │       ├── appointment_form_widget.dart
+    │       └── medical_record_form_widget.dart
+    └── routes/
+        ├── app_router.dart
+        └── route_names.dart
+
+assets/
+├── images/
+│   ├── logos/
+│   ├── icons/
+│   └── placeholders/
+├── fonts/
+└── animations/
+
+test/
+├── unit/
+│   ├── domain/
+│   ├── data/
+│   └── presentation/
+├── widget/
+└── integration/
+```
