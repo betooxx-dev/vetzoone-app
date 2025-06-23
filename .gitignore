@@ -10,7 +10,7 @@
 .history
 .svn/
 .swiftpm/
-.estructura.txt
+.estructura
 migrate_working_dir/
 
 # IntelliJ related
