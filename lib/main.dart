@@ -5,6 +5,7 @@ import 'presentation/pages/public/login_page.dart';
 import 'presentation/pages/public/register_type_selection_page.dart';
 import 'presentation/pages/public/register_owner_page.dart';
 import 'presentation/pages/public/register_veterinarian_page.dart';
+import 'presentation/pages/public/email_verification_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -29,7 +30,7 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterTypeSelectionPage(),
         '/register/owner': (context) => const RegisterOwnerPage(),
         '/register/veterinarian': (context) => const RegisterVeterinarianPage(),
-        '/email-verification': (context) => const Placeholder(),
+        '/email-verification': (context) => const EmailVerificationPage(),
         '/professional-verification': (context) => const Placeholder(),
         '/reset-password': (context) => const Placeholder(),
         '/dashboard': (context) => const Placeholder(),
