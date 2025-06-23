@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'presentation/pages/public/splash_screen.dart';
+import 'presentation/pages/public/landing_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,12 +15,14 @@ class MyApp extends StatelessWidget {
       title: 'VetZoone',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.green,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: const SplashScreen(),
       routes: {
-        '/landing': (context) => const Placeholder(), // Temporalmente
+        '/landing': (context) => const LandingPage(),
+        '/login': (context) => const Placeholder(), // Temporal
+        '/register': (context) => const Placeholder(), // Temporal
       },
     );
   }
