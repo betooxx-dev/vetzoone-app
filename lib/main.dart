@@ -9,6 +9,9 @@ import 'presentation/pages/public/email_verification_page.dart';
 import 'presentation/pages/owner/dashboard/owner_dashboard_page.dart';
 import 'presentation/pages/veterinarian/dashboard/veterinarian_dashboard_page.dart';
 import 'presentation/widgets/common/bottom_navigation_bar.dart';
+import 'presentation/pages/owner/pets/my_pets_page.dart';
+import 'presentation/pages/owner/pets/add_pet_page.dart';
+import 'presentation/pages/owner/pets/pet_detail_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -39,6 +42,9 @@ class MyApp extends StatelessWidget {
         '/dashboard': (context) => const DashboardWrapper(),
         '/dashboard/owner': (context) => const MainScreenOwner(),
         '/dashboard/veterinarian': (context) => const MainScreenVeterinarian(),
+        '/my-pets': (context) => const MyPetsPage(),
+        '/add-pet': (context) => const AddPetPage(),
+        '/pet-detail': (context) => const PetDetailPage(),
       },
     );
   }
@@ -49,11 +55,9 @@ class DashboardWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const bool isVeterinarian = true; // Cambiar a true para probar veterinario
+    const bool isVeterinarian = false; // Cambiar a true para probar veterinario
 
-    // ignore: dead_code
     return isVeterinarian
-        // ignore: dead_code
         ? const MainScreenVeterinarian()
         : const MainScreenOwner();
   }
@@ -72,6 +76,7 @@ class _MainScreenOwnerState extends State<MainScreenOwner> {
 
   final List<Widget> _pages = [
     const OwnerDashboardPage(),
+    const MyPetsPage(),
     const Placeholder(),
     const Placeholder(),
     const Placeholder(),
