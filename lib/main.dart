@@ -12,6 +12,9 @@ import 'presentation/widgets/common/bottom_navigation_bar.dart';
 import 'presentation/pages/owner/pets/my_pets_page.dart';
 import 'presentation/pages/owner/pets/add_pet_page.dart';
 import 'presentation/pages/owner/pets/pet_detail_page.dart';
+import 'presentation/pages/owner/veterinarians/search_veterinarians_page.dart';
+import 'presentation/pages/owner/veterinarians/veterinarians_list_page.dart';
+import 'presentation/pages/owner/veterinarians/veterinarian_profile_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -45,6 +48,10 @@ class MyApp extends StatelessWidget {
         '/my-pets': (context) => const MyPetsPage(),
         '/add-pet': (context) => const AddPetPage(),
         '/pet-detail': (context) => const PetDetailPage(),
+        // Rutas de veterinarios
+        '/search-veterinarians': (context) => const SearchVeterinariansPage(),
+        '/veterinarians-list': (context) => const VeterinariansListPage(),
+        '/veterinarian-profile': (context) => const VeterinarianProfilePage(),
       },
     );
   }
@@ -77,9 +84,9 @@ class _MainScreenOwnerState extends State<MainScreenOwner> {
   final List<Widget> _pages = [
     const OwnerDashboardPage(),
     const MyPetsPage(),
-    const Placeholder(),
-    const Placeholder(),
-    const Placeholder(),
+    const SearchVeterinariansPage(), // Página de búsqueda de veterinarios
+    const Placeholder(), // Placeholder para citas
+    const Placeholder(), // Placeholder para perfil
   ];
 
   @override
@@ -111,10 +118,10 @@ class _MainScreenVeterinarianState extends State<MainScreenVeterinarian> {
 
   final List<Widget> _pages = [
     const VeterinarianDashboardPage(),
-    const Placeholder(),
-    const Placeholder(),
-    const Placeholder(),
-    const Placeholder(),
+    const Placeholder(), // Placeholder para agenda
+    const Placeholder(), // Placeholder para pacientes
+    const Placeholder(), // Placeholder para estadísticas
+    const Placeholder(), // Placeholder para ajustes
   ];
 
   @override
