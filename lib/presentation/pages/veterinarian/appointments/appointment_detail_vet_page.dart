@@ -6,7 +6,8 @@ class AppointmentDetailVetPage extends StatefulWidget {
   const AppointmentDetailVetPage({super.key});
 
   @override
-  State<AppointmentDetailVetPage> createState() => _AppointmentDetailVetPageState();
+  State<AppointmentDetailVetPage> createState() =>
+      _AppointmentDetailVetPageState();
 }
 
 class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
@@ -100,6 +101,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                 children: [
                   _buildQuickActions(),
                   _buildAppointmentCard(),
+                  _buildMedicalActionsSection(), // ← NUEVA SECCIÓN AGREGADA
                   _buildDetailsSections(),
                   const SizedBox(height: 100),
                 ],
@@ -146,41 +148,59 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
           ),
           child: PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF212121)),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             onSelected: _handleMenuAction,
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'reschedule',
-                child: Row(
-                  children: [
-                    Icon(Icons.schedule_rounded, size: 18, color: Colors.grey[700]),
-                    const SizedBox(width: 12),
-                    const Text('Reprogramar'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'call',
-                child: Row(
-                  children: [
-                    Icon(Icons.phone_outlined, size: 18, color: Colors.grey[700]),
-                    const SizedBox(width: 12),
-                    const Text('Llamar al dueño'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                value: 'cancel',
-                child: Row(
-                  children: [
-                    const Icon(Icons.cancel_outlined, size: 18, color: Colors.red),
-                    const SizedBox(width: 12),
-                    const Text('Cancelar cita', style: TextStyle(color: Colors.red)),
-                  ],
-                ),
-              ),
-            ],
+            itemBuilder:
+                (context) => [
+                  PopupMenuItem(
+                    value: 'reschedule',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.schedule_rounded,
+                          size: 18,
+                          color: Colors.grey[700],
+                        ),
+                        const SizedBox(width: 12),
+                        const Text('Reprogramar'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'call',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.phone_outlined,
+                          size: 18,
+                          color: Colors.grey[700],
+                        ),
+                        const SizedBox(width: 12),
+                        const Text('Llamar al dueño'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: 'cancel',
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.cancel_outlined,
+                          size: 18,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Cancelar cita',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
           ),
         ),
       ],
@@ -327,7 +347,9 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
           backgroundColor: Colors.transparent,
           elevation: 0,
           shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
     );
@@ -350,6 +372,186 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     );
   }
 
+  // ← NUEVA FUNCIÓN AGREGADA: Botones de navegación a vistas 32-34
+  Widget _buildMedicalActionsSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.medical_services, color: Color(0xFF81D4FA), size: 24),
+              SizedBox(width: 8),
+              Text(
+                'Acciones Médicas',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2C3E50),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Botones para las vistas 32-34
+          Row(
+            children: [
+              // Vista 32: Crear Registro Médico
+              Expanded(
+                child: _buildMedicalActionButton(
+                  icon: Icons.note_add,
+                  title: 'Crear Registro Médico',
+                  subtitle: 'Nuevo expediente',
+                  color: const Color(0xFF81D4FA),
+                  onTap: () {
+                    Navigator.pushNamed(context, '/create-medical-record');
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Vista 33: Prescribir Medicamentos
+              Expanded(
+                child: _buildMedicalActionButton(
+                  icon: Icons.medication,
+                  title: 'Prescribir Medicamentos',
+                  subtitle: 'Nueva receta',
+                  color: const Color(0xFF4CAF50),
+                  onTap: () {
+                    Navigator.pushNamed(context, '/prescribe-treatment');
+                  },
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Vista 34: Registrar Vacuna (botón ancho)
+          SizedBox(
+            width: double.infinity,
+            child: _buildMedicalActionButton(
+              icon: Icons.vaccines,
+              title: 'Registrar Vacuna',
+              subtitle: 'Aplicar nueva vacuna',
+              color: const Color(0xFF9C27B0),
+              onTap: () {
+                Navigator.pushNamed(context, '/register-vaccination');
+              },
+              isWide: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMedicalActionButton({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+    bool isWide = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: EdgeInsets.all(isWide ? 20 : 16),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(0.3), width: 1),
+          ),
+          child:
+              isWide
+                  ? Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(icon, color: color, size: 24),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: color,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              subtitle,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_ios, color: color, size: 16),
+                    ],
+                  )
+                  : Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(icon, color: color, size: 24),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: color,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDetailsSections() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -361,7 +563,8 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
           _buildOwnerInfoSection(),
           const SizedBox(height: 24),
           _buildMedicalHistorySection(),
-          if (appointment['notes'] != null && appointment['notes']!.isNotEmpty) ...[
+          if (appointment['notes'] != null &&
+              appointment['notes']!.isNotEmpty) ...[
             const SizedBox(height: 24),
             _buildNotesSection(),
           ],
@@ -419,7 +622,8 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
   }
 
   Widget _buildMedicalHistorySection() {
-    final history = appointment['medicalHistory'] as List<Map<String, dynamic>>? ?? [];
+    final history =
+        appointment['medicalHistory'] as List<Map<String, dynamic>>? ?? [];
 
     return _buildDetailCard(
       title: 'Historial Médico Reciente',
@@ -468,10 +672,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
               ),
               Text(
                 record['date'] ?? '',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF757575),
-                ),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF757575)),
               ),
             ],
           ),
@@ -479,10 +680,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
             const SizedBox(height: 4),
             Text(
               record['notes'],
-              style: const TextStyle(
-                fontSize: 13,
-                color: Color(0xFF757575),
-              ),
+              style: const TextStyle(fontSize: 13, color: Color(0xFF757575)),
             ),
           ],
         ],
@@ -593,12 +791,18 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
           ),
           Expanded(
             child: GestureDetector(
-              onTap: isClickable ? () => _handleClickableValue(label, value) : null,
+              onTap:
+                  isClickable
+                      ? () => _handleClickableValue(label, value)
+                      : null,
               child: Text(
                 value,
                 style: TextStyle(
                   fontSize: 14,
-                  color: isClickable ? const Color(0xFF81D4FA) : const Color(0xFF212121),
+                  color:
+                      isClickable
+                          ? const Color(0xFF81D4FA)
+                          : const Color(0xFF212121),
                   fontWeight: FontWeight.w600,
                   decoration: isClickable ? TextDecoration.underline : null,
                 ),
@@ -613,7 +817,8 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
   Widget _buildFloatingActionButtons() {
     final status = appointment['status'] as AppointmentStatus;
 
-    if (status == AppointmentStatus.completed || status == AppointmentStatus.cancelled) {
+    if (status == AppointmentStatus.completed ||
+        status == AppointmentStatus.cancelled) {
       return const SizedBox.shrink();
     }
 
@@ -639,7 +844,10 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
             heroTag: 'medical',
             onPressed: _createMedicalRecord,
             backgroundColor: const Color(0xFF81D4FA),
-            child: const Icon(Icons.medical_services_rounded, color: Colors.white),
+            child: const Icon(
+              Icons.medical_services_rounded,
+              color: Colors.white,
+            ),
           ),
         ],
       ],
@@ -741,7 +949,8 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     final confirmed = await ConfirmationModal.show(
       context: context,
       title: 'Finalizar consulta',
-      message: '¿Estás seguro de que quieres finalizar esta consulta?\n\nAsegúrate de haber completado todos los registros médicos necesarios.',
+      message:
+          '¿Estás seguro de que quieres finalizar esta consulta?\n\nAsegúrate de haber completado todos los registros médicos necesarios.',
       confirmText: 'Finalizar',
       icon: Icons.check_circle_outline_rounded,
       iconColor: const Color(0xFF4CAF50),
@@ -759,22 +968,18 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
             content: const Text('Consulta finalizada exitosamente'),
             backgroundColor: const Color(0xFF4CAF50),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
     }
   }
 
+  // ← FUNCIÓN MODIFICADA: Ahora navega a vista 32
   void _createMedicalRecord() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Crear registro médico'),
-        backgroundColor: const Color(0xFF81D4FA),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+    Navigator.pushNamed(context, '/create-medical-record');
   }
 
   void _callOwner() {
@@ -813,7 +1018,8 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     final confirmed = await ConfirmationModal.show(
       context: context,
       title: 'Cancelar cita',
-      message: '¿Estás seguro de que quieres cancelar esta cita?\n\nSe notificará automáticamente al propietario.',
+      message:
+          '¿Estás seguro de que quieres cancelar esta cita?\n\nSe notificará automáticamente al propietario.',
       confirmText: 'Cancelar cita',
       cancelText: 'No cancelar',
       icon: Icons.cancel_outlined,
@@ -833,7 +1039,9 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
             content: const Text('Cita cancelada exitosamente'),
             backgroundColor: const Color(0xFFFF7043),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }

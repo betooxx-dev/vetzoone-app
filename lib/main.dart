@@ -22,6 +22,11 @@ import 'presentation/pages/veterinarian/schedule/my_schedule_page.dart';
 import 'presentation/pages/veterinarian/appointments/appointment_detail_vet_page.dart';
 import 'presentation/pages/owner/medical_records/medical_record_page.dart';
 import 'presentation/pages/owner/medical_records/consultation_detail_page.dart';
+import 'presentation/pages/owner/medical_records/vaccination_history_page.dart';
+import 'presentation/pages/owner/medical_records/active_treatments_page.dart';
+import 'presentation/pages/veterinarian/medical_records/create_medical_record_page.dart';
+import 'presentation/pages/veterinarian/medical_records/prescribe_treatment_page.dart';
+import 'presentation/pages/veterinarian/medical_records/register_vaccination_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -52,8 +57,6 @@ class MyApp extends StatelessWidget {
         '/dashboard': (context) => const DashboardWrapper(),
         '/dashboard/owner': (context) => const MainScreenOwner(),
         '/dashboard/veterinarian': (context) => const MainScreenVeterinarian(),
-
-        // Owner routes
         '/my-pets': (context) => const MyPetsPage(),
         '/add-pet': (context) => const AddPetPage(),
         '/pet-detail': (context) => const PetDetailPage(),
@@ -65,11 +68,14 @@ class MyApp extends StatelessWidget {
         '/appointment-detail': (context) => const AppointmentDetailPage(),
         '/medical-record': (context) => const MedicalRecordPage(),
         '/consultation-detail': (context) => const ConsultationDetailPage(),
-
-        // Veterinarian routes
+        '/vaccination-history': (context) => const VaccinationHistoryPage(),
+        '/active-treatments': (context) => const ActiveTreatmentsPage(),
         '/my-schedule': (context) => const MySchedulePage(),
         '/appointment-detail-vet':
             (context) => const AppointmentDetailVetPage(),
+        '/create-medical-record': (context) => const CreateMedicalRecordPage(),
+        '/prescribe-treatment': (context) => const PrescribeTreatmentPage(),
+        '/register-vaccination': (context) => const RegisterVaccinationPage(),
       },
     );
   }
@@ -80,7 +86,7 @@ class DashboardWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const bool isVeterinarian = false; // Cambiar a true para probar veterinario
+    const bool isVeterinarian = true; // Cambiar a true para probar veterinario
 
     return isVeterinarian
         ? const MainScreenVeterinarian()

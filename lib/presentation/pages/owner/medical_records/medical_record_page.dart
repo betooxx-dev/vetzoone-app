@@ -25,9 +25,14 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
       'clinic': 'Clínica VetCare Tuxtla',
       'diagnosis': 'Estado de salud excelente',
       'treatment': 'Continuar con dieta actual y ejercicio regular',
-      'notes': 'Mascota en perfecto estado. Se recomienda próxima visita en 6 meses.',
+      'notes':
+          'Mascota en perfecto estado. Se recomienda próxima visita en 6 meses.',
       'medications': [
-        {'name': 'Vitamina C', 'dosage': '1 tableta diaria', 'duration': '30 días'},
+        {
+          'name': 'Vitamina C',
+          'dosage': '1 tableta diaria',
+          'duration': '30 días',
+        },
       ],
       'weight': '25.2 kg',
       'temperature': '38.5°C',
@@ -43,7 +48,11 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
       'treatment': 'Vacuna múltiple DHPP',
       'notes': 'Aplicación exitosa. Próxima dosis en 1 año.',
       'vaccines': [
-        {'name': 'DHPP', 'batch': 'VAC-2024-001', 'nextDate': DateTime(2025, 10, 20)},
+        {
+          'name': 'DHPP',
+          'batch': 'VAC-2024-001',
+          'nextDate': DateTime(2025, 10, 20),
+        },
       ],
       'weight': '25.0 kg',
       'temperature': '38.3°C',
@@ -58,7 +67,11 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
       'treatment': 'Desparasitante oral',
       'notes': 'Tratamiento preventivo exitoso. Repetir en 3 meses.',
       'medications': [
-        {'name': 'Drontal Plus', 'dosage': '1 tableta', 'duration': 'Dosis única'},
+        {
+          'name': 'Drontal Plus',
+          'dosage': '1 tableta',
+          'duration': 'Dosis única',
+        },
       ],
       'weight': '24.8 kg',
     },
@@ -121,6 +134,7 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
             children: [
               _buildAppBar(),
               _buildPetHeader(),
+              _buildQuickActionsSection(), // ← NUEVA SECCIÓN AGREGADA
               _buildTabBar(),
               Expanded(child: _buildTabBarView()),
             ],
@@ -176,10 +190,7 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
                 ),
                 Text(
                   'Historial completo de salud',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.white),
                 ),
               ],
             ),
@@ -286,9 +297,77 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
               ),
               const Text(
                 'Registros',
+                style: TextStyle(fontSize: 12, color: Color(0xFF757575)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ← NUEVA FUNCIÓN AGREGADA: Botones de navegación a vistas 30-31
+  Widget _buildQuickActionsSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.medical_services, color: Color(0xFF4CAF50), size: 24),
+              SizedBox(width: 8),
+              Text(
+                'Acciones Rápidas',
                 style: TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF757575),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF212121),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Botones para las nuevas vistas 30-31
+          Row(
+            children: [
+              // Vista 30: Historial de Vacunas
+              Expanded(
+                child: _buildActionButton(
+                  icon: Icons.vaccines,
+                  title: 'Historial de Vacunas',
+                  subtitle: 'Ver todas las vacunas',
+                  color: const Color(0xFF2196F3),
+                  onTap: () {
+                    Navigator.pushNamed(context, '/vaccination-history');
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Vista 31: Tratamientos Activos
+              Expanded(
+                child: _buildActionButton(
+                  icon: Icons.medication,
+                  title: 'Tratamientos Activos',
+                  subtitle: 'Ver medicamentos',
+                  color: const Color(0xFF4CAF50),
+                  onTap: () {
+                    Navigator.pushNamed(context, '/active-treatments');
+                  },
                 ),
               ),
             ],
@@ -358,8 +437,11 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
           animation: _animationController,
           builder: (context, child) {
             final delay = index * 0.1;
-            final animationValue = (_animationController.value - delay).clamp(0.0, 1.0);
-            
+            final animationValue = (_animationController.value - delay).clamp(
+              0.0,
+              1.0,
+            );
+
             return Transform.translate(
               offset: Offset(0, 30 * (1 - animationValue)),
               child: Opacity(
@@ -510,7 +592,7 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
 
   Widget _buildMedicationsTab() {
     final allMedications = <Map<String, dynamic>>[];
-    
+
     // Recopilar medicamentos de todos los registros
     for (final record in _medicalRecords) {
       if (record['medications'] != null) {
@@ -614,19 +696,21 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
 
   Widget _buildVitalSignsTab() {
     final vitalSigns = <Map<String, dynamic>>[];
-    
+
     // Recopilar signos vitales de todos los registros
     for (final record in _medicalRecords) {
       final signs = <String, dynamic>{
         'date': record['date'],
         'veterinarian': record['veterinarian'],
       };
-      
+
       if (record['weight'] != null) signs['weight'] = record['weight'];
-      if (record['temperature'] != null) signs['temperature'] = record['temperature'];
+      if (record['temperature'] != null)
+        signs['temperature'] = record['temperature'];
       if (record['heartRate'] != null) signs['heartRate'] = record['heartRate'];
-      
-      if (signs.length > 2) { // Más que solo fecha y veterinario
+
+      if (signs.length > 2) {
+        // Más que solo fecha y veterinario
         vitalSigns.add(signs);
       }
     }
@@ -681,10 +765,7 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
               ),
               Text(
                 signs['veterinarian'],
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF757575),
-                ),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF757575)),
               ),
             ],
           ),
@@ -725,7 +806,12 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
     );
   }
 
-  Widget _buildVitalSignItem(String label, String value, IconData icon, Color color) {
+  Widget _buildVitalSignItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.all(12),
@@ -748,10 +834,7 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
           ),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 10,
-              color: Color(0xFF757575),
-            ),
+            style: const TextStyle(fontSize: 10, color: Color(0xFF757575)),
             textAlign: TextAlign.center,
           ),
         ],
@@ -774,11 +857,7 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
                 color: const Color(0xFF4CAF50).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(40),
               ),
-              child: Icon(
-                icon,
-                size: 40,
-                color: const Color(0xFF4CAF50),
-              ),
+              child: Icon(icon, size: 40, color: const Color(0xFF4CAF50)),
             ),
             const SizedBox(height: 24),
             Text(
@@ -801,6 +880,59 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
               textAlign: TextAlign.center,
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // ← NUEVA FUNCIÓN AGREGADA: Botones de acción reutilizables
+  Widget _buildActionButton({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(0.3), width: 1),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -842,17 +974,25 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
   }
 
   String _formatDate(DateTime date) {
-    final months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-                   'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    
+    final months = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ];
+
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
   void _navigateToConsultationDetail(Map<String, dynamic> record) {
-    Navigator.pushNamed(
-      context,
-      '/consultation-detail',
-      arguments: record,
-    );
+    Navigator.pushNamed(context, '/consultation-detail', arguments: record);
   }
 }
