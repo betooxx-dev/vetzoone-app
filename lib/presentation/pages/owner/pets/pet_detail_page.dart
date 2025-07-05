@@ -269,7 +269,7 @@ class _PetDetailPageState extends State<PetDetailPage>
                 decoration: BoxDecoration(
                   color: _getSpeciesColors(
                     pet['species'] ?? 'Perro',
-                  // ignore: deprecated_member_use
+                    // ignore: deprecated_member_use
                   )[0].withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -430,34 +430,56 @@ class _PetDetailPageState extends State<PetDetailPage>
     );
   }
 
+  // En pet_detail_page.dart, buscar el método _buildMedicalRecordsTab() y REEMPLAZARLO por:
+
   Widget _buildMedicalRecordsTab() {
-    return ListView(
-      children: [
-        _buildMedicalRecordCard(
-          date: '15 Nov 2024',
-          diagnosis: 'Consulta de rutina',
-          veterinarian: 'Dr. María González',
-          notes:
-              'Mascota en excelente estado de salud. Se recomienda mantener la dieta actual.',
-          status: 'Completado',
-        ),
-        const SizedBox(height: 12),
-        _buildMedicalRecordCard(
-          date: '20 Oct 2024',
-          diagnosis: 'Vacunación anual',
-          veterinarian: 'Dr. Carlos López',
-          notes: 'Aplicación de vacuna múltiple. Próxima dosis en un año.',
-          status: 'Completado',
-        ),
-        const SizedBox(height: 12),
-        _buildMedicalRecordCard(
-          date: '05 Sep 2024',
-          diagnosis: 'Desparasitación',
-          veterinarian: 'Dr. Ana García',
-          notes: 'Tratamiento antiparasitario completo. Repetir en 3 meses.',
-          status: 'Completado',
-        ),
-      ],
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Mostrar algunas consultas recientes como preview
+          _buildMedicalRecordCard(
+            date: '15 Nov 2024',
+            diagnosis: 'Consulta de rutina',
+            veterinarian: 'Dr. María González',
+            notes: 'Mascota en excelente estado de salud.',
+            status: 'Completado',
+          ),
+          const SizedBox(height: 12),
+          _buildMedicalRecordCard(
+            date: '20 Oct 2024',
+            diagnosis: 'Vacunación anual',
+            veterinarian: 'Dr. Carlos López',
+            notes: 'Aplicación de vacuna múltiple.',
+            status: 'Completado',
+          ),
+          const SizedBox(height: 20),
+          // Botón para ver expediente completo
+          Container(
+            width: double.infinity,
+            height: 48,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            child: ElevatedButton.icon(
+              onPressed:
+                  () => Navigator.pushNamed(
+                    context,
+                    '/medical-record',
+                    arguments: pet,
+                  ),
+              icon: const Icon(Icons.folder_open_outlined),
+              label: const Text('Ver Expediente Completo'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4CAF50),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
     );
   }
 

@@ -18,6 +18,10 @@ import 'presentation/pages/owner/veterinarians/veterinarian_profile_page.dart';
 import 'presentation/pages/owner/appointments/schedule_appointment_page.dart';
 import 'presentation/pages/owner/appointments/my_appointments_page.dart';
 import 'presentation/pages/owner/appointments/appointment_detail_page.dart';
+import 'presentation/pages/veterinarian/schedule/my_schedule_page.dart';
+import 'presentation/pages/veterinarian/appointments/appointment_detail_vet_page.dart';
+import 'presentation/pages/owner/medical_records/medical_record_page.dart';
+import 'presentation/pages/owner/medical_records/consultation_detail_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -48,6 +52,8 @@ class MyApp extends StatelessWidget {
         '/dashboard': (context) => const DashboardWrapper(),
         '/dashboard/owner': (context) => const MainScreenOwner(),
         '/dashboard/veterinarian': (context) => const MainScreenVeterinarian(),
+
+        // Owner routes
         '/my-pets': (context) => const MyPetsPage(),
         '/add-pet': (context) => const AddPetPage(),
         '/pet-detail': (context) => const PetDetailPage(),
@@ -57,6 +63,13 @@ class MyApp extends StatelessWidget {
         '/schedule-appointment': (context) => const ScheduleAppointmentPage(),
         '/my-appointments': (context) => const MyAppointmentsPage(),
         '/appointment-detail': (context) => const AppointmentDetailPage(),
+        '/medical-record': (context) => const MedicalRecordPage(),
+        '/consultation-detail': (context) => const ConsultationDetailPage(),
+
+        // Veterinarian routes
+        '/my-schedule': (context) => const MySchedulePage(),
+        '/appointment-detail-vet':
+            (context) => const AppointmentDetailVetPage(),
       },
     );
   }
@@ -91,7 +104,7 @@ class _MainScreenOwnerState extends State<MainScreenOwner> {
     const MyPetsPage(),
     const SearchVeterinariansPage(),
     const MyAppointmentsPage(),
-    const Placeholder(),
+    const Placeholder(), // Profile page
   ];
 
   @override
@@ -123,10 +136,10 @@ class _MainScreenVeterinarianState extends State<MainScreenVeterinarian> {
 
   final List<Widget> _pages = [
     const VeterinarianDashboardPage(),
-    const Placeholder(),
-    const Placeholder(),
-    const Placeholder(),
-    const Placeholder(),
+    const MySchedulePage(), // Vista 26 - Agenda del veterinario
+    const Placeholder(), // Patients list
+    const Placeholder(), // Statistics
+    const Placeholder(), // Settings
   ];
 
   @override

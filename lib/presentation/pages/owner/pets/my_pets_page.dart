@@ -125,10 +125,7 @@ class _MyPetsPageState extends State<MyPetsPage>
                 ),
                 Text(
                   'Gestiona el cuidado de tus compañeros',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF757575),
-                  ),
+                  style: TextStyle(fontSize: 14, color: Color(0xFF757575)),
                 ),
               ],
             ),
@@ -173,8 +170,9 @@ class _MyPetsPageState extends State<MyPetsPage>
                   animation: _animationController,
                   builder: (context, child) {
                     final delay = index * 0.1;
-                    final animationValue = (_animationController.value - delay).clamp(0.0, 1.0);
-                    
+                    final animationValue = (_animationController.value - delay)
+                        .clamp(0.0, 1.0);
+
                     return Transform.translate(
                       offset: Offset(0, 30 * (1 - animationValue)),
                       child: Opacity(
@@ -299,7 +297,7 @@ class _MyPetsPageState extends State<MyPetsPage>
   Widget _buildPetAvatar(Map<String, String> pet) {
     final species = pet['species']!;
     final colors = _getSpeciesColors(species);
-    
+
     return Container(
       width: 70,
       height: 70,
@@ -319,11 +317,7 @@ class _MyPetsPageState extends State<MyPetsPage>
           ),
         ],
       ),
-      child: Icon(
-        _getSpeciesIcon(species),
-        size: 32,
-        color: Colors.white,
-      ),
+      child: Icon(_getSpeciesIcon(species), size: 32, color: Colors.white),
     );
   }
 
@@ -376,11 +370,7 @@ class _MyPetsPageState extends State<MyPetsPage>
           const SizedBox(height: 4),
           Row(
             children: [
-              Icon(
-                Icons.cake_outlined,
-                size: 16,
-                color: Colors.grey[600],
-              ),
+              Icon(Icons.cake_outlined, size: 16, color: Colors.grey[600]),
               const SizedBox(width: 4),
               Text(
                 pet['age']!,
@@ -406,59 +396,70 @@ class _MyPetsPageState extends State<MyPetsPage>
         borderRadius: BorderRadius.circular(12),
       ),
       child: PopupMenuButton<String>(
-        icon: Icon(
-          Icons.more_vert_rounded,
-          color: Colors.grey[600],
-          size: 20,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        icon: Icon(Icons.more_vert_rounded, color: Colors.grey[600], size: 20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         offset: const Offset(-10, 10),
         onSelected: (value) => _handleMenuAction(value, pet, index),
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'edit',
-            child: Row(
-              children: [
-                Icon(Icons.edit_outlined, size: 18, color: Colors.grey[700]),
-                const SizedBox(width: 12),
-                const Text('Editar'),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'medical',
-            child: Row(
-              children: [
-                Icon(Icons.medical_services_outlined, size: 18, color: Colors.grey[700]),
-                const SizedBox(width: 12),
-                const Text('Expediente médico'),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'appointment',
-            child: Row(
-              children: [
-                Icon(Icons.calendar_today_outlined, size: 18, color: Colors.grey[700]),
-                const SizedBox(width: 12),
-                const Text('Agendar cita'),
-              ],
-            ),
-          ),
-          const PopupMenuDivider(),
-          PopupMenuItem(
-            value: 'delete',
-            child: Row(
-              children: [
-                const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                const SizedBox(width: 12),
-                const Text('Eliminar', style: TextStyle(color: Colors.red)),
-              ],
-            ),
-          ),
-        ],
+        itemBuilder:
+            (context) => [
+              PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.edit_outlined,
+                      size: 18,
+                      color: Colors.grey[700],
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('Editar'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'medical',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.medical_services_outlined,
+                      size: 18,
+                      color: Colors.grey[700],
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('Expediente médico'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'appointment',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 18,
+                      color: Colors.grey[700],
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('Agendar cita'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.delete_outline,
+                      size: 18,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('Eliminar', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
       ),
     );
   }
@@ -512,7 +513,10 @@ class _MyPetsPageState extends State<MyPetsPage>
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4CAF50),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -534,9 +538,7 @@ class _MyPetsPageState extends State<MyPetsPage>
         'Agregar Mascota',
         style: TextStyle(fontWeight: FontWeight.w600),
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     );
   }
 
@@ -578,15 +580,7 @@ class _MyPetsPageState extends State<MyPetsPage>
   }
 
   void _viewMedicalRecord(Map<String, String> pet) {
-    // Implementar navegación a expediente médico
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Expediente médico de ${pet['name']}'),
-        backgroundColor: const Color(0xFF81D4FA),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+    Navigator.pushNamed(context, '/medical-record', arguments: pet);
   }
 
   void _scheduleAppointment(Map<String, String> pet) {
@@ -604,34 +598,44 @@ class _MyPetsPageState extends State<MyPetsPage>
   void _deletePet(Map<String, String> pet, int index) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Eliminar mascota'),
-        content: Text('¿Estás seguro de que quieres eliminar a ${pet['name']}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                _pets.removeAt(index);
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${pet['name']} eliminado'),
-                  backgroundColor: Colors.red,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text('Eliminar mascota'),
+            content: Text(
+              '¿Estás seguro de que quieres eliminar a ${pet['name']}?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _pets.removeAt(index);
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${pet['name']} eliminado'),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'Eliminar',
+                  style: TextStyle(color: Colors.red),
                 ),
-              );
-            },
-            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
