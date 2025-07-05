@@ -15,6 +15,9 @@ import 'presentation/pages/owner/pets/pet_detail_page.dart';
 import 'presentation/pages/owner/veterinarians/search_veterinarians_page.dart';
 import 'presentation/pages/owner/veterinarians/veterinarians_list_page.dart';
 import 'presentation/pages/owner/veterinarians/veterinarian_profile_page.dart';
+import 'presentation/pages/owner/appointments/schedule_appointment_page.dart';
+import 'presentation/pages/owner/appointments/my_appointments_page.dart';
+import 'presentation/pages/owner/appointments/appointment_detail_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -48,10 +51,12 @@ class MyApp extends StatelessWidget {
         '/my-pets': (context) => const MyPetsPage(),
         '/add-pet': (context) => const AddPetPage(),
         '/pet-detail': (context) => const PetDetailPage(),
-        // Rutas de veterinarios
         '/search-veterinarians': (context) => const SearchVeterinariansPage(),
         '/veterinarians-list': (context) => const VeterinariansListPage(),
         '/veterinarian-profile': (context) => const VeterinarianProfilePage(),
+        '/schedule-appointment': (context) => const ScheduleAppointmentPage(),
+        '/my-appointments': (context) => const MyAppointmentsPage(),
+        '/appointment-detail': (context) => const AppointmentDetailPage(),
       },
     );
   }
@@ -84,9 +89,9 @@ class _MainScreenOwnerState extends State<MainScreenOwner> {
   final List<Widget> _pages = [
     const OwnerDashboardPage(),
     const MyPetsPage(),
-    const SearchVeterinariansPage(), // Página de búsqueda de veterinarios
-    const Placeholder(), // Placeholder para citas
-    const Placeholder(), // Placeholder para perfil
+    const SearchVeterinariansPage(),
+    const MyAppointmentsPage(),
+    const Placeholder(),
   ];
 
   @override
@@ -118,10 +123,10 @@ class _MainScreenVeterinarianState extends State<MainScreenVeterinarian> {
 
   final List<Widget> _pages = [
     const VeterinarianDashboardPage(),
-    const Placeholder(), // Placeholder para agenda
-    const Placeholder(), // Placeholder para pacientes
-    const Placeholder(), // Placeholder para estadísticas
-    const Placeholder(), // Placeholder para ajustes
+    const Placeholder(),
+    const Placeholder(),
+    const Placeholder(),
+    const Placeholder(),
   ];
 
   @override
