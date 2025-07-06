@@ -13,7 +13,8 @@ class CustomBottomNavigationBar extends StatefulWidget {
   });
 
   @override
-  State<CustomBottomNavigationBar> createState() => _CustomBottomNavigationBarState();
+  State<CustomBottomNavigationBar> createState() =>
+      _CustomBottomNavigationBarState();
 }
 
 class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
@@ -48,61 +49,65 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
     }
   }
 
+  // ✅ CORREGIDO: Agregado ícono de notificaciones para dueños
   List<_BottomNavItem> get _ownerItems => [
-        _BottomNavItem(
-          icon: Icons.home_rounded,
-          label: 'Inicio',
-          activeColor: const Color(0xFF4CAF50),
-        ),
-        _BottomNavItem(
-          icon: Icons.pets_rounded,
-          label: 'Mascotas',
-          activeColor: const Color(0xFF4CAF50),
-        ),
-        _BottomNavItem(
-          icon: Icons.search_rounded,
-          label: 'Buscar',
-          activeColor: const Color(0xFF4CAF50),
-        ),
-        _BottomNavItem(
-          icon: Icons.calendar_today_rounded,
-          label: 'Citas',
-          activeColor: const Color(0xFF4CAF50),
-        ),
-        _BottomNavItem(
-          icon: Icons.person_rounded,
-          label: 'Perfil',
-          activeColor: const Color(0xFF4CAF50),
-        ),
-      ];
+    _BottomNavItem(
+      icon: Icons.home_rounded,
+      label: 'Inicio',
+      activeColor: const Color(0xFF4CAF50),
+    ),
+    _BottomNavItem(
+      icon: Icons.pets_rounded,
+      label: 'Mascotas',
+      activeColor: const Color(0xFF4CAF50),
+    ),
+    _BottomNavItem(
+      icon: Icons.search_rounded,
+      label: 'Buscar',
+      activeColor: const Color(0xFF4CAF50),
+    ),
+    _BottomNavItem(
+      icon: Icons.calendar_today_rounded,
+      label: 'Citas',
+      activeColor: const Color(0xFF4CAF50),
+    ),
+    // ✅ AGREGADO: Notificaciones para dueños (Tab 4)
+    _BottomNavItem(
+      icon: Icons.notifications_rounded,
+      label: 'Notificaciones',
+      activeColor: const Color(0xFF4CAF50),
+    ),
+  ];
 
+  // ✅ CORREGIDO: Agregado ícono de notificaciones para veterinarios
   List<_BottomNavItem> get _veterinarianItems => [
-        _BottomNavItem(
-          icon: Icons.dashboard_rounded,
-          label: 'Dashboard',
-          activeColor: const Color(0xFF81D4FA),
-        ),
-        _BottomNavItem(
-          icon: Icons.calendar_month_rounded,
-          label: 'Agenda',
-          activeColor: const Color(0xFF81D4FA),
-        ),
-        _BottomNavItem(
-          icon: Icons.people_rounded,
-          label: 'Pacientes',
-          activeColor: const Color(0xFF81D4FA),
-        ),
-        _BottomNavItem(
-          icon: Icons.bar_chart_rounded,
-          label: 'Estadísticas',
-          activeColor: const Color(0xFF81D4FA),
-        ),
-        _BottomNavItem(
-          icon: Icons.settings_rounded,
-          label: 'Ajustes',
-          activeColor: const Color(0xFF81D4FA),
-        ),
-      ];
+    _BottomNavItem(
+      icon: Icons.dashboard_rounded,
+      label: 'Dashboard',
+      activeColor: const Color(0xFF81D4FA),
+    ),
+    _BottomNavItem(
+      icon: Icons.calendar_month_rounded,
+      label: 'Agenda',
+      activeColor: const Color(0xFF81D4FA),
+    ),
+    _BottomNavItem(
+      icon: Icons.people_rounded,
+      label: 'Pacientes',
+      activeColor: const Color(0xFF81D4FA),
+    ),
+    // ✅ AGREGADO: Notificaciones para veterinarios (Tab 3)
+    _BottomNavItem(
+      icon: Icons.notifications_rounded,
+      label: 'Notificaciones',
+      activeColor: const Color(0xFF81D4FA),
+    ),
+    _BottomNavItem(
+      icon: Icons.settings_rounded,
+      label: 'Ajustes',
+      activeColor: const Color(0xFF81D4FA),
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +122,6 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
         ),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
             color: Colors.black.withOpacity(0.1),
             blurRadius: 20,
             offset: const Offset(0, -5),
@@ -162,26 +166,52 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
                 animation: _scaleAnimation,
                 builder: (context, child) {
                   return Transform.scale(
-                    scale: isSelected && widget.currentIndex == index 
-                        ? _scaleAnimation.value 
-                        : 1.0,
+                    scale:
+                        isSelected && widget.currentIndex == index
+                            ? _scaleAnimation.value
+                            : 1.0,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: isSelected 
-                            // ignore: deprecated_member_use
-                            ? item.activeColor.withOpacity(0.15) 
-                            : Colors.transparent,
+                        color:
+                            isSelected
+                                ? item.activeColor.withOpacity(0.15)
+                                : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(
-                        item.icon,
-                        size: 24,
-                        color: isSelected 
-                            ? item.activeColor 
-                            : const Color(0xFF9E9E9E),
+                      child: Stack(
+                        children: [
+                          Center(
+                            child: Icon(
+                              item.icon,
+                              size: 24,
+                              color:
+                                  isSelected
+                                      ? item.activeColor
+                                      : const Color(0xFF9E9E9E),
+                            ),
+                          ),
+                          // ✅ AGREGADO: Badge de notificaciones
+                          if (item.label == 'Notificaciones')
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   );
@@ -193,9 +223,8 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  color: isSelected 
-                      ? item.activeColor 
-                      : const Color(0xFF9E9E9E),
+                  color:
+                      isSelected ? item.activeColor : const Color(0xFF9E9E9E),
                 ),
                 child: Text(item.label),
               ),

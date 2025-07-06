@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+// Páginas públicas
 import 'presentation/pages/public/splash_screen.dart';
 import 'presentation/pages/public/landing_page.dart';
 import 'presentation/pages/public/login_page.dart';
@@ -6,9 +7,13 @@ import 'presentation/pages/public/register_type_selection_page.dart';
 import 'presentation/pages/public/register_owner_page.dart';
 import 'presentation/pages/public/register_veterinarian_page.dart';
 import 'presentation/pages/public/email_verification_page.dart';
-import 'presentation/widgets/common/bottom_navigation_bar.dart';
+
+// Dashboards y navegación
 import 'presentation/pages/owner/dashboard/owner_dashboard_page.dart';
 import 'presentation/pages/veterinarian/dashboard/veterinarian_dashboard_page.dart';
+import 'presentation/widgets/common/bottom_navigation_bar.dart';
+
+// Páginas del dueño
 import 'presentation/pages/owner/pets/my_pets_page.dart';
 import 'presentation/pages/owner/pets/add_pet_page.dart';
 import 'presentation/pages/owner/pets/pet_detail_page.dart';
@@ -18,12 +23,16 @@ import 'presentation/pages/owner/veterinarians/veterinarian_profile_page.dart';
 import 'presentation/pages/owner/appointments/schedule_appointment_page.dart';
 import 'presentation/pages/owner/appointments/my_appointments_page.dart';
 import 'presentation/pages/owner/appointments/appointment_detail_page.dart';
-import 'presentation/pages/veterinarian/schedule/my_schedule_page.dart';
-import 'presentation/pages/veterinarian/appointments/appointment_detail_vet_page.dart';
 import 'presentation/pages/owner/medical_records/medical_record_page.dart';
 import 'presentation/pages/owner/medical_records/consultation_detail_page.dart';
 import 'presentation/pages/owner/medical_records/vaccination_history_page.dart';
 import 'presentation/pages/owner/medical_records/active_treatments_page.dart';
+// Notificaciones para dueños
+import 'presentation/pages/owner/notifications/notifications_page.dart';
+
+// Páginas del veterinario
+import 'presentation/pages/veterinarian/schedule/my_schedule_page.dart';
+import 'presentation/pages/veterinarian/appointments/appointment_detail_vet_page.dart';
 import 'presentation/pages/veterinarian/medical_records/create_medical_record_page.dart';
 import 'presentation/pages/veterinarian/medical_records/prescribe_treatment_page.dart';
 import 'presentation/pages/veterinarian/medical_records/register_vaccination_page.dart';
@@ -48,6 +57,7 @@ class MyApp extends StatelessWidget {
       ),
       home: const SplashScreen(),
       routes: {
+        // Rutas públicas
         '/landing': (context) => const LandingPage(),
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterTypeSelectionPage(),
@@ -56,29 +66,44 @@ class MyApp extends StatelessWidget {
         '/email-verification': (context) => const EmailVerificationPage(),
         '/professional-verification': (context) => const Placeholder(),
         '/reset-password': (context) => const Placeholder(),
+
+        // Dashboards principales
         '/dashboard': (context) => const DashboardWrapper(),
         '/dashboard/owner': (context) => const MainScreenOwner(),
         '/dashboard/veterinarian': (context) => const MainScreenVeterinarian(),
+
+        // Rutas del dueño - Mascotas
         '/my-pets': (context) => const MyPetsPage(),
         '/add-pet': (context) => const AddPetPage(),
         '/pet-detail': (context) => const PetDetailPage(),
+
+        // Rutas del dueño - Veterinarios
         '/search-veterinarians': (context) => const SearchVeterinariansPage(),
         '/veterinarians-list': (context) => const VeterinariansListPage(),
         '/veterinarian-profile': (context) => const VeterinarianProfilePage(),
+
+        // Rutas del dueño - Citas
         '/schedule-appointment': (context) => const ScheduleAppointmentPage(),
         '/my-appointments': (context) => const MyAppointmentsPage(),
         '/appointment-detail': (context) => const AppointmentDetailPage(),
+
+        // Rutas del dueño - Registros médicos
         '/medical-record': (context) => const MedicalRecordPage(),
         '/consultation-detail': (context) => const ConsultationDetailPage(),
         '/vaccination-history': (context) => const VaccinationHistoryPage(),
         '/active-treatments': (context) => const ActiveTreatmentsPage(),
+
+        // Rutas del veterinario - Agenda
         '/my-schedule': (context) => const MySchedulePage(),
         '/appointment-detail-vet':
             (context) => const AppointmentDetailVetPage(),
+
+        // Rutas del veterinario - Registros médicos
         '/create-medical-record': (context) => const CreateMedicalRecordPage(),
         '/prescribe-treatment': (context) => const PrescribeTreatmentPage(),
         '/register-vaccination': (context) => const RegisterVaccinationPage(),
-        // Nuevas rutas agregadas para las vistas 38 y 39
+
+        // Rutas del veterinario - Pacientes (Vistas 38-39)
         '/patients-list': (context) => const PatientsListPage(),
         '/patient-history': (context) {
           final args =
@@ -86,6 +111,9 @@ class MyApp extends StatelessWidget {
                   as Map<String, dynamic>?;
           return PatientHistoryPage(patient: args);
         },
+
+        // Rutas de notificaciones (Vistas 40-41) - NUEVAS
+        '/notifications': (context) => const NotificationsPage(),
       },
     );
   }
@@ -103,6 +131,7 @@ class DashboardWrapper extends StatelessWidget {
         : const MainScreenOwner();
   }
 }
+
 // Screen principal para dueños con navegación
 class MainScreenOwner extends StatefulWidget {
   const MainScreenOwner({super.key});
@@ -119,7 +148,7 @@ class _MainScreenOwnerState extends State<MainScreenOwner> {
     const MyPetsPage(),
     const SearchVeterinariansPage(),
     const MyAppointmentsPage(),
-    const Placeholder(), // Profile page
+    const NotificationsPage(), // Vista 41 - Notificaciones (AGREGADO)
   ];
 
   @override
@@ -153,8 +182,8 @@ class _MainScreenVeterinarianState extends State<MainScreenVeterinarian> {
   final List<Widget> _pages = [
     const VeterinarianDashboardPage(),
     const MySchedulePage(), // Vista 26 - Agenda del veterinario
-    const PatientsListPage(), // Vista 38 - Lista de pacientes (AGREGADO)
-    const Placeholder(), // Statistics
+    const PatientsListPage(), // Vista 38 - Lista de pacientes
+    const NotificationsPage(), // Vista 41 - Notificaciones (AGREGADO)
     const Placeholder(), // Settings
   ];
 
