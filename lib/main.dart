@@ -6,9 +6,9 @@ import 'presentation/pages/public/register_type_selection_page.dart';
 import 'presentation/pages/public/register_owner_page.dart';
 import 'presentation/pages/public/register_veterinarian_page.dart';
 import 'presentation/pages/public/email_verification_page.dart';
+import 'presentation/widgets/common/bottom_navigation_bar.dart';
 import 'presentation/pages/owner/dashboard/owner_dashboard_page.dart';
 import 'presentation/pages/veterinarian/dashboard/veterinarian_dashboard_page.dart';
-import 'presentation/widgets/common/bottom_navigation_bar.dart';
 import 'presentation/pages/owner/pets/my_pets_page.dart';
 import 'presentation/pages/owner/pets/add_pet_page.dart';
 import 'presentation/pages/owner/pets/pet_detail_page.dart';
@@ -27,6 +27,8 @@ import 'presentation/pages/owner/medical_records/active_treatments_page.dart';
 import 'presentation/pages/veterinarian/medical_records/create_medical_record_page.dart';
 import 'presentation/pages/veterinarian/medical_records/prescribe_treatment_page.dart';
 import 'presentation/pages/veterinarian/medical_records/register_vaccination_page.dart';
+import 'presentation/pages/veterinarian/patients/patients_list_page.dart';
+import 'presentation/pages/veterinarian/patients/patient_history_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -76,6 +78,14 @@ class MyApp extends StatelessWidget {
         '/create-medical-record': (context) => const CreateMedicalRecordPage(),
         '/prescribe-treatment': (context) => const PrescribeTreatmentPage(),
         '/register-vaccination': (context) => const RegisterVaccinationPage(),
+        // Nuevas rutas agregadas para las vistas 38 y 39
+        '/patients-list': (context) => const PatientsListPage(),
+        '/patient-history': (context) {
+          final args =
+              ModalRoute.of(context)?.settings.arguments
+                  as Map<String, dynamic>?;
+          return PatientHistoryPage(patient: args);
+        },
       },
     );
   }
@@ -93,7 +103,6 @@ class DashboardWrapper extends StatelessWidget {
         : const MainScreenOwner();
   }
 }
-
 // Screen principal para dueños con navegación
 class MainScreenOwner extends StatefulWidget {
   const MainScreenOwner({super.key});
@@ -130,6 +139,7 @@ class _MainScreenOwnerState extends State<MainScreenOwner> {
   }
 }
 
+// Screen principal para veterinarios con navegación
 class MainScreenVeterinarian extends StatefulWidget {
   const MainScreenVeterinarian({super.key});
 
@@ -143,7 +153,7 @@ class _MainScreenVeterinarianState extends State<MainScreenVeterinarian> {
   final List<Widget> _pages = [
     const VeterinarianDashboardPage(),
     const MySchedulePage(), // Vista 26 - Agenda del veterinario
-    const Placeholder(), // Patients list
+    const PatientsListPage(), // Vista 38 - Lista de pacientes (AGREGADO)
     const Placeholder(), // Statistics
     const Placeholder(), // Settings
   ];
