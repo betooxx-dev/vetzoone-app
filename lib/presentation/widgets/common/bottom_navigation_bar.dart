@@ -49,7 +49,6 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
     }
   }
 
-  // ✅ CORREGIDO: Agregado ícono de notificaciones para dueños
   List<_BottomNavItem> get _ownerItems => [
     _BottomNavItem(
       icon: Icons.home_rounded,
@@ -71,15 +70,13 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
       label: 'Citas',
       activeColor: const Color(0xFF4CAF50),
     ),
-    // ✅ AGREGADO: Notificaciones para dueños (Tab 4)
     _BottomNavItem(
-      icon: Icons.notifications_rounded,
-      label: 'Notificaciones',
+      icon: Icons.person_rounded,
+      label: 'Perfil',
       activeColor: const Color(0xFF4CAF50),
     ),
   ];
 
-  // ✅ CORREGIDO: Agregado ícono de notificaciones para veterinarios
   List<_BottomNavItem> get _veterinarianItems => [
     _BottomNavItem(
       icon: Icons.dashboard_rounded,
@@ -96,7 +93,6 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
       label: 'Pacientes',
       activeColor: const Color(0xFF81D4FA),
     ),
-    // ✅ AGREGADO: Notificaciones para veterinarios (Tab 3)
     _BottomNavItem(
       icon: Icons.notifications_rounded,
       label: 'Notificaciones',
@@ -104,7 +100,7 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
     ),
     _BottomNavItem(
       icon: Icons.settings_rounded,
-      label: 'Ajustes',
+      label: 'Configuración',
       activeColor: const Color(0xFF81D4FA),
     ),
   ];
@@ -193,7 +189,6 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
                                       : const Color(0xFF9E9E9E),
                             ),
                           ),
-                          // ✅ AGREGADO: Badge de notificaciones
                           if (item.label == 'Notificaciones')
                             Positioned(
                               right: 8,
