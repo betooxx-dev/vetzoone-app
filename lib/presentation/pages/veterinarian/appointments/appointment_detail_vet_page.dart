@@ -885,7 +885,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
       case AppointmentStatus.rescheduled:
         return {
           'primary': const Color(0xFFFF7043),
-          'secondary': const Color(0xFFFF8A65),
+          'secondary': const Color(0xFFFF8A65),    
         };
     }
   }

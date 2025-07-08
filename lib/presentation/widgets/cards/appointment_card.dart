@@ -7,6 +7,7 @@ enum AppointmentStatus {
   completed,
   cancelled,
   rescheduled,
+  
 }
 
 class AppointmentCard extends StatelessWidget {
