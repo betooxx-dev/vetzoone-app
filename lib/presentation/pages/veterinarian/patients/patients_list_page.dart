@@ -15,7 +15,7 @@ class _PatientsListPageState extends State<PatientsListPage>
   late Animation<Offset> _slideAnimation;
 
   final TextEditingController _searchController = TextEditingController();
-  
+
   List<Map<String, dynamic>> _allPatients = [];
   List<Map<String, dynamic>> _filteredPatients = [];
   String _selectedFilter = 'Todos';
@@ -33,34 +33,28 @@ class _PatientsListPageState extends State<PatientsListPage>
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    ));
-    
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0.0, 0.1),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    ));
-    
+    ).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
     _loadPatients();
     _animationController.forward();
   }
 
   void _loadPatients() {
-    // Simular carga de datos
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
         setState(() {
@@ -80,88 +74,98 @@ class _PatientsListPageState extends State<PatientsListPage>
               'status': 'Activo',
               'priority': 'Normal',
               'consultationsCount': 8,
-              'profileImage': 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=400&fit=crop&crop=face',
-              'medicalNotes': 'Paciente cooperativo. Historial de alergias alimentarias.',
+              'profileImage':
+                  'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=400&fit=crop&crop=face',
+              'medicalNotes':
+                  'Paciente cooperativo. Historial de alergias alimentarias. Vacunación al día.',
               'conditions': ['Alergia alimentaria'],
-              'lastDiagnosis': 'Revisión de rutina - Estado excelente',
+              'lastDiagnosis': 'Control preventivo - Estado óptimo',
             },
             {
               'id': '2',
-              'name': 'Milo',
-              'species': 'Gato',
-              'breed': 'Persa',
+              'name': 'Max',
+              'species': 'Perro',
+              'breed': 'Labrador',
               'age': '5 años',
               'gender': 'Macho',
-              'weight': '4.2 kg',
-              'ownerName': 'Carlos Hernández',
-              'ownerPhone': '+52 961 987 6543',
-              'lastVisit': DateTime.now().subtract(const Duration(days: 7)),
-              'nextAppointment': DateTime.now().add(const Duration(days: 14)),
+              'weight': '32.0 kg',
+              'ownerName': 'Carlos Ruiz',
+              'ownerPhone': '+52 961 234 5678',
+              'lastVisit': DateTime.now().subtract(const Duration(days: 3)),
+              'nextAppointment': DateTime.now().add(const Duration(days: 21)),
               'status': 'Seguimiento',
               'priority': 'Alta',
               'consultationsCount': 12,
-              'profileImage': 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=400&fit=crop&crop=face',
-              'medicalNotes': 'Tratamiento post-quirúrgico. Requiere seguimiento.',
-              'conditions': ['Post-cirugía', 'Diabetes'],
-              'lastDiagnosis': 'Recuperación post-cirugía de cálculos urinarios',
+              'profileImage':
+                  'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=400&h=400&fit=crop&crop=face',
+              'medicalNotes':
+                  'Post-cirugía de cadera. Requiere seguimiento continuo y fisioterapia.',
+              'conditions': ['Displasia de cadera', 'Post-cirugía'],
+              'lastDiagnosis': 'Recuperación post-cirugía - Progreso favorable',
             },
             {
               'id': '3',
-              'name': 'Bella',
-              'species': 'Perro',
-              'breed': 'Bulldog Francés',
+              'name': 'Milo',
+              'species': 'Gato',
+              'breed': 'Persa',
               'age': '2 años',
-              'gender': 'Hembra',
-              'weight': '12.1 kg',
+              'gender': 'Macho',
+              'weight': '4.2 kg',
               'ownerName': 'Ana García',
-              'ownerPhone': '+52 961 456 7890',
-              'lastVisit': DateTime.now().subtract(const Duration(days: 45)),
-              'nextAppointment': null,
-              'status': 'Inactivo',
-              'priority': 'Baja',
-              'consultationsCount': 3,
-              'profileImage': 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=400&h=400&fit=crop&crop=face',
-              'medicalNotes': 'Problemas respiratorios típicos de la raza.',
-              'conditions': ['Problemas respiratorios'],
-              'lastDiagnosis': 'Consulta de rutina - Recomendaciones preventivas',
+              'ownerPhone': '+52 961 345 6789',
+              'lastVisit': DateTime.now().subtract(const Duration(days: 60)),
+              'nextAppointment': DateTime.now().add(const Duration(days: 10)),
+              'status': 'Crítico',
+              'priority': 'Crítica',
+              'consultationsCount': 6,
+              'profileImage':
+                  'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=400&fit=crop&crop=face',
+              'medicalNotes':
+                  'Problemas respiratorios crónicos. Monitoreo constante requerido.',
+              'conditions': ['Asma felino', 'Problemas respiratorios'],
+              'lastDiagnosis': 'Crisis asmática - Tratamiento intensivo',
             },
             {
               'id': '4',
-              'name': 'Rocky',
+              'name': 'Bella',
               'species': 'Perro',
               'breed': 'Pastor Alemán',
               'age': '7 años',
-              'gender': 'Macho',
-              'weight': '32.8 kg',
-              'ownerName': 'Roberto Silva',
-              'ownerPhone': '+52 961 321 6547',
-              'lastVisit': DateTime.now().subtract(const Duration(days: 3)),
-              'nextAppointment': DateTime.now().add(const Duration(days: 7)),
-              'status': 'Crítico',
-              'priority': 'Crítica',
+              'gender': 'Hembra',
+              'weight': '26.8 kg',
+              'ownerName': 'Jorge Méndez',
+              'ownerPhone': '+52 961 456 7890',
+              'lastVisit': DateTime.now().subtract(const Duration(days: 120)),
+              'nextAppointment': null,
+              'status': 'Inactivo',
+              'priority': 'Baja',
               'consultationsCount': 15,
-              'profileImage': 'https://images.unsplash.com/photo-1551717743-49959800b1f6?w=400&h=400&fit=crop&crop=face',
-              'medicalNotes': 'Displasia de cadera. Tratamiento de dolor crónico.',
-              'conditions': ['Displasia de cadera', 'Artritis'],
-              'lastDiagnosis': 'Exacerbación de displasia de cadera',
+              'profileImage':
+                  'https://images.unsplash.com/photo-1605568427561-40dd23c2acea?w=400&h=400&fit=crop&crop=face',
+              'medicalNotes':
+                  'Paciente senior. Última consulta hace 4 meses. Recordar contactar.',
+              'conditions': [],
+              'lastDiagnosis': 'Control geriátrico - Estado general bueno',
             },
             {
               'id': '5',
-              'name': 'Whiskers',
-              'species': 'Gato',
-              'breed': 'Maine Coon',
+              'name': 'Rocky',
+              'species': 'Perro',
+              'breed': 'Bulldog',
               'age': '4 años',
               'gender': 'Macho',
-              'weight': '6.8 kg',
-              'ownerName': 'Laura Martínez',
-              'ownerPhone': '+52 961 789 0123',
+              'weight': '22.5 kg',
+              'ownerName': 'Sofía Morales',
+              'ownerPhone': '+52 961 567 8901',
               'lastVisit': DateTime.now().subtract(const Duration(days: 2)),
-              'nextAppointment': DateTime.now().add(const Duration(days: 21)),
-              'status': 'Reciente',
+              'nextAppointment': DateTime.now().add(const Duration(days: 14)),
+              'status': 'Activo',
               'priority': 'Normal',
-              'consultationsCount': 6,
-              'profileImage': 'https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?w=400&h=400&fit=crop&crop=face',
-              'medicalNotes': 'Paciente muy tranquilo. Vacunación al día.',
+              'consultationsCount': 9,
+              'profileImage':
+                  'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=400&h=400&fit=crop&crop=face',
+              'medicalNotes':
+                  'Paciente cooperativo. Historial de alergias alimentarias. Vacunación al día.',
               'conditions': [],
               'lastDiagnosis': 'Control preventivo - Estado óptimo',
             },
@@ -190,36 +194,45 @@ class _PatientsListPageState extends State<PatientsListPage>
   void _applyFilters() {
     List<Map<String, dynamic>> filtered = _allPatients;
 
-    // Aplicar filtro por categoría
     if (_selectedFilter != 'Todos') {
-      filtered = filtered.where((patient) {
-        switch (_selectedFilter) {
-          case 'Recientes':
-            final daysSinceLastVisit = DateTime.now()
-                .difference(patient['lastVisit'] as DateTime)
-                .inDays;
-            return daysSinceLastVisit <= 7;
-          case 'Seguimiento':
-            return patient['status'] == 'Seguimiento';
-          case 'Críticos':
-            return patient['status'] == 'Crítico';
-          case 'Inactivos':
-            return patient['status'] == 'Inactivo';
-          default:
-            return true;
-        }
-      }).toList();
+      filtered =
+          filtered.where((patient) {
+            switch (_selectedFilter) {
+              case 'Recientes':
+                final daysSinceLastVisit =
+                    DateTime.now()
+                        .difference(patient['lastVisit'] as DateTime)
+                        .inDays;
+                return daysSinceLastVisit <= 7;
+              case 'Seguimiento':
+                return patient['status'] == 'Seguimiento';
+              case 'Críticos':
+                return patient['status'] == 'Crítico';
+              case 'Inactivos':
+                return patient['status'] == 'Inactivo';
+              default:
+                return true;
+            }
+          }).toList();
     }
 
-    // Aplicar búsqueda por texto
     if (_searchQuery.isNotEmpty) {
-      filtered = filtered.where((patient) {
-        final searchLower = _searchQuery.toLowerCase();
-        return patient['name'].toString().toLowerCase().contains(searchLower) ||
-               patient['ownerName'].toString().toLowerCase().contains(searchLower) ||
-               patient['breed'].toString().toLowerCase().contains(searchLower) ||
-               patient['species'].toString().toLowerCase().contains(searchLower);
-      }).toList();
+      filtered =
+          filtered.where((patient) {
+            final searchLower = _searchQuery.toLowerCase();
+            return patient['name'].toString().toLowerCase().contains(
+                  searchLower,
+                ) ||
+                patient['ownerName'].toString().toLowerCase().contains(
+                  searchLower,
+                ) ||
+                patient['breed'].toString().toLowerCase().contains(
+                  searchLower,
+                ) ||
+                patient['species'].toString().toLowerCase().contains(
+                  searchLower,
+                );
+          }).toList();
     }
 
     _filteredPatients = filtered;
@@ -260,7 +273,7 @@ class _PatientsListPageState extends State<PatientsListPage>
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date).inDays;
-    
+
     if (difference == 0) {
       return 'Hoy';
     } else if (difference == 1) {
@@ -304,9 +317,7 @@ class _PatientsListPageState extends State<PatientsListPage>
         actions: [
           IconButton(
             icon: const Icon(Icons.search, color: Color(0xFF3498DB)),
-            onPressed: () {
-              // Expandir barra de búsqueda
-            },
+            onPressed: () {},
           ),
           IconButton(
             icon: const Icon(Icons.filter_list, color: Color(0xFF3498DB)),
@@ -322,88 +333,19 @@ class _PatientsListPageState extends State<PatientsListPage>
           position: _slideAnimation,
           child: Column(
             children: [
-              // Estadísticas rápidas
-              _buildStatsSection(),
-              
-              // Barra de búsqueda
               _buildSearchBar(),
-              
-              // Filtros
               _buildFiltersSection(),
-              
-              // Lista de pacientes
               Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _filteredPatients.isEmpty
+                child:
+                    _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _filteredPatients.isEmpty
                         ? _buildEmptyState()
                         : _buildPatientsList(),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildStatsSection() {
-    final totalPatients = _allPatients.length;
-    final activePatients = _allPatients.where((p) => p['status'] == 'Activo').length;
-    final criticalPatients = _allPatients.where((p) => p['status'] == 'Crítico').length;
-    final recentPatients = _allPatients.where((p) {
-      final daysSinceLastVisit = DateTime.now()
-          .difference(p['lastVisit'] as DateTime)
-          .inDays;
-      return daysSinceLastVisit <= 7;
-    }).length;
-
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          _buildStatItem('Total', totalPatients.toString(), Colors.blue),
-          _buildStatItem('Activos', activePatients.toString(), Colors.green),
-          _buildStatItem('Críticos', criticalPatients.toString(), Colors.red),
-          _buildStatItem('Recientes', recentPatients.toString(), Colors.orange),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String label, String value, Color color) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF7F8C8D),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -420,10 +362,12 @@ class _PatientsListPageState extends State<PatientsListPage>
       child: TextField(
         controller: _searchController,
         onChanged: _searchPatients,
+        style: const TextStyle(fontSize: 16),
         decoration: const InputDecoration(
-          hintText: 'Buscar por nombre, dueño, raza...',
+          hintText: 'Buscar pacientes...',
           border: InputBorder.none,
           icon: Icon(Icons.search, color: Color(0xFF7F8C8D)),
+          hintStyle: TextStyle(color: Color(0xFF95A5A6)),
         ),
       ),
     );
@@ -431,16 +375,15 @@ class _PatientsListPageState extends State<PatientsListPage>
 
   Widget _buildFiltersSection() {
     return Container(
-      height: 50,
-      margin: const EdgeInsets.only(top: 16),
+      height: 60,
+      margin: const EdgeInsets.all(16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: _filterOptions.length,
         itemBuilder: (context, index) {
           final filter = _filterOptions[index];
-          final isSelected = _selectedFilter == filter;
-          
+          final isSelected = filter == _selectedFilter;
+
           return Container(
             margin: const EdgeInsets.only(right: 8),
             child: FilterChip(
@@ -448,14 +391,20 @@ class _PatientsListPageState extends State<PatientsListPage>
               selected: isSelected,
               onSelected: (selected) => _filterPatients(filter),
               backgroundColor: Colors.white,
-              selectedColor: const Color(0xFF3498DB).withOpacity(0.2),
+              selectedColor: const Color(0xFF3498DB).withOpacity(0.1),
               checkmarkColor: const Color(0xFF3498DB),
               labelStyle: TextStyle(
-                color: isSelected ? const Color(0xFF3498DB) : const Color(0xFF7F8C8D),
+                color:
+                    isSelected
+                        ? const Color(0xFF3498DB)
+                        : const Color(0xFF7F8C8D),
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
               side: BorderSide(
-                color: isSelected ? const Color(0xFF3498DB) : const Color(0xFFE0E0E0),
+                color:
+                    isSelected
+                        ? const Color(0xFF3498DB)
+                        : const Color(0xFFE0E0E0),
               ),
             ),
           );
@@ -505,10 +454,8 @@ class _PatientsListPageState extends State<PatientsListPage>
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Header con foto y info básica
                 Row(
                   children: [
-                    // Foto del paciente
                     Container(
                       width: 60,
                       height: 60,
@@ -537,10 +484,7 @@ class _PatientsListPageState extends State<PatientsListPage>
                         ),
                       ),
                     ),
-                    
                     const SizedBox(width: 16),
-                    
-                    // Info principal
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -563,8 +507,10 @@ class _PatientsListPageState extends State<PatientsListPage>
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: _getStatusColor(patient['status']).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
+                                  color: _getStatusColor(
+                                    patient['status'],
+                                  ).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
                                   patient['status'],
@@ -598,10 +544,9 @@ class _PatientsListPageState extends State<PatientsListPage>
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
-                // Info adicional
+
                 Row(
                   children: [
                     _buildInfoChip(
@@ -617,35 +562,55 @@ class _PatientsListPageState extends State<PatientsListPage>
                     ),
                   ],
                 ),
-                
+
                 if (patient['conditions'].isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
-                    children: (patient['conditions'] as List<String>).map((condition) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Colors.orange.withOpacity(0.3),
-                          ),
-                        ),
-                        child: Text(
+                    children:
+                        (patient['conditions'] as List<String>).map((
                           condition,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.orange,
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                        ) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              condition,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.red,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                  ),
+                ],
+
+                if (patient['medicalNotes'].isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F9FA),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      patient['medicalNotes'],
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF7F8C8D),
+                        height: 1.4,
+                      ),
+                    ),
                   ),
                 ],
               ],
@@ -657,61 +622,87 @@ class _PatientsListPageState extends State<PatientsListPage>
   }
 
   Widget _buildInfoChip(IconData icon, String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: color,
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: color,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptyState() {
+    String title;
+    String subtitle;
+    IconData icon;
+
+    if (_searchQuery.isNotEmpty) {
+      title = 'No se encontraron pacientes';
+      subtitle = 'Intenta con otros términos de búsqueda';
+      icon = Icons.search_off;
+    } else if (_selectedFilter != 'Todos') {
+      title = 'No hay pacientes $_selectedFilter';
+      subtitle = 'Cambia el filtro para ver más pacientes';
+      icon = Icons.filter_list_off;
+    } else {
+      title = 'No tienes pacientes registrados';
+      subtitle = 'Los pacientes aparecerán aquí después de su primera consulta';
+      icon = Icons.pets_outlined;
+    }
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.pets_outlined,
-            size: 80,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No se encontraron pacientes',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: const Color(0xFF3498DB).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(60),
+              ),
+              child: Icon(icon, size: 60, color: const Color(0xFF3498DB)),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _searchQuery.isNotEmpty
-                ? 'Intenta con otros términos de búsqueda'
-                : 'Los pacientes aparecerán aquí después de su primera consulta',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
+            const SizedBox(height: 24),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2C3E50),
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: const TextStyle(fontSize: 14, color: Color(0xFF7F8C8D)),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -719,47 +710,56 @@ class _PatientsListPageState extends State<PatientsListPage>
   void _showFilterBottomSheet() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Filtrar Pacientes',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2C3E50),
-                ),
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
-              const SizedBox(height: 20),
-              ...(_filterOptions.map((filter) {
-                final isSelected = _selectedFilter == filter;
-                return ListTile(
-                  title: Text(filter),
-                  leading: Radio<String>(
-                    value: filter,
-                    groupValue: _selectedFilter,
-                    onChanged: (value) {
-                      _filterPatients(value!);
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(top: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE0E0E0),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Text(
+                    'Filtrar pacientes',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2C3E50),
+                    ),
+                  ),
+                ),
+                ..._filterOptions.map((filter) {
+                  return ListTile(
+                    title: Text(filter),
+                    trailing:
+                        _selectedFilter == filter
+                            ? const Icon(Icons.check, color: Color(0xFF3498DB))
+                            : null,
+                    onTap: () {
+                      _filterPatients(filter);
                       Navigator.pop(context);
                     },
-                  ),
-                  onTap: () {
-                    _filterPatients(filter);
-                    Navigator.pop(context);
-                  },
-                );
-              }).toList()),
-            ],
+                  );
+                }),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
-        );
-      },
     );
   }
 }

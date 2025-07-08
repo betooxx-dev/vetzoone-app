@@ -977,7 +977,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     }
   }
 
-  // ← FUNCIÓN MODIFICADA: Ahora navega a vista 32
   void _createMedicalRecord() {
     Navigator.pushNamed(context, '/create-medical-record');
   }
