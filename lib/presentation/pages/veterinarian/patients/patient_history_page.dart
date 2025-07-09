@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class PatientHistoryPage extends StatefulWidget {
   final Map<String, dynamic>? patient;
@@ -12,435 +11,409 @@ class PatientHistoryPage extends StatefulWidget {
 
 class _PatientHistoryPageState extends State<PatientHistoryPage>
     with TickerProviderStateMixin {
-  late AnimationController _animationController;
   late TabController _tabController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
 
-  Map<String, dynamic> patient = {};
-  List<Map<String, dynamic>> consultations = [];
-  List<Map<String, dynamic>> vaccinations = [];
-  List<Map<String, dynamic>> treatments = [];
-  List<Map<String, dynamic>> attachments = [];
+  final List<Map<String, dynamic>> consultations = [
+    {
+      'id': '1',
+      'date': DateTime.now().subtract(const Duration(days: 7)),
+      'diagnosis': 'Control rutinario - Vacunación múltiple',
+      'symptoms': 'Ninguno',
+      'temperature': '38.5°C',
+      'weight': '15.2 kg',
+      'pulse': '110 bpm',
+      'notes':
+          'Mascota en excelente estado de salud. Se aplicó vacuna múltiple según calendario de vacunación. Próxima cita en 3 meses para control.',
+      'prescriptions': [
+        'Vitaminas - 1 comprimido diario x 30 días',
+        'Desparasitante - Cada 3 meses',
+      ],
+      'attachments': ['radiografia_torax.jpg', 'analisis_sangre.pdf'],
+      'cost': 850.00,
+      'status': 'Completado',
+      'nextAppointment': DateTime.now().add(const Duration(days: 90)),
+    },
+    {
+      'id': '2',
+      'date': DateTime.now().subtract(const Duration(days: 30)),
+      'diagnosis': 'Gastroenteritis leve',
+      'symptoms': 'Vómito, diarrea, pérdida de apetito',
+      'temperature': '39.2°C',
+      'weight': '14.8 kg',
+      'pulse': '125 bpm',
+      'notes':
+          'Cuadro de gastroenteritis leve debido a cambio de dieta. Respuesta favorable al tratamiento. Se recomienda dieta blanda por 5 días.',
+      'prescriptions': [
+        'Omeprazol - 20mg cada 12 horas x 7 días',
+        'Probióticos - 1 sobre diario x 10 días',
+        'Dieta blanda - Arroz con pollo x 5 días',
+      ],
+      'attachments': ['receta_medicamentos.pdf'],
+      'cost': 650.00,
+      'status': 'Completado',
+      'nextAppointment': null,
+    },
+    {
+      'id': '3',
+      'date': DateTime.now().subtract(const Duration(days: 60)),
+      'diagnosis': 'Limpieza dental',
+      'symptoms': 'Mal aliento, sarro dental',
+      'temperature': '38.0°C',
+      'weight': '15.0 kg',
+      'pulse': '105 bpm',
+      'notes':
+          'Procedimiento de limpieza dental bajo anestesia. Se removió sarro acumulado. Estado dental mejorado considerablemente.',
+      'prescriptions': [
+        'Antibiótico - Amoxicilina 500mg cada 8 horas x 7 días',
+        'Analgésico - Meloxicam 1.5mg cada 24 horas x 3 días',
+      ],
+      'attachments': ['fotos_before_after.jpg'],
+      'cost': 1200.00,
+      'status': 'Completado',
+      'nextAppointment': DateTime.now().add(const Duration(days: 365)),
+    },
+  ];
 
-  bool _isLoading = true;
+  final List<Map<String, dynamic>> vaccinations = [
+    {
+      'id': '1',
+      'name': 'Vacuna Múltiple (DHPP)',
+      'date': DateTime.now().subtract(const Duration(days: 7)),
+      'batch': 'VM-2024-1157',
+      'manufacturer': 'Zoetis',
+      'veterinarian': 'Dr. María González',
+      'nextDate': DateTime.now().add(const Duration(days: 365)),
+      'status': 'Aplicada',
+      'notes':
+          'Vacuna aplicada sin complicaciones. Mascota toleró bien el procedimiento.',
+      'cost': 450.00,
+      'sideEffects': 'Ninguno observado',
+      'location': 'Músculo cuadriceps derecho',
+    },
+    {
+      'id': '2',
+      'name': 'Antirrábica',
+      'date': DateTime.now().subtract(const Duration(days: 180)),
+      'batch': 'RAB-2024-0892',
+      'manufacturer': 'Merck',
+      'veterinarian': 'Dr. Carlos López',
+      'nextDate': DateTime.now().add(const Duration(days: 185)),
+      'status': 'Aplicada',
+      'notes': 'Vacuna antirrábica anual aplicada según normativa sanitaria.',
+      'cost': 200.00,
+      'sideEffects': 'Leve inflamación local por 24 horas',
+      'location': 'Región escapular izquierda',
+    },
+    {
+      'id': '3',
+      'name': 'Tos de las Perreras',
+      'date': DateTime.now().subtract(const Duration(days: 90)),
+      'batch': 'KC-2024-0445',
+      'manufacturer': 'Nobivac',
+      'veterinarian': 'Dr. Ana Martínez',
+      'nextDate': DateTime.now().add(const Duration(days: 275)),
+      'status': 'Aplicada',
+      'notes':
+          'Vacuna intranasal aplicada para prevención de traqueobronquitis.',
+      'cost': 300.00,
+      'sideEffects': 'Estornudos leves por 2 días',
+      'location': 'Vía intranasal',
+    },
+  ];
+
+  final List<Map<String, dynamic>> treatments = [
+    {
+      'id': '1',
+      'name': 'Tratamiento Antiparasitario',
+      'startDate': DateTime.now().subtract(const Duration(days: 5)),
+      'endDate': DateTime.now().add(const Duration(days: 25)),
+      'status': 'Activo',
+      'medications': [
+        {
+          'name': 'Drontal Plus',
+          'dosage': '1 comprimido',
+          'frequency': 'Cada 12 horas',
+          'duration': '3 días',
+          'instructions': 'Administrar con alimento',
+        },
+        {
+          'name': 'Vitaminas del complejo B',
+          'dosage': '1 comprimido',
+          'frequency': 'Diario',
+          'duration': '30 días',
+          'instructions': 'En ayunas, con abundante agua',
+        },
+      ],
+      'reason': 'Desparasitación preventiva trimestral',
+      'veterinarian': 'Dr. María González',
+      'notes':
+          'Tratamiento preventivo según calendario. Monitorear deposiciones.',
+      'cost': 380.00,
+      'progress': 'Excelente tolerancia, sin efectos secundarios',
+    },
+    {
+      'id': '2',
+      'name': 'Tratamiento Post-Quirúrgico',
+      'startDate': DateTime.now().subtract(const Duration(days: 60)),
+      'endDate': DateTime.now().subtract(const Duration(days: 50)),
+      'status': 'Completado',
+      'medications': [
+        {
+          'name': 'Amoxicilina',
+          'dosage': '500mg',
+          'frequency': 'Cada 8 horas',
+          'duration': '7 días',
+          'instructions': 'Con alimento para evitar molestias estomacales',
+        },
+        {
+          'name': 'Meloxicam',
+          'dosage': '1.5mg',
+          'frequency': 'Cada 24 horas',
+          'duration': '5 días',
+          'instructions': 'Después de las comidas',
+        },
+      ],
+      'reason': 'Recuperación post-limpieza dental',
+      'veterinarian': 'Dr. Carlos López',
+      'notes': 'Tratamiento completado exitosamente. Cicatrización adecuada.',
+      'cost': 420.00,
+      'progress': 'Recuperación completa sin complicaciones',
+    },
+    {
+      'id': '3',
+      'name': 'Tratamiento Digestivo',
+      'startDate': DateTime.now().subtract(const Duration(days: 30)),
+      'endDate': DateTime.now().subtract(const Duration(days: 20)),
+      'status': 'Completado',
+      'medications': [
+        {
+          'name': 'Omeprazol',
+          'dosage': '20mg',
+          'frequency': 'Cada 12 horas',
+          'duration': '7 días',
+          'instructions': 'Media hora antes de las comidas',
+        },
+        {
+          'name': 'Probióticos',
+          'dosage': '1 sobre',
+          'frequency': 'Diario',
+          'duration': '10 días',
+          'instructions': 'Mezclar con alimento húmedo',
+        },
+      ],
+      'reason': 'Gastroenteritis leve',
+      'veterinarian': 'Dr. María González',
+      'notes': 'Respuesta excelente al tratamiento. Síntomas resueltos.',
+      'cost': 290.00,
+      'progress': 'Recuperación completa en 7 días',
+    },
+  ];
 
   @override
   void initState() {
     super.initState();
-
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-
     _tabController = TabController(length: 4, vsync: this);
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0.0, 0.1),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
-
-    _initializePatientData();
-    _animationController.forward();
-  }
-
-  void _initializePatientData() {
-    patient =
-        widget.patient ??
-        {
-          'id': '1',
-          'name': 'Luna',
-          'species': 'Perro',
-          'breed': 'Golden Retriever',
-          'age': '3 años',
-          'gender': 'Hembra',
-          'weight': '28.5 kg',
-          'ownerName': 'María López',
-          'ownerPhone': '+52 961 123 4567',
-          'ownerEmail': 'maria.lopez@email.com',
-          'birthDate': DateTime(2021, 3, 15),
-          'registrationDate': DateTime(2021, 6, 10),
-          'lastVisit': DateTime.now().subtract(const Duration(days: 15)),
-          'nextAppointment': DateTime.now().add(const Duration(days: 30)),
-          'status': 'Activo',
-          'priority': 'Normal',
-          'consultationsCount': 8,
-          'profileImage':
-              'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=400&fit=crop&crop=face',
-          'medicalNotes':
-              'Paciente cooperativo. Historial de alergias alimentarias.',
-          'conditions': ['Alergia alimentaria'],
-          'allergies': ['Pollo', 'Lácteos'],
-          'microchipId': '982000123456789',
-        };
-
-    _loadMedicalHistory();
-  }
-
-  void _loadMedicalHistory() {
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() {
-          consultations = [
-            {
-              'id': '1',
-              'date': DateTime.now().subtract(const Duration(days: 15)),
-              'type': 'Consulta General',
-              'diagnosis': 'Estado de salud excelente',
-              'treatment': 'Continuar con dieta actual',
-              'weight': '28.5 kg',
-              'temperature': '38.2°C',
-              'cost': 350.0,
-              'notes': 'Paciente en excelente estado general.',
-              'veterinarian': 'Dr. María González',
-            },
-            {
-              'id': '2',
-              'date': DateTime.now().subtract(const Duration(days: 45)),
-              'type': 'Vacunación',
-              'diagnosis': 'Aplicación de refuerzo anual',
-              'treatment': 'Vacuna polivalente',
-              'weight': '27.8 kg',
-              'temperature': '37.9°C',
-              'cost': 280.0,
-              'notes': 'Vacunación completada sin reacciones adversas.',
-              'veterinarian': 'Dr. María González',
-            },
-            {
-              'id': '3',
-              'date': DateTime.now().subtract(const Duration(days: 90)),
-              'type': 'Emergencia',
-              'diagnosis': 'Reacción alérgica alimentaria',
-              'treatment': 'Antihistamínicos y dieta especial',
-              'weight': '27.2 kg',
-              'temperature': '38.8°C',
-              'cost': 520.0,
-              'notes':
-                  'Reacción severa a nueva comida. Se estableció dieta hipoalergénica.',
-              'veterinarian': 'Dr. Carlos López',
-            },
-          ];
-
-          vaccinations = [
-            {
-              'id': '1',
-              'name': 'Vacuna Polivalente',
-              'date': DateTime.now().subtract(const Duration(days: 45)),
-              'nextDate': DateTime.now().add(const Duration(days: 320)),
-              'batch': 'VB2024-007',
-              'status': 'Aplicada',
-              'veterinarian': 'Dr. María González',
-            },
-            {
-              'id': '2',
-              'name': 'Vacuna Antirrábica',
-              'date': DateTime.now().subtract(const Duration(days: 200)),
-              'nextDate': DateTime.now().add(const Duration(days: 165)),
-              'batch': 'VR2024-003',
-              'status': 'Aplicada',
-              'veterinarian': 'Dr. Carlos López',
-            },
-          ];
-
-          treatments = [
-            {
-              'id': '1',
-              'name': 'Dieta Hipoalergénica',
-              'startDate': DateTime.now().subtract(const Duration(days: 90)),
-              'endDate': DateTime.now().add(const Duration(days: 90)),
-              'status': 'Activo',
-              'description': 'Dieta especial libre de alérgenos',
-              'instructions': 'Solo alimento prescrito, evitar premios',
-              'veterinarian': 'Dr. Carlos López',
-            },
-            {
-              'id': '2',
-              'name': 'Suplemento Articular',
-              'startDate': DateTime.now().subtract(const Duration(days: 60)),
-              'endDate': DateTime.now().add(const Duration(days: 90)),
-              'status': 'Activo',
-              'description':
-                  'Glucosamina y condroitina para prevención articular',
-              'instructions': '1 tableta diaria con la comida',
-              'veterinarian': 'Dr. María González',
-            },
-          ];
-
-          attachments = [
-            {
-              'id': '1',
-              'name': 'Radiografía Torácica',
-              'type': 'image',
-              'date': DateTime.now().subtract(const Duration(days: 90)),
-              'url':
-                  'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=600&h=400',
-              'description': 'Radiografía durante consulta de emergencia',
-            },
-            {
-              'id': '2',
-              'name': 'Análisis de Sangre',
-              'type': 'document',
-              'date': DateTime.now().subtract(const Duration(days: 45)),
-              'url': 'https://example.com/lab-results.pdf',
-              'description': 'Perfil bioquímico completo',
-            },
-          ];
-
-          _isLoading = false;
-        });
-      }
-    });
-  }
-
-  void _addMedicalRecord() {
-    HapticFeedback.lightImpact();
-    Navigator.pushNamed(context, '/create-medical-record');
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'activo':
-        return Colors.green;
-      case 'completado':
-        return Colors.blue;
-      case 'suspendido':
-        return Colors.red;
-      case 'aplicada':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
     _tabController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final patient = widget.patient;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [_buildAppBar(), _buildPatientHeader()];
-            },
-            body: Column(
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        title: Text(
+          'Historial de ${patient?['name'] ?? 'Paciente'}',
+          style: const TextStyle(
+            color: Color(0xFF2C3E50),
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF2C3E50)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share, color: Color(0xFF3498DB)),
+            onPressed: () {},
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          _buildPatientHeader(patient),
+          _buildStatsSection(),
+          _buildTabBar(),
+          Expanded(child: _buildTabBarView()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPatientHeader(Map<String, dynamic>? patient) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(40),
+            child: Image.network(
+              patient?['profileImage'] ?? 'https://via.placeholder.com/80',
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3498DB).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(40),
+                  ),
+                  child: const Icon(
+                    Icons.pets,
+                    size: 40,
+                    color: Color(0xFF3498DB),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildTabBar(),
-                Expanded(
-                  child:
-                      _isLoading
-                          ? const Center(child: CircularProgressIndicator())
-                          : _buildTabBarView(),
+                Text(
+                  patient?['name'] ?? 'Nombre no disponible',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2C3E50),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${patient?['species'] ?? 'Especie'} • ${patient?['breed'] ?? 'Raza'} • ${patient?['age'] ?? 'Edad'}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF7F8C8D),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _buildInfoChip(Icons.person, patient?['ownerName'] ?? ''),
+                    const SizedBox(width: 8),
+                    _buildInfoChip(
+                      Icons.monitor_weight,
+                      patient?['weight'] ?? '',
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _addMedicalRecord,
-        backgroundColor: const Color(0xFF3498DB),
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text(
-          'Nuevo Registro',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildAppBar() {
-    return SliverAppBar(
-      expandedHeight: 0,
-      pinned: true,
-      backgroundColor: Colors.white,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF2C3E50)),
-        onPressed: () => Navigator.pop(context),
+  Widget _buildInfoChip(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF3498DB).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
       ),
-      title: Text(
-        patient['name'] ?? 'Paciente',
-        style: const TextStyle(
-          color: Color(0xFF2C3E50),
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.more_vert, color: Color(0xFF2C3E50)),
-          onPressed: () {
-            _showMoreOptions();
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPatientHeader() {
-    return SliverToBoxAdapter(
-      child: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(40),
-                    border: Border.all(
-                      color: _getStatusColor(patient['status']),
-                      width: 3,
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(37),
-                    child: Image.network(
-                      patient['profileImage'],
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: const Color(0xFFF0F0F0),
-                          child: const Icon(
-                            Icons.pets,
-                            color: Color(0xFF7F8C8D),
-                            size: 40,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              patient['name'],
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF2C3E50),
-                              ),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor(
-                                patient['status'],
-                              ).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              patient['status'],
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: _getStatusColor(patient['status']),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${patient['breed']} • ${patient['age']} • ${patient['gender']}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF7F8C8D),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Dueño: ${patient['ownerName']}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF95A5A6),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: const Color(0xFF3498DB)),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF3498DB),
+              fontWeight: FontWeight.w500,
             ),
-
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                _buildInfoCard('Peso', patient['weight'], Icons.scale),
-                _buildInfoCard(
-                  'Consultas',
-                  '${patient['consultationsCount']}',
-                  Icons.medical_services,
-                ),
-                _buildInfoCard('Edad', patient['age'], Icons.cake),
-              ],
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildInfoCard(String label, String value, IconData icon) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8F9FA),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE0E0E0)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: const Color(0xFF3498DB), size: 20),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2C3E50),
-              ),
+  Widget _buildStatsSection() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildStatCard(
+              Icons.medical_services,
+              '${consultations.length}',
+              'Consultas',
             ),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF7F8C8D)),
+          ),
+          Expanded(
+            child: _buildStatCard(
+              Icons.vaccines,
+              '${vaccinations.length}',
+              'Vacunas',
             ),
-          ],
-        ),
+          ),
+          Expanded(
+            child: _buildStatCard(
+              Icons.medication,
+              '${treatments.length}',
+              'Tratamientos',
+            ),
+          ),
+          Expanded(child: _buildStatCard(Icons.attach_file, '4', 'Archivos')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(IconData icon, String value, String label) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: const Color(0xFF3498DB), size: 20),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2C3E50),
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF7F8C8D)),
+          ),
+        ],
       ),
     );
   }
@@ -501,22 +474,63 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _showConsultationDetail(consultation),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3498DB).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.medical_services,
+                        color: Color(0xFF3498DB),
+                        size: 20,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(
+                          consultation['status'],
+                        ).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        consultation['status'],
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: _getStatusColor(consultation['status']),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 Text(
-                  consultation['type'],
+                  consultation['diagnosis'],
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF2C3E50),
                   ),
                 ),
+                const SizedBox(height: 8),
                 Text(
                   _formatDate(consultation['date']),
                   style: const TextStyle(
@@ -524,68 +538,47 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
                     color: Color(0xFF7F8C8D),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Diagnóstico: ${consultation['diagnosis']}',
-              style: const TextStyle(fontSize: 14, color: Color(0xFF2C3E50)),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Tratamiento: ${consultation['treatment']}',
-              style: const TextStyle(fontSize: 14, color: Color(0xFF7F8C8D)),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _buildDataChip('Peso: ${consultation['weight']}'),
-                const SizedBox(width: 8),
-                _buildDataChip('Temperatura: ${consultation['temperature']}'),
-              ],
-            ),
-            if (consultation['notes'].isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8F9FA),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
+                const SizedBox(height: 8),
+                Text(
                   consultation['notes'],
                   style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF7F8C8D),
-                    height: 1.4,
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Dr: ${consultation['veterinarian']}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF3498DB),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  '\$${consultation['cost']}',
-                  style: const TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF27AE60),
+                    color: Color(0xFF34495E),
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.attach_money,
+                          size: 16,
+                          color: Color(0xFF27AE60),
+                        ),
+                        Text(
+                          '\$${consultation['cost']}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF27AE60),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Color(0xFF7F8C8D),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -616,90 +609,107 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _showVaccinationDetail(vaccination),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF27AE60).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.vaccines,
-                    color: Color(0xFF27AE60),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        vaccination['name'],
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2C3E50),
-                        ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF27AE60).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      Text(
-                        'Aplicada: ${_formatDate(vaccination['date'])}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF7F8C8D),
-                        ),
+                      child: const Icon(
+                        Icons.vaccines,
+                        color: Color(0xFF27AE60),
+                        size: 20,
                       ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(
-                      vaccination['status'],
-                    ).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    vaccination['status'],
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: _getStatusColor(vaccination['status']),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            vaccination['name'],
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2C3E50),
+                            ),
+                          ),
+                          Text(
+                            'Aplicada: ${_formatDate(vaccination['date'])}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF7F8C8D),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(
+                          vaccination['status'],
+                        ).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        vaccination['status'],
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: _getStatusColor(vaccination['status']),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _buildDataChip('Lote: ${vaccination['batch']}'),
+                    const SizedBox(width: 8),
+                    _buildDataChip(
+                      'Próxima: ${_formatDate(vaccination['nextDate'])}',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Dr: ${vaccination['veterinarian']}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF3498DB),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Color(0xFF7F8C8D),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _buildDataChip('Lote: ${vaccination['batch']}'),
-                const SizedBox(width: 8),
-                _buildDataChip(
-                  'Próxima: ${_formatDate(vaccination['nextDate'])}',
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Dr: ${vaccination['veterinarian']}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF3498DB),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -730,123 +740,159 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _showTreatmentDetail(treatment),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF9B59B6).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.medication,
-                    color: Color(0xFF9B59B6),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        treatment['name'],
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2C3E50),
-                        ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE67E22).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      Text(
-                        treatment['description'],
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF7F8C8D),
-                        ),
+                      child: const Icon(
+                        Icons.medication,
+                        color: Color(0xFFE67E22),
+                        size: 20,
                       ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(
-                      treatment['status'],
-                    ).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    treatment['status'],
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: _getStatusColor(treatment['status']),
                     ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            treatment['name'],
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2C3E50),
+                            ),
+                          ),
+                          Text(
+                            'Inicio: ${_formatDate(treatment['startDate'])}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF7F8C8D),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(
+                          treatment['status'],
+                        ).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        treatment['status'],
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: _getStatusColor(treatment['status']),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  treatment['reason'],
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF34495E),
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _buildDataChip(
+                      '${treatment['medications'].length} medicamentos',
+                    ),
+                    const SizedBox(width: 8),
+                    _buildDataChip('Dr: ${treatment['veterinarian']}'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.attach_money,
+                          size: 16,
+                          color: Color(0xFF27AE60),
+                        ),
+                        Text(
+                          '\$${treatment['cost']}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF27AE60),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Color(0xFF7F8C8D),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8F9FA),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'Instrucciones: ${treatment['instructions']}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF7F8C8D),
-                  height: 1.4,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Inicio: ${_formatDate(treatment['startDate'])}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF7F8C8D),
-                  ),
-                ),
-                Text(
-                  'Fin: ${_formatDate(treatment['endDate'])}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF7F8C8D),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Dr: ${treatment['veterinarian']}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF3498DB),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildAttachmentsTab() {
+    final attachments = [
+      {
+        'name': 'Radiografía Tórax',
+        'date': DateTime.now().subtract(const Duration(days: 7)),
+        'type': 'image',
+        'size': '2.4 MB',
+      },
+      {
+        'name': 'Análisis de Sangre',
+        'date': DateTime.now().subtract(const Duration(days: 7)),
+        'type': 'pdf',
+        'size': '856 KB',
+      },
+      {
+        'name': 'Receta Medicamentos',
+        'date': DateTime.now().subtract(const Duration(days: 30)),
+        'type': 'pdf',
+        'size': '123 KB',
+      },
+      {
+        'name': 'Fotos Before/After',
+        'date': DateTime.now().subtract(const Duration(days: 60)),
+        'type': 'image',
+        'size': '5.1 MB',
+      },
+    ];
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: attachments.length,
@@ -858,79 +904,47 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
   }
 
   Widget _buildAttachmentCard(Map<String, dynamic> attachment) {
-    final isImage = attachment['type'] == 'image';
-
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: const Color(0xFFE0E0E0)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color:
-                    isImage
-                        ? const Color(0xFF3498DB).withOpacity(0.1)
-                        : const Color(0xFFE67E22).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                isImage ? Icons.image : Icons.description,
-                color:
-                    isImage ? const Color(0xFF3498DB) : const Color(0xFFE67E22),
-                size: 30,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    attachment['name'],
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2C3E50),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    attachment['description'],
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF7F8C8D),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatDate(attachment['date']),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF95A5A6),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(Icons.visibility, color: Color(0xFF3498DB)),
-            ),
-          ],
+      child: ListTile(
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color:
+                attachment['type'] == 'image'
+                    ? const Color(0xFF9B59B6).withOpacity(0.1)
+                    : const Color(0xFFE74C3C).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            attachment['type'] == 'image' ? Icons.image : Icons.picture_as_pdf,
+            color:
+                attachment['type'] == 'image'
+                    ? const Color(0xFF9B59B6)
+                    : const Color(0xFFE74C3C),
+          ),
+        ),
+        title: Text(
+          attachment['name'],
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF2C3E50),
+          ),
+        ),
+        subtitle: Text(
+          '${_formatDate(attachment['date'])} • ${attachment['size']}',
+          style: const TextStyle(fontSize: 12, color: Color(0xFF7F8C8D)),
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.download, color: Color(0xFF3498DB)),
+          onPressed: () {},
         ),
       ),
     );
@@ -940,74 +954,789 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF3498DB).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
       ),
       child: Text(
         text,
         style: const TextStyle(
-          fontSize: 10,
+          fontSize: 12,
+          color: Color(0xFF7F8C8D),
           fontWeight: FontWeight.w500,
-          color: Color(0xFF3498DB),
         ),
       ),
     );
   }
 
-  void _showMoreOptions() {
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'activo':
+        return const Color(0xFF27AE60);
+      case 'completado':
+      case 'aplicada':
+        return const Color(0xFF3498DB);
+      case 'pendiente':
+        return const Color(0xFFE67E22);
+      case 'cancelado':
+        return const Color(0xFFE74C3C);
+      default:
+        return const Color(0xFF7F8C8D);
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  void _showConsultationDetail(Map<String, dynamic> consultation) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
+      builder:
+          (context) => DraggableScrollableSheet(
+            initialChildSize: 0.9,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            builder:
+                (context, scrollController) => Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE0E0E0),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF3498DB).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.medical_services,
+                                color: Color(0xFF3498DB),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Detalle de Consulta',
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF2C3E50),
+                                    ),
+                                  ),
+                                  Text(
+                                    _formatDate(consultation['date']),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF7F8C8D),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(
+                                  consultation['status'],
+                                ).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                consultation['status'],
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: _getStatusColor(
+                                    consultation['status'],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          controller: scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildDetailSection(
+                                'Diagnóstico',
+                                consultation['diagnosis'],
+                              ),
+                              _buildDetailSection(
+                                'Síntomas',
+                                consultation['symptoms'],
+                              ),
+                              const SizedBox(height: 20),
+                              Text(
+                                'Signos Vitales',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2C3E50),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildVitalCard(
+                                      'Temperatura',
+                                      consultation['temperature'],
+                                      Icons.thermostat,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _buildVitalCard(
+                                      'Peso',
+                                      consultation['weight'],
+                                      Icons.monitor_weight,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _buildVitalCard(
+                                      'Pulso',
+                                      consultation['pulse'],
+                                      Icons.favorite,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              _buildDetailSection(
+                                'Notas del Veterinario',
+                                consultation['notes'],
+                              ),
+                              const SizedBox(height: 20),
+                              Text(
+                                'Prescripciones',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2C3E50),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ...consultation['prescriptions']
+                                  .map<Widget>(
+                                    (prescription) => Container(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF8F9FA),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: const Color(0xFFE0E0E0),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.medication,
+                                            size: 16,
+                                            color: Color(0xFF27AE60),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              prescription,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                color: Color(0xFF2C3E50),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                              const SizedBox(height: 20),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Costo Total',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF2C3E50),
+                                    ),
+                                  ),
+                                  Text(
+                                    '\$${consultation['cost']}',
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF27AE60),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 30),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+          ),
+    );
+  }
+
+  void _showVaccinationDetail(Map<String, dynamic> vaccination) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => DraggableScrollableSheet(
+            initialChildSize: 0.8,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            builder:
+                (context, scrollController) => Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE0E0E0),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF27AE60).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.vaccines,
+                                color: Color(0xFF27AE60),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Detalle de Vacuna',
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF2C3E50),
+                                    ),
+                                  ),
+                                  Text(
+                                    vaccination['name'],
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF7F8C8D),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(
+                                  vaccination['status'],
+                                ).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                vaccination['status'],
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: _getStatusColor(vaccination['status']),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          controller: scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildDetailSection(
+                                'Vacuna',
+                                vaccination['name'],
+                              ),
+                              _buildDetailSection(
+                                'Fabricante',
+                                vaccination['manufacturer'],
+                              ),
+                              _buildDetailSection('Lote', vaccination['batch']),
+                              _buildDetailSection(
+                                'Lugar de Aplicación',
+                                vaccination['location'],
+                              ),
+                              _buildDetailSection(
+                                'Veterinario',
+                                vaccination['veterinarian'],
+                              ),
+                              const SizedBox(height: 20),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildInfoCard(
+                                      'Fecha de Aplicación',
+                                      _formatDate(vaccination['date']),
+                                      Icons.calendar_today,
+                                      const Color(0xFF3498DB),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _buildInfoCard(
+                                      'Próxima Dosis',
+                                      _formatDate(vaccination['nextDate']),
+                                      Icons.schedule,
+                                      const Color(0xFFE67E22),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              _buildDetailSection(
+                                'Notas',
+                                vaccination['notes'],
+                              ),
+                              _buildDetailSection(
+                                'Efectos Secundarios',
+                                vaccination['sideEffects'],
+                              ),
+                              const SizedBox(height: 20),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Costo',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF2C3E50),
+                                    ),
+                                  ),
+                                  Text(
+                                    '\$${vaccination['cost']}',
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF27AE60),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 30),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+          ),
+    );
+  }
+
+  void _showTreatmentDetail(Map<String, dynamic> treatment) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => DraggableScrollableSheet(
+            initialChildSize: 0.9,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            builder:
+                (context, scrollController) => Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE0E0E0),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE67E22).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.medication,
+                                color: Color(0xFFE67E22),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Detalle de Tratamiento',
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF2C3E50),
+                                    ),
+                                  ),
+                                  Text(
+                                    treatment['name'],
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF7F8C8D),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(
+                                  treatment['status'],
+                                ).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                treatment['status'],
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: _getStatusColor(treatment['status']),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          controller: scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildDetailSection(
+                                'Motivo',
+                                treatment['reason'],
+                              ),
+                              _buildDetailSection(
+                                'Veterinario',
+                                treatment['veterinarian'],
+                              ),
+                              const SizedBox(height: 20),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildInfoCard(
+                                      'Fecha de Inicio',
+                                      _formatDate(treatment['startDate']),
+                                      Icons.play_arrow,
+                                      const Color(0xFF27AE60),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _buildInfoCard(
+                                      'Fecha de Fin',
+                                      _formatDate(treatment['endDate']),
+                                      Icons.stop,
+                                      const Color(0xFFE74C3C),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              Text(
+                                'Medicamentos',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2C3E50),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ...treatment['medications']
+                                  .map<Widget>(
+                                    (medication) => Container(
+                                      margin: const EdgeInsets.only(bottom: 12),
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF8F9FA),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: const Color(0xFFE0E0E0),
+                                        ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.medication,
+                                                size: 20,
+                                                color: Color(0xFFE67E22),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  medication['name'],
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Color(0xFF2C3E50),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Dosis: ${medication['dosage']} - ${medication['frequency']}',
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              color: Color(0xFF34495E),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Duración: ${medication['duration']}',
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              color: Color(0xFF7F8C8D),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Instrucciones: ${medication['instructions']}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFF7F8C8D),
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                              const SizedBox(height: 20),
+                              _buildDetailSection(
+                                'Notas del Veterinario',
+                                treatment['notes'],
+                              ),
+                              _buildDetailSection(
+                                'Progreso',
+                                treatment['progress'],
+                              ),
+                              const SizedBox(height: 20),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Costo Total',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF2C3E50),
+                                    ),
+                                  ),
+                                  Text(
+                                    '\$${treatment['cost']}',
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF27AE60),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 30),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+          ),
+    );
+  }
+
+  Widget _buildDetailSection(String title, String content) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF7F8C8D),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          content,
+          style: const TextStyle(fontSize: 16, color: Color(0xFF2C3E50)),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildVitalCard(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 20, color: const Color(0xFF3498DB)),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2C3E50),
             ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(top: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE0E0E0),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: const Icon(Icons.note_add, color: Color(0xFF27AE60)),
-                title: const Text('Nuevo Registro Médico'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/create-medical-record');
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.medication, color: Color(0xFF9B59B6)),
-                title: const Text('Prescribir Tratamiento'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/prescribe-treatment');
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.vaccines, color: Color(0xFFE67E22)),
-                title: const Text('Registrar Vacuna'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/register-vaccination');
-                },
-              ),
-            ],
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF7F8C8D)),
+            textAlign: TextAlign.center,
           ),
-        );
-      },
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 24, color: color),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF7F8C8D),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }
