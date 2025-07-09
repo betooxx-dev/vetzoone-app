@@ -1,6 +1,245 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../widgets/cards/notification_card.dart';
+
+enum NotificationType {
+  appointment,
+  reminder,
+  medical,
+  promotion,
+  system,
+  emergency,
+}
+
+enum NotificationPriority {
+  low,
+  normal,
+  high,
+  urgent,
+}
+
+class NotificationCard extends StatelessWidget {
+  final String id;
+  final String title;
+  final String message;
+  final NotificationType type;
+  final NotificationPriority priority;
+  final DateTime timestamp;
+  final bool isRead;
+  final String? actionText;
+  final String? imageUrl;
+  final VoidCallback? onTap;
+  final VoidCallback? onMarkAsRead;
+  final VoidCallback? onDismiss;
+  final VoidCallback? onAction;
+
+  const NotificationCard({
+    super.key,
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.type,
+    required this.priority,
+    required this.timestamp,
+    required this.isRead,
+    this.actionText,
+    this.imageUrl,
+    this.onTap,
+    this.onMarkAsRead,
+    this.onDismiss,
+    this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isRead ? Colors.transparent : _getTypeColor().withOpacity(0.3),
+          width: isRead ? 0 : 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: _getTypeColor().withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      _getTypeIcon(),
+                      color: _getTypeColor(),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: isRead ? const Color(0xFF7F8C8D) : const Color(0xFF2C3E50),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _formatTimestamp(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF95A5A6),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!isRead)
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _getTypeColor(),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                message,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isRead ? const Color(0xFF7F8C8D) : const Color(0xFF2C3E50),
+                  height: 1.4,
+                ),
+              ),
+              if (imageUrl != null) ...[
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    imageUrl!,
+                    height: 120,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 120,
+                        color: const Color(0xFFF8F9FA),
+                        child: const Center(
+                          child: Icon(
+                            Icons.image_not_supported,
+                            color: Color(0xFF95A5A6),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+              if (actionText != null && onAction != null) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: onAction,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _getTypeColor(),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      actionText!,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getTypeColor() {
+    switch (type) {
+      case NotificationType.appointment:
+        return const Color(0xFF3498DB);
+      case NotificationType.reminder:
+        return const Color(0xFFF39C12);
+      case NotificationType.medical:
+        return const Color(0xFF27AE60);
+      case NotificationType.promotion:
+        return const Color(0xFF9B59B6);
+      case NotificationType.system:
+        return const Color(0xFF95A5A6);
+      case NotificationType.emergency:
+        return const Color(0xFFE74C3C);
+    }
+  }
+
+  IconData _getTypeIcon() {
+    switch (type) {
+      case NotificationType.appointment:
+        return Icons.calendar_today;
+      case NotificationType.reminder:
+        return Icons.alarm;
+      case NotificationType.medical:
+        return Icons.medical_services;
+      case NotificationType.promotion:
+        return Icons.local_offer;
+      case NotificationType.system:
+        return Icons.system_update;
+      case NotificationType.emergency:
+        return Icons.emergency;
+    }
+  }
+
+  String _formatTimestamp() {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inMinutes < 1) {
+      return 'Ahora';
+    } else if (difference.inHours < 1) {
+      return 'Hace ${difference.inMinutes}m';
+    } else if (difference.inDays < 1) {
+      return 'Hace ${difference.inHours}h';
+    } else if (difference.inDays < 7) {
+      return 'Hace ${difference.inDays}d';
+    } else {
+      return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
+    }
+  }
+}
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -12,73 +251,64 @@ class NotificationsPage extends StatefulWidget {
 class _NotificationsPageState extends State<NotificationsPage>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
-  late TabController _tabController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  late TabController _tabController;
 
+  bool _isLoading = false;
+  String _selectedFilter = 'Todas';
   List<Map<String, dynamic>> _allNotifications = [];
   List<Map<String, dynamic>> _filteredNotifications = [];
-  String _selectedFilter = 'Todas';
-  bool _isLoading = true;
-  bool _showOnlyUnread = false;
 
   final List<String> _filterOptions = [
     'Todas',
     'Citas',
     'Recordatorios',
     'Médicas',
-    'Sistema',
+    'Sistema'
   ];
 
   @override
   void initState() {
     super.initState();
-    
+    _tabController = TabController(length: 2, vsync: this);
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    
-    _tabController = TabController(length: 2, vsync: this);
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    ));
-    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0.0, 0.1),
+      begin: const Offset(0, 0.1),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    ));
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
     
     _loadNotifications();
     _animationController.forward();
   }
 
   void _loadNotifications() {
+    setState(() {
+      _isLoading = true;
+    });
+
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
         setState(() {
           _allNotifications = [
             {
               'id': '1',
-              'title': 'Recordatorio de Cita',
-              'message': 'Tu cita con Dr. María González para Luna es mañana a las 10:00 AM. No olvides llevar su cartilla de vacunación.',
+              'title': 'Cita Agendada',
+              'message': 'Tu cita con Dr. María González ha sido confirmada para mañana a las 10:00 AM. Recuerda llegar 15 minutos antes.',
               'type': NotificationType.appointment,
-              'priority': NotificationPriority.high,
-              'timestamp': DateTime.now().subtract(const Duration(hours: 2)),
+              'priority': NotificationPriority.normal,
+              'timestamp': DateTime.now().subtract(const Duration(minutes: 30)),
               'isRead': false,
-              'actionText': 'Confirmar Cita',
+              'actionText': 'Ver Detalles',
               'actionData': {
                 'appointmentId': 'apt_001',
-                'petName': 'Luna',
-                'veterinarianName': 'Dr. María González',
+                'vetName': 'Dr. María González',
               },
             },
             {
@@ -151,23 +381,9 @@ class _NotificationsPageState extends State<NotificationsPage>
                 'version': '2.1.0',
               },
             },
-            {
-              'id': '7',
-              'title': 'Emergencia Veterinaria',
-              'message': 'Dr. Carlos López ha marcado el caso de Rocky como urgente. Se requiere atención inmediata.',
-              'type': NotificationType.emergency,
-              'priority': NotificationPriority.urgent,
-              'timestamp': DateTime.now().subtract(const Duration(hours: 6)),
-              'isRead': true,
-              'actionText': 'Ver Caso',
-              'actionData': {
-                'petName': 'Rocky',
-                'caseId': 'emergency_001',
-              },
-            },
           ];
-          _filteredNotifications = _allNotifications;
           _isLoading = false;
+          _applyFilters();
         });
       }
     });
@@ -180,17 +396,9 @@ class _NotificationsPageState extends State<NotificationsPage>
     });
   }
 
-  void _toggleUnreadFilter() {
-    setState(() {
-      _showOnlyUnread = !_showOnlyUnread;
-      _applyFilters();
-    });
-  }
-
   void _applyFilters() {
-    List<Map<String, dynamic>> filtered = _allNotifications;
+    List<Map<String, dynamic>> filtered = List.from(_allNotifications);
 
-    // Filtrar por tipo
     if (_selectedFilter != 'Todas') {
       NotificationType? filterType;
       switch (_selectedFilter) {
@@ -215,13 +423,6 @@ class _NotificationsPageState extends State<NotificationsPage>
       }
     }
 
-    // Filtrar por estado de lectura
-    if (_showOnlyUnread) {
-      filtered = filtered.where((notification) {
-        return notification['isRead'] == false;
-      }).toList();
-    }
-
     _filteredNotifications = filtered;
   }
 
@@ -233,23 +434,6 @@ class _NotificationsPageState extends State<NotificationsPage>
         _applyFilters();
       }
     });
-  }
-
-  void _markAllAsRead() {
-    setState(() {
-      for (var notification in _allNotifications) {
-        notification['isRead'] = true;
-      }
-      _applyFilters();
-    });
-    
-    HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Todas las notificaciones marcadas como leídas'),
-        backgroundColor: Color(0xFF27AE60),
-      ),
-    );
   }
 
   void _deleteNotification(String notificationId) {
@@ -284,7 +468,6 @@ class _NotificationsPageState extends State<NotificationsPage>
         if (actionData?['consultationId'] != null) {
           Navigator.pushNamed(context, '/medical-record');
         } else {
-          // Marcar medicamento como dado
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Medicamento marcado como administrado a ${actionData?['petName']}'),
@@ -358,47 +541,6 @@ class _NotificationsPageState extends State<NotificationsPage>
           icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF2C3E50)),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _showOnlyUnread ? Icons.mark_email_read : Icons.mark_email_unread,
-              color: const Color(0xFF3498DB),
-            ),
-            onPressed: _toggleUnreadFilter,
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Color(0xFF2C3E50)),
-            onSelected: (value) {
-              if (value == 'mark_all_read') {
-                _markAllAsRead();
-              } else if (value == 'settings') {
-                _showNotificationSettings();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'mark_all_read',
-                child: Row(
-                  children: [
-                    Icon(Icons.done_all, color: Color(0xFF27AE60)),
-                    SizedBox(width: 8),
-                    Text('Marcar todas como leídas'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings, color: Color(0xFF95A5A6)),
-                    SizedBox(width: 8),
-                    Text('Configuración'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
@@ -406,10 +548,8 @@ class _NotificationsPageState extends State<NotificationsPage>
           position: _slideAnimation,
           child: Column(
             children: [
-              // Filtros
               _buildFiltersSection(),
               
-              // Lista de notificaciones
               Expanded(
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
@@ -504,17 +644,15 @@ class _NotificationsPageState extends State<NotificationsPage>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            _showOnlyUnread ? Icons.mark_email_read : Icons.notifications_off,
+            Icons.notifications_off,
             size: 80,
             color: Colors.grey[400],
           ),
           const SizedBox(height: 16),
           Text(
-            _showOnlyUnread 
-                ? 'No tienes notificaciones sin leer'
-                : _selectedFilter == 'Todas'
-                    ? 'No tienes notificaciones'
-                    : 'No hay notificaciones de $_selectedFilter',
+            _selectedFilter == 'Todas'
+                ? 'No tienes notificaciones'
+                : 'No hay notificaciones de $_selectedFilter',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -523,102 +661,15 @@ class _NotificationsPageState extends State<NotificationsPage>
           ),
           const SizedBox(height: 8),
           Text(
-            _showOnlyUnread
-                ? '¡Excelente! Estás al día con todas tus notificaciones'
-                : 'Las notificaciones aparecerán aquí cuando las recibas',
+            'Las notificaciones aparecerán aquí cuando las recibas',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[500],
             ),
             textAlign: TextAlign.center,
           ),
-          if (_showOnlyUnread) ...[
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _toggleUnreadFilter,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3498DB),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Ver todas las notificaciones'),
-            ),
-          ],
         ],
       ),
-    );
-  }
-
-  void _showNotificationSettings() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Configuración de Notificaciones',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2C3E50),
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildSettingTile(
-                'Recordatorios de Citas',
-                'Recibe notificaciones antes de tus citas',
-                true,
-              ),
-              _buildSettingTile(
-                'Vacunas y Tratamientos',
-                'Alertas para vacunas y medicamentos',
-                true,
-              ),
-              _buildSettingTile(
-                'Promociones',
-                'Ofertas especiales de veterinarias',
-                false,
-              ),
-              _buildSettingTile(
-                'Actualizaciones del Sistema',
-                'Noticias y actualizaciones de la app',
-                true,
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3498DB),
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Guardar Configuración'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSettingTile(String title, String subtitle, bool enabled) {
-    return SwitchListTile(
-      title: Text(title),
-      subtitle: Text(subtitle),
-      value: enabled,
-      onChanged: (value) {
-        // Implementar cambio de configuración
-        HapticFeedback.lightImpact();
-      },
-      activeColor: const Color(0xFF3498DB),
     );
   }
 }

@@ -27,7 +27,7 @@ import 'presentation/pages/owner/medical_records/medical_record_page.dart';
 import 'presentation/pages/owner/medical_records/consultation_detail_page.dart';
 import 'presentation/pages/owner/medical_records/vaccination_history_page.dart';
 import 'presentation/pages/owner/medical_records/active_treatments_page.dart';
-import 'presentation/pages/owner/notifications/notifications_page.dart';
+import 'presentation/pages/common/notifications/notifications_page.dart';
 import 'presentation/pages/owner/profile/owner_profile_page.dart';
 
 // Páginas del veterinario
