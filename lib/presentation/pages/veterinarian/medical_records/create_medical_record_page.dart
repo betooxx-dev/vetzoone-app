@@ -824,38 +824,35 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
           _buildSummaryRow(
             'Motivo',
             _chiefComplaintController.text.isNotEmpty
-                ? _chiefComplaintController.text.substring(
+                ? '${_chiefComplaintController.text.substring(
                       0,
                       _chiefComplaintController.text.length > 50
                           ? 50
                           : _chiefComplaintController.text.length,
-                    ) +
-                    '...'
+                    )}...'
                 : 'No especificado',
           ),
           _buildSummaryRow('Gravedad', selectedSeverity),
           _buildSummaryRow(
             'Síntomas',
             _symptomsController.text.isNotEmpty
-                ? _symptomsController.text.substring(
+                ? '${_symptomsController.text.substring(
                       0,
                       _symptomsController.text.length > 50
                           ? 50
                           : _symptomsController.text.length,
-                    ) +
-                    '...'
+                    )}...'
                 : 'No especificado',
           ),
           _buildSummaryRow(
             'Diagnóstico',
             _diagnosisProbableController.text.isNotEmpty
-                ? _diagnosisProbableController.text.substring(
+                ? '${_diagnosisProbableController.text.substring(
                       0,
                       _diagnosisProbableController.text.length > 50
                           ? 50
                           : _diagnosisProbableController.text.length,
-                    ) +
-                    '...'
+                    )}...'
                 : 'No especificado',
           ),
           _buildSummaryRow(

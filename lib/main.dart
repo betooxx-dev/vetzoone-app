@@ -137,10 +137,11 @@ class DashboardWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const bool isVeterinarian = true; // Cambiar a true para probar veterinario
+    const bool isVeterinarian = true; //true para probar veterinario
 
     return isVeterinarian
         ? const MainScreenVeterinarian()
+        // ignore: dead_code
         : const MainScreenOwner();
   }
 }
