@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../widgets/cards/appointment_card.dart';
 
 class VeterinarianDashboardPage extends StatefulWidget {
   const VeterinarianDashboardPage({super.key});
@@ -19,7 +18,7 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
           child: Column(
             children: [
               _buildHeader(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
@@ -51,72 +50,52 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Column(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Dr. María González',
                         style: TextStyle(
-                          fontSize: 24,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      Text(
+                      const SizedBox(height: 4),
+                      const Text(
                         'Medicina General',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
+                        style: TextStyle(fontSize: 16, color: Colors.white70),
                       ),
                     ],
                   ),
-                  Row(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: IconButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/notifications');
-                          },
-                          icon: const Icon(
-                            Icons.notifications_outlined,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: IconButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/vet-settings');
-                          },
-                          icon: const Icon(
-                            Icons.settings_outlined,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    ],
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(51),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.notifications_outlined,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/notifications');
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -129,12 +108,12 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
         const Text(
           'Resumen de Hoy',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: 22,
             fontWeight: FontWeight.bold,
             color: Color(0xFF212121),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         Row(
           children: [
             Expanded(
@@ -200,53 +179,49 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 24),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withAlpha(25),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const Spacer(),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF757575),
-                  ),
-                ),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF757575),
-                  ),
-                ),
-              ],
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           ),
         ],
       ),
@@ -263,7 +238,7 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
             const Text(
               'Agenda de Hoy',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF212121),
               ),
@@ -283,149 +258,88 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
           ],
         ),
         const SizedBox(height: 16),
-        _buildAppointmentItem(
-          time: '10:00',
-          petName: 'Max',
-          ownerName: 'Juan Pérez',
-          type: 'Consulta General',
-          status: 'next',
-        ),
-        const SizedBox(height: 12),
-        _buildAppointmentItem(
-          time: '11:30',
-          petName: 'Luna',
-          ownerName: 'Ana García',
-          type: 'Vacunación',
-          status: 'scheduled',
-        ),
-        const SizedBox(height: 12),
-        _buildAppointmentItem(
-          time: '14:00',
-          petName: 'Rocky',
-          ownerName: 'Carlos López',
-          type: 'Cirugía Menor',
-          status: 'scheduled',
+        GestureDetector(
+          onTap: () {
+            Navigator.pushNamed(context, '/appointment-detail-vet');
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFF4CAF50), width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(13),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50).withAlpha(25),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    '10:00',
+                    style: TextStyle(
+                      color: Color(0xFF4CAF50),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Max - Juan Pérez',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF212121),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Consulta General',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50).withAlpha(25),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'Siguiente',
+                    style: TextStyle(
+                      color: Color(0xFF4CAF50),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
-    );
-  }
-
-  Widget _buildAppointmentItem({
-    required String time,
-    required String petName,
-    required String ownerName,
-    required String type,
-    required String status,
-  }) {
-    final isNext = status == 'next';
-    final color = isNext ? const Color(0xFF4CAF50) : const Color(0xFF81D4FA);
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(
-          context,
-          '/appointment-detail-vet',
-          arguments: {
-            'petName': petName,
-            'ownerName': ownerName,
-            'appointmentType': type,
-            'dateTime': DateTime.now(),
-            'time': time,
-            'status': AppointmentStatus.scheduled,
-            'notes': 'Cita programada',
-          },
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border:
-              isNext
-                  ? Border.all(color: color.withOpacity(0.3), width: 2)
-                  : null,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    time.split(':')[0],
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                  Text(
-                    time.split(':')[1],
-                    style: TextStyle(fontSize: 12, color: color),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$petName - $ownerName',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    type,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF757575),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isNext)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'Siguiente',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -436,7 +350,7 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
         const Text(
           'Acciones Rápidas',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: 22,
             fontWeight: FontWeight.bold,
             color: Color(0xFF212121),
           ),
@@ -446,22 +360,22 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
           children: [
             Expanded(
               child: _buildActionCard(
-                icon: Icons.add_circle_outline_rounded,
-                title: 'Nueva Consulta',
-                gradient: const [Color(0xFF4CAF50), Color(0xFF66BB6A)],
+                title: 'Configurar\nHorarios',
+                icon: Icons.schedule_rounded,
+                color: const Color(0xFFFF7043),
                 onTap: () {
-                  Navigator.pushNamed(context, '/create-medical-record');
+                  Navigator.pushNamed(context, '/configure-schedule');
                 },
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: _buildActionCard(
-                icon: Icons.schedule_rounded,
-                title: 'Configurar Horarios',
-                gradient: const [Color(0xFF81D4FA), Color(0xFF4FC3F7)],
+                title: 'Ver\nEstadísticas',
+                icon: Icons.analytics_rounded,
+                color: const Color(0xFF9C27B0),
                 onTap: () {
-                  Navigator.pushNamed(context, '/configure-schedule');
+                  Navigator.pushNamed(context, '/statistics');
                 },
               ),
             ),
@@ -472,48 +386,48 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
   }
 
   Widget _buildActionCard({
-    required IconData icon,
     required String title,
-    required List<Color> gradient,
+    required IconData icon,
+    required Color color,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 100,
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: gradient),
-          borderRadius: BorderRadius.circular(20),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: gradient[0].withOpacity(0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 6),
+              color: Colors.black.withAlpha(13),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: Colors.white, size: 24),
-              const Spacer(),
-              Flexible(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    height: 1.2,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withAlpha(25),
+                borderRadius: BorderRadius.circular(12),
               ),
-            ],
-          ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[800],
+                height: 1.2,
+              ),
+            ),
+          ],
         ),
       ),
     );

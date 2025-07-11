@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../core/widgets/confirmation_modal.dart';
 import '../../../widgets/cards/appointment_card.dart';
+import '../../../../core/widgets/confirmation_modal.dart';
+import '../../../../core/widgets/date_time_selector.dart';
 
 class AppointmentDetailVetPage extends StatefulWidget {
   const AppointmentDetailVetPage({super.key});
@@ -27,22 +28,22 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
-    _initializeAppointmentData();
+
     _animationController.forward();
+    _initializeDefaultData();
   }
 
-  void _initializeAppointmentData() {
+  void _initializeDefaultData() {
     final defaultAppointment = {
       'id': '1',
       'petName': 'Max',
       'ownerName': 'Juan Pérez',
-      'appointmentType': 'Consulta General',
-      'dateTime': DateTime.now().add(const Duration(hours: 2)),
-      'status': AppointmentStatus.confirmed,
-      'duration': 30,
-      'notes': 'Control de rutina, revisar vacunas pendientes',
       'ownerPhone': '+52 961 123 4567',
       'ownerEmail': 'juan.perez@email.com',
+      'appointmentType': 'Control de rutina, revisar vacunas pendientes',
+      'dateTime': DateTime.now(),
+      'status': AppointmentStatus.confirmed,
+      'notes': 'Control de rutina, revisar vacunas pendientes',
       'petDetails': {
         'species': 'Perro',
         'breed': 'Labrador Retriever',
@@ -101,7 +102,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                 children: [
                   _buildQuickActions(),
                   _buildAppointmentCard(),
-                  _buildMedicalActionsSection(), // ← NUEVA SECCIÓN AGREGADA
+                  _buildMedicalActionsSection(),
                   _buildDetailsSections(),
                   const SizedBox(height: 100),
                 ],
@@ -115,242 +116,161 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
   }
 
   Widget _buildSliverAppBar() {
-    final status = appointment['status'] as AppointmentStatus;
+    final status =
+        appointment['status'] as AppointmentStatus? ??
+        AppointmentStatus.scheduled;
     final colors = _getStatusColors(status);
 
     return SliverAppBar(
-      expandedHeight: 200,
+      expandedHeight: 120,
+      floating: false,
       pinned: true,
       backgroundColor: colors['primary'],
-      leading: Container(
-        margin: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          // ignore: deprecated_member_use
-          color: Colors.white.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Color(0xFF212121),
-            size: 20,
-          ),
-        ),
-      ),
-      actions: [
-        Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            // ignore: deprecated_member_use
-            color: Colors.white.withOpacity(0.9),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF212121)),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            onSelected: _handleMenuAction,
-            itemBuilder:
-                (context) => [
-                  PopupMenuItem(
-                    value: 'reschedule',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.schedule_rounded,
-                          size: 18,
-                          color: Colors.grey[700],
-                        ),
-                        const SizedBox(width: 12),
-                        const Text('Reprogramar'),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'call',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.phone_outlined,
-                          size: 18,
-                          color: Colors.grey[700],
-                        ),
-                        const SizedBox(width: 12),
-                        const Text('Llamar al dueño'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuDivider(),
-                  PopupMenuItem(
-                    value: 'cancel',
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.cancel_outlined,
-                          size: 18,
-                          color: Colors.red,
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Cancelar cita',
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-          ),
-        ),
-      ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [colors['primary']!, colors['secondary']!],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
+              colors: [colors['primary']!, colors['secondary']!],
             ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 80),
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(35),
-                  boxShadow: [
-                    BoxShadow(
-                      // ignore: deprecated_member_use
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const Text(
+                    'Detalle de Cita',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
-                  ],
-                ),
-                child: Icon(
-                  _getStatusIcon(status),
-                  size: 35,
-                  color: Colors.white,
-                ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _getStatusText(status),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withAlpha(230),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                '${appointment['petName']} - ${appointment['ownerName']}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                appointment['appointmentType'] ?? 'Cita',
-                style: TextStyle(
-                  fontSize: 14,
-                  // ignore: deprecated_member_use
-                  color: Colors.white.withOpacity(0.9),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
+      actions: [
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert, color: Colors.white),
+          onSelected: _handleMenuAction,
+          itemBuilder:
+              (context) => [
+                const PopupMenuItem(
+                  value: 'reschedule',
+                  child: Row(
+                    children: [
+                      Icon(Icons.schedule, size: 20, color: Color(0xFF757575)),
+                      SizedBox(width: 12),
+                      Text('Reprogramar'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'cancel',
+                  child: Row(
+                    children: [
+                      Icon(Icons.cancel, size: 20, color: Color(0xFFFF7043)),
+                      SizedBox(width: 12),
+                      Text('Cancelar cita'),
+                    ],
+                  ),
+                ),
+              ],
+        ),
+      ],
     );
   }
 
   Widget _buildQuickActions() {
-    final status = appointment['status'] as AppointmentStatus;
-    final canStartConsultation = status == AppointmentStatus.confirmed;
-    final canComplete = status == AppointmentStatus.inProgress;
+    final status =
+        appointment['status'] as AppointmentStatus? ??
+        AppointmentStatus.scheduled;
 
     return Container(
       margin: const EdgeInsets.all(24),
       child: Row(
         children: [
-          if (canStartConsultation) ...[
+          if (status == AppointmentStatus.confirmed) ...[
             Expanded(
-              child: _buildActionButton(
-                'Iniciar Consulta',
-                Icons.play_circle_outline_rounded,
-                const Color(0xFF4CAF50),
-                _startConsultation,
+              child: ElevatedButton.icon(
+                onPressed: _startConsultation,
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: const Text('Iniciar Consulta'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4CAF50),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 12),
-          ],
-          if (canComplete) ...[
             Expanded(
-              child: _buildActionButton(
-                'Finalizar',
-                Icons.check_circle_outline_rounded,
-                const Color(0xFF66BB6A),
-                _completeConsultation,
+              child: ElevatedButton.icon(
+                onPressed: _rescheduleAppointment,
+                icon: const Icon(Icons.schedule_rounded),
+                label: const Text('Reprogramar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF81D4FA),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ),
-            const SizedBox(width: 12),
-          ],
-          Expanded(
-            child: _buildActionButton(
-              'Llamar',
-              Icons.phone_outlined,
-              const Color(0xFF81D4FA),
-              _callOwner,
+          ] else if (status == AppointmentStatus.inProgress) ...[
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _completeConsultation,
+                icon: const Icon(Icons.check_circle_outline_rounded),
+                label: const Text('Finalizar Consulta'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4CAF50),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
             ),
-          ),
+          ] else if (status == AppointmentStatus.scheduled) ...[
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _rescheduleAppointment,
+                icon: const Icon(Icons.schedule_rounded),
+                label: const Text('Reprogramar Cita'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF81D4FA),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton(
-    String text,
-    IconData icon,
-    Color color,
-    VoidCallback onPressed,
-  ) {
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          // ignore: deprecated_member_use
-          colors: [color, color.withOpacity(0.8)],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            // ignore: deprecated_member_use
-            color: color.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 18, color: Colors.white),
-        label: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
       ),
     );
   }
@@ -372,17 +292,16 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     );
   }
 
-  // ← NUEVA FUNCIÓN AGREGADA: Botones de navegación a vistas 32-34
   Widget _buildMedicalActionsSection() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      margin: const EdgeInsets.all(24),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -405,15 +324,14 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
-          // Botones para las vistas 32-34
+          // Primera fila de botones
           Row(
             children: [
-              // Vista 32: Crear Registro Médico
               Expanded(
                 child: _buildMedicalActionButton(
-                  icon: Icons.note_add,
+                  icon: Icons.note_add_rounded,
                   title: 'Crear Registro Médico',
                   subtitle: 'Nuevo expediente',
                   color: const Color(0xFF81D4FA),
@@ -422,12 +340,10 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                   },
                 ),
               ),
-              const SizedBox(width: 12),
-
-              // Vista 33: Prescribir Medicamentos
+              const SizedBox(width: 16),
               Expanded(
                 child: _buildMedicalActionButton(
-                  icon: Icons.medication,
+                  icon: Icons.medication_rounded,
                   title: 'Prescribir Medicamentos',
                   subtitle: 'Nueva receta',
                   color: const Color(0xFF4CAF50),
@@ -439,21 +355,18 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
             ],
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
-          // Vista 34: Registrar Vacuna (botón ancho)
-          SizedBox(
-            width: double.infinity,
-            child: _buildMedicalActionButton(
-              icon: Icons.vaccines,
-              title: 'Registrar Vacuna',
-              subtitle: 'Aplicar nueva vacuna',
-              color: const Color(0xFF9C27B0),
-              onTap: () {
-                Navigator.pushNamed(context, '/register-vaccination');
-              },
-              isWide: true,
-            ),
+          // Segunda fila - botón único centrado
+          _buildMedicalActionButton(
+            icon: Icons.vaccines_rounded,
+            title: 'Registrar Vacuna',
+            subtitle: 'Aplicar nueva vacuna',
+            color: const Color(0xFF9C27B0),
+            onTap: () {
+              Navigator.pushNamed(context, '/register-vaccination');
+            },
+            isFullWidth: true,
           ),
         ],
       ),
@@ -466,88 +379,88 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     required String subtitle,
     required Color color,
     required VoidCallback onTap,
-    bool isWide = false,
+    bool isFullWidth = false,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: EdgeInsets.all(isWide ? 20 : 16),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.3), width: 1),
-          ),
-          child:
-              isWide
-                  ? Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(icon, color: color, size: 24),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: color,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              subtitle,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(Icons.arrow_forward_ios, color: color, size: 16),
-                    ],
-                  )
-                  : Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(icon, color: color, size: 24),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: color,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withAlpha(25),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withAlpha(51), width: 1),
         ),
+        child:
+            isFullWidth
+                ? Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: color.withAlpha(51),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(icon, color: color, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: color,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_ios, color: color, size: 16),
+                  ],
+                )
+                : Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: color.withAlpha(51),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(icon, color: color, size: 24),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: color,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
       ),
     );
   }
@@ -600,7 +513,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
 
   Widget _buildOwnerInfoSection() {
     return _buildDetailCard(
-      title: 'Información del Propietario',
+      title: 'Info. del Propietario',
       icon: Icons.person_rounded,
       iconColor: const Color(0xFF81D4FA),
       children: [
@@ -609,7 +522,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
           _buildDetailRow(
             'Teléfono',
             appointment['ownerPhone'],
-            isClickable: true,
+            isClickable: false,
           ),
         if (appointment['ownerEmail'] != null)
           _buildDetailRow(
@@ -672,17 +585,15 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
               ),
               Text(
                 record['date'] ?? '',
-                style: const TextStyle(fontSize: 12, color: Color(0xFF757575)),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
             ],
           ),
-          if (record['notes'] != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              record['notes'],
-              style: const TextStyle(fontSize: 13, color: Color(0xFF757575)),
-            ),
-          ],
+          const SizedBox(height: 4),
+          Text(
+            record['notes'] ?? '',
+            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+          ),
         ],
       ),
     );
@@ -690,7 +601,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
 
   Widget _buildNotesSection() {
     return _buildDetailCard(
-      title: 'Notas de la cita',
+      title: 'Notas adicionales',
       icon: Icons.note_outlined,
       iconColor: const Color(0xFF9C27B0),
       children: [
@@ -728,8 +639,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -744,19 +654,22 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: iconColor.withOpacity(0.1),
+                  color: iconColor.withAlpha(25),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: iconColor, size: 20),
               ),
               const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF212121),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF212121),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -779,7 +692,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
+            width: 80,
             child: Text(
               label,
               style: const TextStyle(
@@ -789,6 +702,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
               ),
             ),
           ),
+          const SizedBox(width: 8),
           Expanded(
             child: GestureDetector(
               onTap:
@@ -806,6 +720,9 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                   fontWeight: FontWeight.w600,
                   decoration: isClickable ? TextDecoration.underline : null,
                 ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
               ),
             ),
           ),
@@ -815,46 +732,40 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
   }
 
   Widget _buildFloatingActionButtons() {
-    final status = appointment['status'] as AppointmentStatus;
+    final status =
+        appointment['status'] as AppointmentStatus? ??
+        AppointmentStatus.scheduled;
 
-    if (status == AppointmentStatus.completed ||
-        status == AppointmentStatus.cancelled) {
-      return const SizedBox.shrink();
+    if (status == AppointmentStatus.inProgress) {
+      return FloatingActionButton.extended(
+        onPressed: _createMedicalRecord,
+        backgroundColor: const Color(0xFF4CAF50),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.note_add_rounded),
+        label: const Text('Crear Expediente'),
+      );
     }
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (status == AppointmentStatus.confirmed)
-          FloatingActionButton(
-            heroTag: 'start',
-            onPressed: _startConsultation,
-            backgroundColor: const Color(0xFF4CAF50),
-            child: const Icon(Icons.play_arrow_rounded, color: Colors.white),
-          ),
-        if (status == AppointmentStatus.inProgress) ...[
-          FloatingActionButton(
-            heroTag: 'complete',
-            onPressed: _completeConsultation,
-            backgroundColor: const Color(0xFF66BB6A),
-            child: const Icon(Icons.check_rounded, color: Colors.white),
-          ),
-          const SizedBox(height: 12),
-          FloatingActionButton(
-            heroTag: 'medical',
-            onPressed: _createMedicalRecord,
-            backgroundColor: const Color(0xFF81D4FA),
-            child: const Icon(
-              Icons.medical_services_rounded,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ],
-    );
+    return const SizedBox.shrink();
   }
 
-  // Métodos de validación y colores
+  String _getStatusText(AppointmentStatus status) {
+    switch (status) {
+      case AppointmentStatus.scheduled:
+        return 'Programada';
+      case AppointmentStatus.confirmed:
+        return 'Confirmada';
+      case AppointmentStatus.inProgress:
+        return 'En progreso';
+      case AppointmentStatus.completed:
+        return 'Completada';
+      case AppointmentStatus.cancelled:
+        return 'Cancelada';
+      case AppointmentStatus.rescheduled:
+        return 'Reprogramada';
+    }
+  }
+
   Map<String, Color> _getStatusColors(AppointmentStatus status) {
     switch (status) {
       case AppointmentStatus.scheduled:
@@ -885,7 +796,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
       case AppointmentStatus.rescheduled:
         return {
           'primary': const Color(0xFFFF7043),
-          'secondary': const Color(0xFFFF8A65),    
+          'secondary': const Color(0xFFFF8A65),
         };
     }
   }
@@ -907,14 +818,10 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     }
   }
 
-  // Métodos de acciones
   void _handleMenuAction(String action) {
     switch (action) {
       case 'reschedule':
         _rescheduleAppointment();
-        break;
-      case 'call':
-        _callOwner();
         break;
       case 'cancel':
         _cancelAppointment();
@@ -923,9 +830,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
   }
 
   void _handleClickableValue(String label, String value) {
-    if (label == 'Teléfono') {
-      _callOwner();
-    } else if (label == 'Email') {
+    if (label == 'Email') {
       _emailOwner(value);
     }
   }
@@ -981,18 +886,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     Navigator.pushNamed(context, '/create-medical-record');
   }
 
-  void _callOwner() {
-    final phone = appointment['ownerPhone'] ?? '';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Llamar a ${appointment['ownerName']}: $phone'),
-        backgroundColor: const Color(0xFF81D4FA),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
   void _emailOwner(String email) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1004,13 +897,277 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     );
   }
 
-  void _rescheduleAppointment() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Reprogramar cita próximamente'),
-        backgroundColor: Color(0xFF81D4FA),
-      ),
+  Future<void> _rescheduleAppointment() async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildRescheduleModal(),
     );
+
+    if (result != null) {
+      final newDateTime = result['dateTime'] as DateTime;
+
+      setState(() {
+        appointment['status'] = AppointmentStatus.rescheduled;
+        appointment['dateTime'] = newDateTime;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Cita reprogramada para ${_formatNewDateTime(newDateTime)}',
+            ),
+            backgroundColor: const Color(0xFF81D4FA),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            action: SnackBarAction(
+              label: 'Ver agenda',
+              textColor: Colors.white,
+              onPressed: () {
+                Navigator.pushNamed(context, '/my-schedule');
+              },
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildRescheduleModal() {
+    DateTime? selectedDate;
+    TimeOfDay? selectedTime;
+
+    return StatefulBuilder(
+      builder: (context, setModalState) {
+        final canConfirm = selectedDate != null && selectedTime != null;
+
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(top: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF81D4FA).withAlpha(25),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.schedule_rounded,
+                        color: Color(0xFF81D4FA),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Reprogramar Cita',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF212121),
+                            ),
+                          ),
+                          Text(
+                            '${appointment['petName']} - ${appointment['ownerName']}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Date Time Selector
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    children: [
+                      DateTimeSelector(
+                        initialDate: DateTime.now().add(
+                          const Duration(days: 1),
+                        ),
+                        initialTime: const TimeOfDay(hour: 9, minute: 0),
+                        firstDate: DateTime.now().add(const Duration(days: 1)),
+                        lastDate: DateTime.now().add(const Duration(days: 90)),
+                        disabledWeekdays: const [7], // Domingo deshabilitado
+                        onDateChanged: (date) {
+                          setModalState(() {
+                            selectedDate = date;
+                          });
+                        },
+                        onTimeChanged: (time) {
+                          setModalState(() {
+                            selectedTime = time;
+                          });
+                        },
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Info adicional
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF81D4FA).withAlpha(25),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline,
+                              color: Color(0xFF81D4FA),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Se notificará automáticamente al propietario sobre la nueva fecha y hora.',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Buttons
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancelar',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF757575),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed:
+                            canConfirm
+                                ? () {
+                                  final newDateTime = DateTime(
+                                    selectedDate!.year,
+                                    selectedDate!.month,
+                                    selectedDate!.day,
+                                    selectedTime!.hour,
+                                    selectedTime!.minute,
+                                  );
+                                  Navigator.pop(context, {
+                                    'dateTime': newDateTime,
+                                  });
+                                }
+                                : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF81D4FA),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          disabledBackgroundColor: Colors.grey[300],
+                        ),
+                        child: const Text(
+                          'Confirmar',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatNewDateTime(DateTime dateTime) {
+    final months = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ];
+
+    final hour =
+        dateTime.hour == 0
+            ? 12
+            : dateTime.hour > 12
+            ? dateTime.hour - 12
+            : dateTime.hour;
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final period = dateTime.hour < 12 ? 'AM' : 'PM';
+
+    return '${dateTime.day} ${months[dateTime.month - 1]} $hour:$minute $period';
   }
 
   Future<void> _cancelAppointment() async {

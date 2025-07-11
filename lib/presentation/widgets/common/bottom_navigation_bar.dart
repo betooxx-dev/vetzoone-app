@@ -94,11 +94,6 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
       activeColor: const Color(0xFF81D4FA),
     ),
     _BottomNavItem(
-      icon: Icons.notifications_rounded,
-      label: 'Notificaciones',
-      activeColor: const Color(0xFF81D4FA),
-    ),
-    _BottomNavItem(
       icon: Icons.settings_rounded,
       label: 'Configuración',
       activeColor: const Color(0xFF81D4FA),
