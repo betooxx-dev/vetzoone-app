@@ -397,7 +397,15 @@ class _AddPetPageState extends State<AddPetPage> {
       decoration: InputDecoration(
         labelText: 'Sexo',
         hintText: 'Selecciona el sexo',
-        prefixIcon: const Icon(Icons.wc_rounded, color: Color(0xFF4CAF50)),
+        prefixIcon: Icon(
+          _selectedGender == 'Hembra'
+              ? Icons.female
+              : _selectedGender == 'Macho'
+              ? Icons.male
+              : Icons.pets_rounded,
+          color: const Color(0xFF4CAF50),
+        ),
+
         filled: true,
         fillColor: Colors.white,
         border: OutlineInputBorder(

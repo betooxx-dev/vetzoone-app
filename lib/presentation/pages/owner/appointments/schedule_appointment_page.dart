@@ -93,6 +93,11 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
   @override
   void initState() {
     super.initState();
+    // Set defaults immediately
+    selectedVeterinarian = _defaultVeterinarian;
+    selectedPet = _pets.first;
+
+    // Then check for arguments and override if they exist
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final arguments = ModalRoute.of(context)?.settings.arguments;
       if (arguments != null && arguments is Map<String, dynamic>) {
@@ -101,7 +106,6 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
             selectedVeterinarian = arguments['selectedVeterinarian'];
           }
           if (arguments.containsKey('selectedPet')) {
-            // Find matching pet in _pets list or use first pet
             final petData = arguments['selectedPet'];
             selectedPet = _pets.firstWhere(
               (pet) => pet['name'] == petData['name'],
@@ -109,14 +113,6 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
             );
           }
         });
-      }
-
-      // Set defaults if nothing was passed
-      if (selectedVeterinarian == null) {
-        selectedVeterinarian = _defaultVeterinarian;
-      }
-      if (selectedPet == null) {
-        selectedPet = _pets.first;
       }
     });
   }

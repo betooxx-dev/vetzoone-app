@@ -9,7 +9,7 @@ class OwnerProfilePage extends StatefulWidget {
 
 class _OwnerProfilePageState extends State<OwnerProfilePage> {
   bool _isEditing = false;
-  
+
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -27,7 +27,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
     'registrationDate': '15 de Marzo, 2024',
     'totalPets': 3,
     'totalAppointments': 12,
-    'profileImage': 'https://via.placeholder.com/120'
+    'profileImage': 'https://via.placeholder.com/120',
   };
 
   @override
@@ -92,19 +92,19 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             // Header con foto y info básica
             _buildProfileHeader(),
             const SizedBox(height: 20),
-            
+
             // Estadísticas rápidas
             _buildStatsCard(),
             const SizedBox(height: 20),
-            
+
             // Información personal
             _buildPersonalInfoCard(),
             const SizedBox(height: 20),
-            
+
             // Contacto de emergencia
             _buildEmergencyContactCard(),
             const SizedBox(height: 20),
-            
+
             // Opciones adicionales
             _buildOptionsCard(),
           ],
@@ -141,15 +141,16 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
                   border: Border.all(color: const Color(0xFF0D9488), width: 3),
                 ),
                 child: ClipOval(
-                  child: userData['profileImage'] != null
-                      ? Image.network(
-                          userData['profileImage'],
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildDefaultAvatar();
-                          },
-                        )
-                      : _buildDefaultAvatar(),
+                  child:
+                      userData['profileImage'] != null
+                          ? Image.network(
+                            userData['profileImage'],
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildDefaultAvatar();
+                            },
+                          )
+                          : _buildDefaultAvatar(),
                 ),
               ),
               if (_isEditing)
@@ -176,7 +177,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Nombre
           Text(
             userData['name'],
@@ -187,17 +188,14 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             ),
           ),
           const SizedBox(height: 4),
-          
+
           // Email
           Text(
             userData['email'],
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF6B7280),
-            ),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
           ),
           const SizedBox(height: 8),
-          
+
           // Fecha de registro
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -227,11 +225,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
         color: Color(0xFFF0F9FF),
         shape: BoxShape.circle,
       ),
-      child: const Icon(
-        Icons.person,
-        size: 50,
-        color: Color(0xFF0D9488),
-      ),
+      child: const Icon(Icons.person, size: 50, color: Color(0xFF0D9488)),
     );
   }
 
@@ -260,11 +254,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
               color: const Color(0xFF8B5CF6),
             ),
           ),
-          Container(
-            width: 1,
-            height: 50,
-            color: const Color(0xFFE5E7EB),
-          ),
+          Container(width: 1, height: 50, color: const Color(0xFFE5E7EB)),
           Expanded(
             child: _buildStatItem(
               icon: Icons.calendar_today,
@@ -307,10 +297,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Color(0xFF6B7280),
-          ),
+          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
         ),
       ],
     );
@@ -343,7 +330,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           _buildInfoField(
             icon: Icons.person_outline,
             label: 'Nombre completo',
@@ -351,7 +338,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             enabled: _isEditing,
           ),
           const SizedBox(height: 16),
-          
+
           _buildInfoField(
             icon: Icons.email_outlined,
             label: 'Correo electrónico',
@@ -359,7 +346,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             enabled: false, // Email no se puede editar
           ),
           const SizedBox(height: 16),
-          
+
           _buildInfoField(
             icon: Icons.phone_outlined,
             label: 'Teléfono',
@@ -367,7 +354,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             enabled: _isEditing,
           ),
           const SizedBox(height: 16),
-          
+
           _buildInfoField(
             icon: Icons.location_on_outlined,
             label: 'Dirección',
@@ -407,7 +394,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           _buildInfoField(
             icon: Icons.contact_phone_outlined,
             label: 'Nombre del contacto',
@@ -415,7 +402,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             enabled: _isEditing,
           ),
           const SizedBox(height: 16),
-          
+
           _buildInfoField(
             icon: Icons.phone_outlined,
             label: 'Teléfono de emergencia',
@@ -451,7 +438,8 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             color: enabled ? const Color(0xFFF9FAFB) : const Color(0xFFF3F4F6),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: enabled ? const Color(0xFFD1D5DB) : const Color(0xFFE5E7EB),
+              color:
+                  enabled ? const Color(0xFFD1D5DB) : const Color(0xFFE5E7EB),
             ),
           ),
           child: TextField(
@@ -460,12 +448,14 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             maxLines: maxLines,
             style: TextStyle(
               fontSize: 14,
-              color: enabled ? const Color(0xFF1A1A1A) : const Color(0xFF6B7280),
+              color:
+                  enabled ? const Color(0xFF1A1A1A) : const Color(0xFF6B7280),
             ),
             decoration: InputDecoration(
               prefixIcon: Icon(
                 icon,
-                color: enabled ? const Color(0xFF0D9488) : const Color(0xFF9CA3AF),
+                color:
+                    enabled ? const Color(0xFF0D9488) : const Color(0xFF9CA3AF),
                 size: 20,
               ),
               border: InputBorder.none,
@@ -507,17 +497,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             ),
           ),
           const SizedBox(height: 20),
-          
-          _buildOptionItem(
-            icon: Icons.notifications_outlined,
-            title: 'Notificaciones',
-            subtitle: 'Gestionar preferencias de notificaciones',
-            onTap: () {
-              // Navegar a configuración de notificaciones
-            },
-          ),
-          _buildDivider(),
-          
+
           _buildOptionItem(
             icon: Icons.security_outlined,
             title: 'Cambiar Contraseña',
@@ -527,17 +507,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             },
           ),
           _buildDivider(),
-          
-          _buildOptionItem(
-            icon: Icons.help_outline,
-            title: 'Ayuda y Soporte',
-            subtitle: 'Obtener ayuda con la aplicación',
-            onTap: () {
-              // Navegar a ayuda
-            },
-          ),
-          _buildDivider(),
-          
+
           _buildOptionItem(
             icon: Icons.logout,
             title: 'Cerrar Sesión',
@@ -568,17 +538,19 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: isDestructive 
-                    ? const Color(0xFFEF4444).withOpacity(0.1)
-                    : const Color(0xFF0D9488).withOpacity(0.1),
+                color:
+                    isDestructive
+                        ? const Color(0xFFEF4444).withOpacity(0.1)
+                        : const Color(0xFF0D9488).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 icon,
                 size: 20,
-                color: isDestructive 
-                    ? const Color(0xFFEF4444)
-                    : const Color(0xFF0D9488),
+                color:
+                    isDestructive
+                        ? const Color(0xFFEF4444)
+                        : const Color(0xFF0D9488),
               ),
             ),
             const SizedBox(width: 16),
@@ -591,9 +563,10 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: isDestructive 
-                          ? const Color(0xFFEF4444)
-                          : const Color(0xFF1A1A1A),
+                      color:
+                          isDestructive
+                              ? const Color(0xFFEF4444)
+                              : const Color(0xFF1A1A1A),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -656,113 +629,114 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
     // Implementar cambio de imagen de perfil
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Tomar foto'),
-              onTap: () {
-                Navigator.pop(context);
-                // Implementar cámara
-              },
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('Tomar foto'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Implementar cámara
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Seleccionar de galería'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Implementar galería
+                  },
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Seleccionar de galería'),
-              onTap: () {
-                Navigator.pop(context);
-                // Implementar galería
-              },
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
   void _showChangePasswordDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cambiar Contraseña'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Contraseña actual',
-                border: OutlineInputBorder(),
-              ),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Cambiar Contraseña'),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Contraseña actual',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 16),
+                TextField(
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Nueva contraseña',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 16),
+                TextField(
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Confirmar nueva contraseña',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
             ),
-            SizedBox(height: 16),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Nueva contraseña',
-                border: OutlineInputBorder(),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
               ),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Confirmar nueva contraseña',
-                border: OutlineInputBorder(),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // Implementar cambio de contraseña
+                },
+                child: const Text('Cambiar'),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Implementar cambio de contraseña
-            },
-            child: const Text('Cambiar'),
-          ),
-        ],
-      ),
     );
   }
 
   void _showLogoutDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cerrar Sesión'),
-        content: const Text(
-          '¿Estás seguro de que quieres cerrar sesión?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Cerrar Sesión'),
+            content: const Text('¿Estás seguro de que quieres cerrar sesión?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFEF4444),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  // Implementar logout
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/login',
+                    (route) => false,
+                  );
+                },
+                child: const Text('Cerrar Sesión'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              // Implementar logout
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/login',
-                (route) => false,
-              );
-            },
-            child: const Text('Cerrar Sesión'),
-          ),
-        ],
-      ),
     );
   }
 }

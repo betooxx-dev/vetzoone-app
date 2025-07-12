@@ -62,12 +62,13 @@ class _EditPetPageState extends State<EditPetPage> {
   void _populateFields() {
     _nameController.text = petData['name'] ?? '';
     _breedController.text = petData['breed'] ?? '';
-    _weightController.text = petData['weight']?.toString().replaceAll(' kg', '') ?? '';
+    _weightController.text =
+        petData['weight']?.toString().replaceAll(' kg', '') ?? '';
     _colorController.text = petData['color'] ?? '';
     _notesController.text = petData['notes'] ?? '';
     _selectedSpecies = petData['species'];
     _selectedGender = petData['gender'];
-    
+
     if (petData['birthDate'] != null) {
       try {
         _selectedBirthDate = DateTime.parse(petData['birthDate']);
@@ -110,10 +111,7 @@ class _EditPetPageState extends State<EditPetPage> {
       elevation: 0,
       leading: IconButton(
         onPressed: () => Navigator.pop(context),
-        icon: const Icon(
-          Icons.arrow_back_ios_new,
-          color: Color(0xFF212121),
-        ),
+        icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF212121)),
       ),
     );
   }
@@ -122,11 +120,7 @@ class _EditPetPageState extends State<EditPetPage> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 32),
-          _buildForm(),
-        ],
+        children: [_buildHeader(), const SizedBox(height: 32), _buildForm()],
       ),
     );
   }
@@ -363,12 +357,13 @@ class _EditPetPageState extends State<EditPetPage> {
           vertical: 16,
         ),
       ),
-      items: _species.map((String species) {
-        return DropdownMenuItem<String>(
-          value: species,
-          child: Text(species),
-        );
-      }).toList(),
+      items:
+          _species.map((String species) {
+            return DropdownMenuItem<String>(
+              value: species,
+              child: Text(species),
+            );
+          }).toList(),
       onChanged: (String? newValue) {
         setState(() {
           _selectedSpecies = newValue;
@@ -389,7 +384,15 @@ class _EditPetPageState extends State<EditPetPage> {
       decoration: InputDecoration(
         labelText: 'Género',
         hintText: 'Selecciona el género',
-        prefixIcon: const Icon(Icons.wc_rounded, color: Color(0xFF4CAF50)),
+        prefixIcon: Icon(
+          _selectedGender == 'Hembra'
+              ? Icons.female
+              : _selectedGender == 'Macho'
+              ? Icons.male
+              : Icons.pets_rounded,
+          color: const Color(0xFF4CAF50),
+        ),
+
         filled: true,
         fillColor: Colors.white,
         border: OutlineInputBorder(
@@ -409,12 +412,10 @@ class _EditPetPageState extends State<EditPetPage> {
           vertical: 16,
         ),
       ),
-      items: _genders.map((String gender) {
-        return DropdownMenuItem<String>(
-          value: gender,
-          child: Text(gender),
-        );
-      }).toList(),
+      items:
+          _genders.map((String gender) {
+            return DropdownMenuItem<String>(value: gender, child: Text(gender));
+          }).toList(),
       onChanged: (String? newValue) {
         setState(() {
           _selectedGender = newValue;
@@ -441,10 +442,7 @@ class _EditPetPageState extends State<EditPetPage> {
         ),
         child: Row(
           children: [
-            const Icon(
-              Icons.cake_outlined,
-              color: Color(0xFF4CAF50),
-            ),
+            const Icon(Icons.cake_outlined, color: Color(0xFF4CAF50)),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -452,10 +450,7 @@ class _EditPetPageState extends State<EditPetPage> {
                 children: [
                   const Text(
                     'Fecha de nacimiento',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF757575),
-                    ),
+                    style: TextStyle(fontSize: 12, color: Color(0xFF757575)),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -464,9 +459,10 @@ class _EditPetPageState extends State<EditPetPage> {
                         : 'Selecciona la fecha de nacimiento',
                     style: TextStyle(
                       fontSize: 16,
-                      color: _selectedBirthDate != null
-                          ? const Color(0xFF212121)
-                          : const Color(0xFF757575),
+                      color:
+                          _selectedBirthDate != null
+                              ? const Color(0xFF212121)
+                              : const Color(0xFF757575),
                     ),
                   ),
                 ],
@@ -517,7 +513,9 @@ class _EditPetPageState extends State<EditPetPage> {
   Future<void> _selectBirthDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedBirthDate ?? DateTime.now().subtract(const Duration(days: 365)),
+      initialDate:
+          _selectedBirthDate ??
+          DateTime.now().subtract(const Duration(days: 365)),
       firstDate: DateTime.now().subtract(const Duration(days: 365 * 30)),
       lastDate: DateTime.now(),
       builder: (context, child) {
@@ -552,30 +550,41 @@ class _EditPetPageState extends State<EditPetPage> {
       'species': _selectedSpecies,
       'breed': _breedController.text.trim(),
       'gender': _selectedGender,
-      'weight': _weightController.text.isNotEmpty ? '${_weightController.text.trim()} kg' : null,
+      'weight':
+          _weightController.text.isNotEmpty
+              ? '${_weightController.text.trim()} kg'
+              : null,
       'color': _colorController.text.trim(),
       'notes': _notesController.text.trim(),
       'birthDate': _selectedBirthDate?.toIso8601String(),
     };
 
     Navigator.pop(context, updatedPet);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${_nameController.text} actualizado exitosamente'),
         backgroundColor: const Color(0xFF4CAF50),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
   String _formatDate(DateTime date) {
     final months = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
     ];
 
     return '${date.day} de ${months[date.month - 1]} de ${date.year}';
