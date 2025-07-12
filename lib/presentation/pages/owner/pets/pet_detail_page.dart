@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class PetDetailPage extends StatefulWidget {
-  final Map<String, String>? petData;
+  final Map<String, dynamic>? petData;
 
   const PetDetailPage({super.key, this.petData});
 
@@ -14,9 +14,7 @@ class _PetDetailPageState extends State<PetDetailPage>
   late TabController _tabController;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-
-  // Mock data - En producción vendría del argumento o API
-  Map<String, String> pet = {};
+  late Map<String, dynamic> pet;
 
   @override
   void initState() {
@@ -30,13 +28,11 @@ class _PetDetailPageState extends State<PetDetailPage>
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
 
-    // Inicializar datos por defecto
     _initializePetData();
     _animationController.forward();
   }
 
   void _initializePetData() {
-    // Datos por defecto
     final defaultPet = {
       'name': 'Max',
       'breed': 'Labrador Retriever',
@@ -45,21 +41,20 @@ class _PetDetailPageState extends State<PetDetailPage>
       'gender': 'Macho',
       'weight': '25 kg',
       'color': 'Dorado',
-      'birthDate': '15/03/2021',
-      'image': 'assets/images/dog_placeholder.png',
+      'birthDate': '2021-03-15',
+      'notes': 'Mascota muy amigable y activa',
     };
 
-    // Intentar obtener argumentos de la ruta
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final arguments = ModalRoute.of(context)?.settings.arguments;
 
-      if (arguments != null && arguments is Map<String, String>) {
+      if (arguments != null && arguments is Map<String, dynamic>) {
         setState(() {
-          pet = arguments;
+          pet = Map<String, dynamic>.from(arguments);
         });
       } else if (widget.petData != null) {
         setState(() {
-          pet = widget.petData!;
+          pet = Map<String, dynamic>.from(widget.petData!);
         });
       } else {
         setState(() {
@@ -68,8 +63,10 @@ class _PetDetailPageState extends State<PetDetailPage>
       }
     });
 
-    // Usar datos por defecto inicialmente
-    pet = widget.petData ?? defaultPet;
+    pet =
+        widget.petData != null
+            ? Map<String, dynamic>.from(widget.petData!)
+            : defaultPet;
   }
 
   @override
@@ -101,7 +98,7 @@ class _PetDetailPageState extends State<PetDetailPage>
   }
 
   Widget _buildSliverAppBar() {
-    final colors = _getSpeciesColors(pet['species']!);
+    final colors = _getSpeciesColors(pet['species'] ?? 'Perro');
 
     return SliverAppBar(
       expandedHeight: 300,
@@ -110,7 +107,6 @@ class _PetDetailPageState extends State<PetDetailPage>
       leading: Container(
         margin: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          // ignore: deprecated_member_use
           color: Colors.white.withOpacity(0.9),
           borderRadius: BorderRadius.circular(12),
         ),
@@ -127,7 +123,6 @@ class _PetDetailPageState extends State<PetDetailPage>
         Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            // ignore: deprecated_member_use
             color: Colors.white.withOpacity(0.9),
             borderRadius: BorderRadius.circular(12),
           ),
@@ -150,20 +145,6 @@ class _PetDetailPageState extends State<PetDetailPage>
                         ),
                         const SizedBox(width: 12),
                         const Text('Editar información'),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'share',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.share_outlined,
-                          size: 18,
-                          color: Colors.grey[700],
-                        ),
-                        const SizedBox(width: 12),
-                        const Text('Compartir'),
                       ],
                     ),
                   ),
@@ -193,45 +174,68 @@ class _PetDetailPageState extends State<PetDetailPage>
         background: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: colors,
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [colors[0], colors[0].withOpacity(0.8)],
             ),
           ),
-          child: Center(
-            child: Hero(
-              tag: 'pet_${pet['name']}',
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(60),
-                  boxShadow: [
-                    BoxShadow(
-                      // ignore: deprecated_member_use
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+          child: _buildHeroSection(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroSection() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 40),
+          Hero(
+            tag: 'pet-${pet['name']}',
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(60),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.3),
+                  width: 3,
                 ),
-                child: Icon(
-                  _getSpeciesIcon(pet['species']!),
-                  size: 60,
-                  color: Colors.white,
-                ),
+              ),
+              child: Icon(
+                Icons.pets_rounded,
+                size: 60,
+                color: Colors.white.withOpacity(0.9),
               ),
             ),
           ),
-        ),
+          const SizedBox(height: 16),
+          Text(
+            pet['name'] ?? 'Sin nombre',
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${pet['species'] ?? 'Sin especie'} • ${pet['breed'] ?? 'Sin raza'}',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.white.withOpacity(0.9),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildPetInfo() {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.all(24),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -239,26 +243,24 @@ class _PetDetailPageState extends State<PetDetailPage>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                  pet['name']!,
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF212121),
-                  ),
+              Text(
+                pet['name'] ?? 'Sin nombre',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF212121),
                 ),
               ),
               Container(
@@ -269,7 +271,6 @@ class _PetDetailPageState extends State<PetDetailPage>
                 decoration: BoxDecoration(
                   color: _getSpeciesColors(
                     pet['species'] ?? 'Perro',
-                    // ignore: deprecated_member_use
                   )[0].withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -303,7 +304,10 @@ class _PetDetailPageState extends State<PetDetailPage>
                 child: _buildInfoItem(
                   icon: Icons.cake_outlined,
                   label: 'Edad',
-                  value: pet['age'] ?? 'Desconocida',
+                  value:
+                      _calculateAge(pet['birthDate']) ??
+                      pet['age'] ??
+                      'Desconocida',
                 ),
               ),
               Expanded(
@@ -322,7 +326,10 @@ class _PetDetailPageState extends State<PetDetailPage>
                 child: _buildInfoItem(
                   icon: Icons.monitor_weight_outlined,
                   label: 'Peso',
-                  value: pet['weight'] ?? 'No registrado',
+                  value:
+                      pet['weight'] != null
+                          ? '${pet['weight']}'
+                          : 'No registrado',
                 ),
               ),
               Expanded(
@@ -334,6 +341,26 @@ class _PetDetailPageState extends State<PetDetailPage>
               ),
             ],
           ),
+          if (pet['notes'] != null && pet['notes'].toString().isNotEmpty) ...[
+            const SizedBox(height: 20),
+            const Text(
+              'Notas',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF212121),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              pet['notes'].toString(),
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF757575),
+                height: 1.5,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -344,35 +371,33 @@ class _PetDetailPageState extends State<PetDetailPage>
     required String label,
     required String value,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAFAFA),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 24, color: const Color(0xFF757575)),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF757575),
-              fontWeight: FontWeight.w500,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 18, color: const Color(0xFF4CAF50)),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
             ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF212121),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF212121),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -384,8 +409,7 @@ class _PetDetailPageState extends State<PetDetailPage>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -430,14 +454,11 @@ class _PetDetailPageState extends State<PetDetailPage>
     );
   }
 
-  // En pet_detail_page.dart, buscar el método _buildMedicalRecordsTab() y REEMPLAZARLO por:
-
   Widget _buildMedicalRecordsTab() {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Mostrar algunas consultas recientes como preview
           _buildMedicalRecordCard(
             date: '15 Nov 2024',
             diagnosis: 'Consulta de rutina',
@@ -454,7 +475,6 @@ class _PetDetailPageState extends State<PetDetailPage>
             status: 'Completado',
           ),
           const SizedBox(height: 20),
-          // Botón para ver expediente completo
           Container(
             width: double.infinity,
             height: 48,
@@ -548,11 +568,12 @@ class _PetDetailPageState extends State<PetDetailPage>
     required String status,
   }) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -561,9 +582,9 @@ class _PetDetailPageState extends State<PetDetailPage>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                diagnosis,
+                date,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF212121),
                 ),
@@ -571,42 +592,37 @@ class _PetDetailPageState extends State<PetDetailPage>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: const Color(0xFF4CAF50).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color:
+                      status == 'Completado'
+                          ? Colors.green.withOpacity(0.1)
+                          : Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   status,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF4CAF50),
+                    color:
+                        status == 'Completado' ? Colors.green : Colors.orange,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(
-                Icons.calendar_today_outlined,
-                size: 16,
-                color: Colors.grey[600],
-              ),
-              const SizedBox(width: 4),
-              Text(
-                date,
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-              const SizedBox(width: 16),
-              Icon(Icons.person_outlined, size: 16, color: Colors.grey[600]),
-              const SizedBox(width: 4),
-              Text(
-                veterinarian,
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-            ],
+          Text(
+            diagnosis,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF212121),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            veterinarian,
+            style: const TextStyle(fontSize: 14, color: Color(0xFF757575)),
           ),
           const SizedBox(height: 8),
           Text(
@@ -628,102 +644,73 @@ class _PetDetailPageState extends State<PetDetailPage>
     required String nextDate,
     required String status,
   }) {
-    final isUpcoming = status == 'Próxima';
-    final statusColor =
-        isUpcoming ? const Color(0xFFFF7043) : const Color(0xFF4CAF50);
+    final isUpToDate = status == 'Al día';
+    final statusColor = isUpToDate ? Colors.green : Colors.orange;
 
     return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color:
-              isUpcoming
-                  // ignore: deprecated_member_use
-                  ? statusColor.withOpacity(0.3)
-                  : const Color(0xFFE0E0E0),
-        ),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.vaccines_outlined, color: statusColor, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
                   vaccine,
                   style: const TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.bold,
                     color: Color(0xFF212121),
                   ),
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: statusColor,
+                const SizedBox(height: 4),
+                Text(
+                  'Aplicada: $date',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF757575),
                   ),
                 ),
-              ),
-            ],
+                Text(
+                  'Próxima: $nextDate',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF757575),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Última aplicación',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      date,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF212121),
-                      ),
-                    ),
-                  ],
-                ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              status,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: statusColor,
               ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Próxima aplicación',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      nextDate,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color:
-                            isUpcoming ? statusColor : const Color(0xFF212121),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -737,82 +724,77 @@ class _PetDetailPageState extends State<PetDetailPage>
     required String veterinarian,
     required String status,
   }) {
-    final isUpcoming = status == 'Programada';
-    final statusColor =
-        isUpcoming ? const Color(0xFF81D4FA) : const Color(0xFF4CAF50);
+    final isCompleted = status == 'Completada';
+    final statusColor = isCompleted ? Colors.green : Colors.blue;
 
     return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color:
-              isUpcoming
-                  // ignore: deprecated_member_use
-                  ? statusColor.withOpacity(0.3)
-                  : const Color(0xFFE0E0E0),
-        ),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.calendar_today_outlined,
+              color: statusColor,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
                   type,
                   style: const TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.bold,
                     color: Color(0xFF212121),
                   ),
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: statusColor,
+                const SizedBox(height: 4),
+                Text(
+                  '$date - $time',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF757575),
                   ),
                 ),
-              ),
-            ],
+                Text(
+                  veterinarian,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF757575),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(
-                Icons.calendar_today_outlined,
-                size: 16,
-                color: Colors.grey[600],
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              status,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: statusColor,
               ),
-              const SizedBox(width: 4),
-              Text(
-                '$date - $time',
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(Icons.person_outlined, size: 16, color: Colors.grey[600]),
-              const SizedBox(width: 4),
-              Text(
-                veterinarian,
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -821,10 +803,10 @@ class _PetDetailPageState extends State<PetDetailPage>
 
   Widget _buildFloatingActionButton() {
     return FloatingActionButton.extended(
-      onPressed: _scheduleAppointment,
+      onPressed: () => _scheduleAppointment(),
       backgroundColor: const Color(0xFF4CAF50),
       foregroundColor: Colors.white,
-      icon: const Icon(Icons.calendar_today_rounded),
+      icon: const Icon(Icons.calendar_today_outlined),
       label: const Text(
         'Agendar Cita',
         style: TextStyle(fontWeight: FontWeight.w600),
@@ -833,13 +815,54 @@ class _PetDetailPageState extends State<PetDetailPage>
     );
   }
 
+  List<Color> _getSpeciesColors(String species) {
+    switch (species.toLowerCase()) {
+      case 'perro':
+        return [const Color(0xFF4CAF50), const Color(0xFF81C784)];
+      case 'gato':
+        return [const Color(0xFF2196F3), const Color(0xFF64B5F6)];
+      case 'ave':
+        return [const Color(0xFFFF9800), const Color(0xFFFFB74D)];
+      case 'pez':
+        return [const Color(0xFF00BCD4), const Color(0xFF4DD0E1)];
+      case 'reptil':
+        return [const Color(0xFF4CAF50), const Color(0xFF81C784)];
+      case 'hamster':
+      case 'conejo':
+        return [const Color(0xFF9C27B0), const Color(0xFFBA68C8)];
+      default:
+        return [const Color(0xFF607D8B), const Color(0xFF90A4AE)];
+    }
+  }
+
+  String? _calculateAge(String? birthDate) {
+    if (birthDate == null || birthDate.isEmpty) return null;
+
+    try {
+      final birth = DateTime.parse(birthDate);
+      final now = DateTime.now();
+      final difference = now.difference(birth);
+
+      final years = (difference.inDays / 365).floor();
+      final months = ((difference.inDays % 365) / 30).floor();
+
+      if (years > 0) {
+        return years == 1 ? '1 año' : '$years años';
+      } else if (months > 0) {
+        return months == 1 ? '1 mes' : '$months meses';
+      } else {
+        final days = difference.inDays;
+        return days == 1 ? '1 día' : '$days días';
+      }
+    } catch (e) {
+      return null;
+    }
+  }
+
   void _handleMenuAction(String action) {
     switch (action) {
       case 'edit':
         _editPet();
-        break;
-      case 'share':
-        _sharePet();
         break;
       case 'delete':
         _deletePet();
@@ -848,24 +871,20 @@ class _PetDetailPageState extends State<PetDetailPage>
   }
 
   void _editPet() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Editar ${pet['name'] ?? 'mascota'}'),
-        backgroundColor: const Color(0xFF4CAF50),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+    Navigator.pushNamed(context, '/edit-pet', arguments: pet).then((result) {
+      if (result != null && result is Map<String, dynamic>) {
+        setState(() {
+          pet = result;
+        });
+      }
+    });
   }
 
-  void _sharePet() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Compartir información de ${pet['name'] ?? 'mascota'}'),
-        backgroundColor: const Color(0xFF81D4FA),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
+  void _scheduleAppointment() {
+    Navigator.pushNamed(
+      context,
+      '/schedule-appointment',
+      arguments: {'selectedPet': pet},
     );
   }
 
@@ -909,54 +928,5 @@ class _PetDetailPageState extends State<PetDetailPage>
             ],
           ),
     );
-  }
-
-  void _scheduleAppointment() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Agendar cita para ${pet['name'] ?? 'mascota'}'),
-        backgroundColor: const Color(0xFF4CAF50),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
-  List<Color> _getSpeciesColors(String species) {
-    switch (species.toLowerCase()) {
-      case 'perro':
-        return [const Color(0xFF4CAF50), const Color(0xFF66BB6A)];
-      case 'gato':
-        return [const Color(0xFF81D4FA), const Color(0xFF4FC3F7)];
-      case 'conejo':
-        return [const Color(0xFFFFB74D), const Color(0xFFFF8A65)];
-      case 'ave':
-        return [const Color(0xFFBA68C8), const Color(0xFF9C27B0)];
-      case 'pez':
-        return [const Color(0xFF4DD0E1), const Color(0xFF26C6DA)];
-      case 'reptil':
-        return [const Color(0xFF81C784), const Color(0xFF4CAF50)];
-      default:
-        return [const Color(0xFF90A4AE), const Color(0xFF607D8B)];
-    }
-  }
-
-  IconData _getSpeciesIcon(String species) {
-    switch (species.toLowerCase()) {
-      case 'perro':
-        return Icons.pets_rounded;
-      case 'gato':
-        return Icons.pets_rounded;
-      case 'conejo':
-        return Icons.cruelty_free_rounded;
-      case 'ave':
-        return Icons.flutter_dash_rounded;
-      case 'pez':
-        return Icons.pool_rounded;
-      case 'reptil':
-        return Icons.dataset_rounded;
-      default:
-        return Icons.pets_rounded;
-    }
   }
 }

@@ -16,6 +16,7 @@ import 'presentation/widgets/common/bottom_navigation_bar.dart';
 // Páginas del dueño
 import 'presentation/pages/owner/pets/my_pets_page.dart';
 import 'presentation/pages/owner/pets/add_pet_page.dart';
+import 'presentation/pages/owner/pets/edit_pet_page.dart';
 import 'presentation/pages/owner/pets/pet_detail_page.dart';
 import 'presentation/pages/owner/veterinarians/search_veterinarians_page.dart';
 import 'presentation/pages/owner/veterinarians/veterinarians_list_page.dart';
@@ -79,6 +80,7 @@ class MyApp extends StatelessWidget {
         // Rutas del dueño - Mascotas
         '/my-pets': (context) => const MyPetsPage(),
         '/add-pet': (context) => const AddPetPage(),
+        '/edit-pet': (context) => const EditPetPage(),
         '/pet-detail': (context) => const PetDetailPage(),
 
         // Rutas del dueño - Veterinarios
@@ -137,7 +139,7 @@ class DashboardWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const bool isVeterinarian = true; //true para probar veterinario
+    const bool isVeterinarian = false; //true para probar veterinario
 
     return isVeterinarian
         ? const MainScreenVeterinarian()
@@ -197,7 +199,6 @@ class _MainScreenVeterinarianState extends State<MainScreenVeterinarian> {
     const VeterinarianDashboardPage(),
     const MySchedulePage(),
     const PatientsListPage(),
-    const NotificationsPage(),
     const VetSettingsPage(),
   ];
 

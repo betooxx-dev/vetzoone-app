@@ -1,119 +1,114 @@
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/confirmation_modal.dart';
-import '../../../widgets/cards/appointment_card.dart';
+
+enum AppointmentStatus {
+  scheduled,
+  confirmed,
+  inProgress,
+  completed,
+  cancelled,
+  rescheduled,
+}
 
 class AppointmentDetailPage extends StatefulWidget {
-  const AppointmentDetailPage({super.key});
+  final Map<String, dynamic>? appointmentData;
+
+  const AppointmentDetailPage({super.key, this.appointmentData});
 
   @override
   State<AppointmentDetailPage> createState() => _AppointmentDetailPageState();
 }
 
-class _AppointmentDetailPageState extends State<AppointmentDetailPage>
-    with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-
-  Map<String, dynamic> appointment = {};
+class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
+  late Map<String, dynamic> appointment;
+  late AppointmentStatus status;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
     _initializeAppointmentData();
-    _animationController.forward();
   }
 
   void _initializeAppointmentData() {
     final defaultAppointment = {
       'id': '1',
-      'petName': 'Max',
-      'veterinarianName': 'Dr. María González',
       'appointmentType': 'Consulta General',
-      'dateTime': DateTime.now().add(const Duration(hours: 2)),
-      'status': AppointmentStatus.confirmed,
-      'clinic': 'Clínica VetCare Tuxtla',
-      'cost': 350.0,
-      'notes': 'Control de rutina, revisar vacunas pendientes',
-      'veterinarianPhone': '+52 961 123 4567',
-      'veterinarianEmail': 'maria.gonzalez@vetcare.com',
-      'clinicAddress': 'Av. Central Norte 1234, Tuxtla Gutiérrez',
-      'specialty': 'Medicina General',
-      'rating': 4.9,
-      'experience': '8 años',
-      'petDetails': {
-        'species': 'Perro',
-        'breed': 'Labrador Retriever',
-        'age': '3 años',
-        'weight': '25 kg',
-      },
+      'petName': 'Max',
+      'petSpecies': 'Perro',
+      'veterinarianName': 'Dr. María González',
+      'veterinarianSpecialty': 'Medicina General',
+      'clinic': 'Veterinaria Central',
+      'date': '25 Dic 2024',
+      'time': '10:00 AM',
+      'duration': '30 min',
+      'notes': 'Consulta de rutina para chequeo general',
+      'address': 'Av. Principal 123, Ciudad',
+      'phone': '+52 999 123 4567',
+      'email': 'contacto@veterinariacentral.com',
+      'cost': '\$500.00',
+      'status': AppointmentStatus.scheduled,
     };
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final arguments = ModalRoute.of(context)?.settings.arguments;
       if (arguments != null && arguments is Map<String, dynamic>) {
         setState(() {
-          appointment = {...defaultAppointment, ...arguments};
-        });
-      } else {
-        setState(() {
-          appointment = defaultAppointment;
+          appointment = arguments;
+          status = appointment['status'] ?? AppointmentStatus.scheduled;
         });
       }
     });
 
-    appointment = defaultAppointment;
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
+    appointment = widget.appointmentData ?? defaultAppointment;
+    status = appointment['status'] ?? AppointmentStatus.scheduled;
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = _getStatusColors(status);
+
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: CustomScrollView(
-          slivers: [
-            _buildSliverAppBar(),
-            SliverToBoxAdapter(
+      body: CustomScrollView(
+        slivers: [
+          _buildSliverAppBar(colors),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildAppointmentCard(),
-                  _buildDetailsSections(),
+                  _buildAppointmentInfo(),
+                  const SizedBox(height: 24),
+                  _buildPetInfo(),
+                  const SizedBox(height: 24),
+                  _buildVeterinarianInfo(),
+                  const SizedBox(height: 24),
+                  _buildLocationInfo(),
+                  const SizedBox(height: 24),
+                  _buildCostInfo(),
+                  if (_canCancelAppointment()) ...[
+                    const SizedBox(height: 32),
+                    _buildCancelButton(),
+                  ],
                   const SizedBox(height: 100),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-      floatingActionButton: _buildFloatingActionButtons(),
     );
   }
 
-  Widget _buildSliverAppBar() {
-    final status = appointment['status'] as AppointmentStatus;
-    final colors = _getStatusColors(status);
-
+  Widget _buildSliverAppBar(Map<String, Color> colors) {
     return SliverAppBar(
-      expandedHeight: 220,
+      expandedHeight: 280,
       pinned: true,
       backgroundColor: colors['primary'],
       leading: Container(
         margin: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          // ignore: deprecated_member_use
           color: Colors.white.withOpacity(0.9),
           borderRadius: BorderRadius.circular(12),
         ),
@@ -126,74 +121,6 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage>
           ),
         ),
       ),
-      actions: [
-        Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            // ignore: deprecated_member_use
-            color: Colors.white.withOpacity(0.9),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF212121)),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            onSelected: _handleMenuAction,
-            itemBuilder:
-                (context) => [
-                  if (_canEditAppointment())
-                    PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.edit_outlined,
-                            size: 18,
-                            color: Colors.grey[700],
-                          ),
-                          const SizedBox(width: 12),
-                          const Text('Editar cita'),
-                        ],
-                      ),
-                    ),
-                  PopupMenuItem(
-                    value: 'share',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.share_outlined,
-                          size: 18,
-                          color: Colors.grey[700],
-                        ),
-                        const SizedBox(width: 12),
-                        const Text('Compartir'),
-                      ],
-                    ),
-                  ),
-                  if (_canCancelAppointment()) const PopupMenuDivider(),
-                  if (_canCancelAppointment())
-                    PopupMenuItem(
-                      value: 'cancel',
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.cancel_outlined,
-                            size: 18,
-                            color: Colors.red,
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Cancelar cita',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-          ),
-        ),
-      ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
@@ -211,12 +138,10 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage>
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(40),
                   boxShadow: [
                     BoxShadow(
-                      // ignore: deprecated_member_use
                       color: Colors.black.withOpacity(0.1),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
@@ -231,20 +156,35 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage>
               ),
               const SizedBox(height: 16),
               Text(
-                appointment['appointmentType'] ?? 'Cita',
+                appointment['appointmentType'] ?? 'Consulta',
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 4),
-              Text(
-                _getStatusText(status),
-                style: TextStyle(
-                  fontSize: 14,
-                  // ignore: deprecated_member_use
-                  color: Colors.white.withOpacity(0.9),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  _getStatusText(status),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],
@@ -254,238 +194,212 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage>
     );
   }
 
-  Widget _buildAppointmentCard() {
-    return Container(
-      margin: const EdgeInsets.all(24),
-      child: AppointmentCard(
-        petName: appointment['petName'] ?? '',
-        veterinarianName: appointment['veterinarianName'] ?? '',
-        appointmentType: appointment['appointmentType'] ?? '',
-        dateTime: appointment['dateTime'] ?? DateTime.now(),
-        status: appointment['status'] ?? AppointmentStatus.scheduled,
-        clinic: appointment['clinic'],
-        notes: appointment['notes'],
-        cost: appointment['cost'],
-        onTap: null, // No tap action in detail view
-        onCancel: _canCancelAppointment() ? _cancelAppointment : null,
-        onReschedule:
-            _canRescheduleAppointment() ? _rescheduleAppointment : null,
-        isOwnerView: true,
-      ),
-    );
-  }
-
-  Widget _buildDetailsSections() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        children: [
-          _buildPetDetailsSection(),
-          const SizedBox(height: 24),
-          _buildVeterinarianDetailsSection(),
-          const SizedBox(height: 24),
-          _buildClinicDetailsSection(),
-          if (appointment['notes'] != null &&
-              appointment['notes']!.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            _buildNotesSection(),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPetDetailsSection() {
-    final petDetails = appointment['petDetails'] as Map<String, dynamic>? ?? {};
-
-    return _buildDetailCard(
-      title: 'Información de la mascota',
-      icon: Icons.pets_rounded,
-      iconColor: const Color(0xFF4CAF50),
+  Widget _buildAppointmentInfo() {
+    return _buildInfoCard(
+      title: 'Información de la Cita',
+      icon: Icons.calendar_today_outlined,
       children: [
-        _buildDetailRow('Nombre', appointment['petName'] ?? ''),
-        if (petDetails['species'] != null)
-          _buildDetailRow('Especie', petDetails['species']),
-        if (petDetails['breed'] != null)
-          _buildDetailRow('Raza', petDetails['breed']),
-        if (petDetails['age'] != null)
-          _buildDetailRow('Edad', petDetails['age']),
-        if (petDetails['weight'] != null)
-          _buildDetailRow('Peso', petDetails['weight']),
+        _buildInfoRow(
+          'Fecha',
+          appointment['date'] ?? 'No especificada',
+          Icons.today_outlined,
+        ),
+        _buildInfoRow(
+          'Hora',
+          appointment['time'] ?? 'No especificada',
+          Icons.access_time_outlined,
+        ),
+        _buildInfoRow(
+          'Duración',
+          appointment['duration'] ?? 'No especificada',
+          Icons.timer_outlined,
+        ),
+        if (appointment['notes'] != null && appointment['notes'].isNotEmpty)
+          _buildInfoRow('Notas', appointment['notes'], Icons.note_outlined),
       ],
     );
   }
 
-  Widget _buildVeterinarianDetailsSection() {
-    return _buildDetailCard(
-      title: 'Información del veterinario',
-      icon: Icons.person_rounded,
-      iconColor: const Color(0xFF81D4FA),
+  Widget _buildPetInfo() {
+    return _buildInfoCard(
+      title: 'Información de la Mascota',
+      icon: Icons.pets_outlined,
       children: [
-        _buildDetailRow('Nombre', appointment['veterinarianName'] ?? ''),
-        if (appointment['specialty'] != null)
-          _buildDetailRow('Especialidad', appointment['specialty']),
-        if (appointment['experience'] != null)
-          _buildDetailRow('Experiencia', appointment['experience']),
-        if (appointment['rating'] != null)
-          _buildDetailRow('Calificación', '${appointment['rating']} ⭐'),
-        if (appointment['veterinarianPhone'] != null)
-          _buildDetailRow(
-            'Teléfono',
-            appointment['veterinarianPhone'],
-            isClickable: true,
-          ),
-        if (appointment['veterinarianEmail'] != null)
-          _buildDetailRow(
-            'Email',
-            appointment['veterinarianEmail'],
-            isClickable: true,
-          ),
-      ],
-    );
-  }
-
-  Widget _buildClinicDetailsSection() {
-    return _buildDetailCard(
-      title: 'Información de la clínica',
-      icon: Icons.local_hospital_rounded,
-      iconColor: const Color(0xFFFF7043),
-      children: [
-        _buildDetailRow('Clínica', appointment['clinic'] ?? ''),
-        if (appointment['clinicAddress'] != null)
-          _buildDetailRow(
-            'Dirección',
-            appointment['clinicAddress'],
-            isClickable: true,
-          ),
-        if (appointment['cost'] != null)
-          _buildDetailRow(
-            'Costo',
-            '\$${appointment['cost']?.toStringAsFixed(0)}',
-          ),
-      ],
-    );
-  }
-
-  Widget _buildNotesSection() {
-    return _buildDetailCard(
-      title: 'Notas adicionales',
-      icon: Icons.note_outlined,
-      iconColor: const Color(0xFF9C27B0),
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFAFAFA),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            appointment['notes'] ?? '',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF212121),
-              height: 1.5,
-            ),
-          ),
+        _buildInfoRow(
+          'Nombre',
+          appointment['petName'] ?? 'No especificado',
+          Icons.pets_rounded,
+        ),
+        _buildInfoRow(
+          'Especie',
+          appointment['petSpecies'] ?? 'No especificado',
+          Icons.category_outlined,
         ),
       ],
     );
   }
 
-  Widget _buildDetailCard({
+  Widget _buildVeterinarianInfo() {
+    return _buildInfoCard(
+      title: 'Veterinario',
+      icon: Icons.person_outline,
+      children: [
+        _buildInfoRow(
+          'Nombre',
+          appointment['veterinarianName'] ?? 'No asignado',
+          Icons.person_rounded,
+        ),
+        _buildInfoRow(
+          'Especialidad',
+          appointment['veterinarianSpecialty'] ?? 'No especificada',
+          Icons.medical_services_outlined,
+        ),
+        _buildInfoRow(
+          'Clínica',
+          appointment['clinic'] ?? 'No especificada',
+          Icons.local_hospital_outlined,
+        ),
+        _buildInfoRow(
+          'Teléfono',
+          appointment['phone'] ?? 'No disponible',
+          Icons.phone_outlined,
+          isClickable: true,
+        ),
+        _buildInfoRow(
+          'Email',
+          appointment['email'] ?? 'No disponible',
+          Icons.email_outlined,
+          isClickable: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLocationInfo() {
+    return _buildInfoCard(
+      title: 'Ubicación',
+      icon: Icons.location_on_outlined,
+      children: [
+        _buildInfoRow(
+          'Dirección',
+          appointment['address'] ?? 'No especificada',
+          Icons.location_on_outlined,
+          isClickable: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCostInfo() {
+    return _buildInfoCard(
+      title: 'Costo',
+      icon: Icons.attach_money_outlined,
+      children: [
+        _buildInfoRow(
+          'Consulta',
+          appointment['cost'] ?? 'No especificado',
+          Icons.monetization_on_outlined,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoCard({
     required String title,
     required IconData icon,
-    required Color iconColor,
     required List<Widget> children,
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: const Offset(0, 2),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: iconColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, size: 20, color: const Color(0xFF4CAF50)),
                 ),
-                child: Icon(icon, color: iconColor, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF212121),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF212121),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...children,
-        ],
+              ],
+            ),
+            const SizedBox(height: 16),
+            ...children,
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildDetailRow(
+  Widget _buildInfoRow(
     String label,
-    String value, {
+    String value,
+    IconData icon, {
     bool isClickable = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF757575),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
+          Icon(icon, size: 18, color: Colors.grey[600]),
+          const SizedBox(width: 12),
           Expanded(
-            child: GestureDetector(
-              onTap:
-                  isClickable
-                      ? () => _handleClickableValue(label, value)
-                      : null,
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 14,
-                  color:
-                      isClickable
-                          ? const Color(0xFF4CAF50)
-                          : const Color(0xFF212121),
-                  fontWeight: FontWeight.w600,
-                  decoration: isClickable ? TextDecoration.underline : null,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 2),
+                GestureDetector(
+                  onTap:
+                      isClickable
+                          ? () => _handleClickableValue(label, value)
+                          : null,
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color:
+                          isClickable
+                              ? const Color(0xFF2196F3)
+                              : const Color(0xFF212121),
+                      fontWeight: FontWeight.w600,
+                      decoration: isClickable ? TextDecoration.underline : null,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -493,66 +407,36 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage>
     );
   }
 
-  Widget _buildFloatingActionButtons() {
-    final status = appointment['status'] as AppointmentStatus;
-
-    if (status == AppointmentStatus.completed ||
-        status == AppointmentStatus.cancelled) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (_canRescheduleAppointment())
-          FloatingActionButton(
-            heroTag: 'reschedule',
-            onPressed: _rescheduleAppointment,
-            backgroundColor: const Color(0xFF81D4FA),
-            child: const Icon(Icons.schedule_rounded, color: Colors.white),
+  Widget _buildCancelButton() {
+    return Container(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: _cancelAppointment,
+        icon: const Icon(Icons.cancel_outlined),
+        label: const Text('Cancelar Cita'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFFF7043),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-        if (_canRescheduleAppointment() && _canCancelAppointment())
-          const SizedBox(height: 12),
-        if (_canCancelAppointment())
-          FloatingActionButton(
-            heroTag: 'cancel',
-            onPressed: _cancelAppointment,
-            backgroundColor: const Color(0xFFFF7043),
-            child: const Icon(Icons.cancel_outlined, color: Colors.white),
-          ),
-      ],
+        ),
+      ),
     );
   }
 
-  // Métodos de validación
-  bool _canEditAppointment() {
-    final status = appointment['status'] as AppointmentStatus;
-    return status == AppointmentStatus.scheduled;
-  }
-
-  bool _canCancelAppointment() {
-    final status = appointment['status'] as AppointmentStatus;
-    return status == AppointmentStatus.scheduled ||
-        status == AppointmentStatus.confirmed;
-  }
-
-  bool _canRescheduleAppointment() {
-    final status = appointment['status'] as AppointmentStatus;
-    return status == AppointmentStatus.scheduled;
-  }
-
-  // Métodos de colores y iconos
   Map<String, Color> _getStatusColors(AppointmentStatus status) {
     switch (status) {
       case AppointmentStatus.scheduled:
         return {
-          'primary': const Color(0xFF81D4FA),
-          'secondary': const Color(0xFF4FC3F7),
+          'primary': const Color(0xFF2196F3),
+          'secondary': const Color(0xFF64B5F6),
         };
       case AppointmentStatus.confirmed:
         return {
           'primary': const Color(0xFF4CAF50),
-          'secondary': const Color(0xFF66BB6A),
+          'secondary': const Color(0xFF81C784),
         };
       case AppointmentStatus.inProgress:
         return {
@@ -561,18 +445,18 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage>
         };
       case AppointmentStatus.completed:
         return {
-          'primary': const Color(0xFF66BB6A),
-          'secondary': const Color(0xFF4CAF50),
+          'primary': const Color(0xFF4CAF50),
+          'secondary': const Color(0xFF81C784),
         };
       case AppointmentStatus.cancelled:
         return {
-          'primary': const Color(0xFF757575),
-          'secondary': const Color(0xFF9E9E9E),
+          'primary': const Color(0xFFFF7043),
+          'secondary': const Color(0xFFFF8A65),
         };
       case AppointmentStatus.rescheduled:
         return {
-          'primary': const Color(0xFFFF7043),
-          'secondary': const Color(0xFFFF8A65),
+          'primary': const Color(0xFF9C27B0),
+          'secondary': const Color(0xFFBA68C8),
         };
     }
   }
@@ -580,17 +464,17 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage>
   IconData _getStatusIcon(AppointmentStatus status) {
     switch (status) {
       case AppointmentStatus.scheduled:
-        return Icons.schedule_rounded;
+        return Icons.schedule_outlined;
       case AppointmentStatus.confirmed:
-        return Icons.check_circle_outline_rounded;
+        return Icons.check_circle_outline;
       case AppointmentStatus.inProgress:
-        return Icons.medical_services_rounded;
+        return Icons.medical_services_outlined;
       case AppointmentStatus.completed:
-        return Icons.check_circle_rounded;
+        return Icons.task_alt_outlined;
       case AppointmentStatus.cancelled:
         return Icons.cancel_outlined;
       case AppointmentStatus.rescheduled:
-        return Icons.update_rounded;
+        return Icons.update_outlined;
     }
   }
 
@@ -611,19 +495,9 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage>
     }
   }
 
-  // Métodos de acciones
-  void _handleMenuAction(String action) {
-    switch (action) {
-      case 'edit':
-        _editAppointment();
-        break;
-      case 'share':
-        _shareAppointment();
-        break;
-      case 'cancel':
-        _cancelAppointment();
-        break;
-    }
+  bool _canCancelAppointment() {
+    return status == AppointmentStatus.scheduled ||
+        status == AppointmentStatus.confirmed;
   }
 
   void _handleClickableValue(String label, String value) {
@@ -636,20 +510,35 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage>
     }
   }
 
-  void _editAppointment() {
+  void _callVeterinarian(String phone) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Función de editar cita próximamente'),
-        backgroundColor: Color(0xFF81D4FA),
+      SnackBar(
+        content: Text('Llamando a $phone...'),
+        backgroundColor: const Color(0xFF4CAF50),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
-  void _shareAppointment() {
+  void _emailVeterinarian(String email) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Información de la cita copiada'),
-        backgroundColor: Color(0xFF4CAF50),
+      SnackBar(
+        content: Text('Abriendo email para $email...'),
+        backgroundColor: const Color(0xFF2196F3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  void _openMap(String address) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Abriendo mapa para: $address'),
+        backgroundColor: const Color(0xFF4CAF50),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -670,6 +559,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage>
     if (confirmed == true) {
       setState(() {
         appointment['status'] = AppointmentStatus.cancelled;
+        status = AppointmentStatus.cancelled;
       });
 
       if (mounted) {
@@ -686,49 +576,5 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage>
         );
       }
     }
-  }
-
-  void _rescheduleAppointment() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Reprogramar cita próximamente'),
-        backgroundColor: const Color(0xFF81D4FA),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
-  void _callVeterinarian(String phone) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Llamar a $phone'),
-        backgroundColor: const Color(0xFF4CAF50),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
-  void _emailVeterinarian(String email) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Enviar email a $email'),
-        backgroundColor: const Color(0xFF4CAF50),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
-  void _openMap(String address) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Abrir mapa: $address'),
-        backgroundColor: const Color(0xFF4CAF50),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
   }
 }

@@ -568,14 +568,10 @@ class _MyPetsPageState extends State<MyPetsPage>
   }
 
   void _editPet(Map<String, String> pet, int index) {
-    // Implementar navegación a editar mascota
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Editar ${pet['name']}'),
-        backgroundColor: const Color(0xFF4CAF50),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
+    Navigator.pushNamed(
+      context,
+      '/add-pet',
+      arguments: {'mode': 'edit', 'pet': pet, 'index': index},
     );
   }
 
@@ -584,14 +580,10 @@ class _MyPetsPageState extends State<MyPetsPage>
   }
 
   void _scheduleAppointment(Map<String, String> pet) {
-    // Implementar navegación a agendar cita
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Agendar cita para ${pet['name']}'),
-        backgroundColor: const Color(0xFFFF7043),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
+    Navigator.pushNamed(
+      context,
+      '/schedule-appointment',
+      arguments: {'selectedPet': pet},
     );
   }
 
