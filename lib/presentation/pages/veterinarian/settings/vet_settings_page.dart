@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/services/user_service.dart';
 
 class VetSettingsPage extends StatefulWidget {
   const VetSettingsPage({super.key});
@@ -8,12 +9,30 @@ class VetSettingsPage extends StatefulWidget {
 }
 
 class _VetSettingsPageState extends State<VetSettingsPage> {
+  Map<String, dynamic> userData = {};
   bool _consultationReminders = true;
   int _reminderMinutes = 15;
   bool _patientDataEncryption = true;
 
   @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final user = await UserService.getCurrentUser();
+    setState(() {
+      userData = user;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (userData.isEmpty) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -39,13 +58,10 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
           children: [
             _buildUserHeader(),
             const SizedBox(height: 24),
-
             _buildProfessionalSettings(),
             const SizedBox(height: 20),
-
             _buildSecuritySettings(),
             const SizedBox(height: 20),
-
             _buildAccountSettings(),
           ],
         ),
@@ -55,20 +71,19 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
 
   Widget _buildUserHeader() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF0D9488), Color(0xFF14B8A6)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF0D9488).withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -79,18 +94,18 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
             height: 60,
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(15),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(Icons.person, color: Colors.white, size: 30),
+            child: const Icon(Icons.person, color: Colors.white, size: 32),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Dr. María González',
-                  style: TextStyle(
+                Text(
+                  userData['fullName'] ?? 'Dr. Usuario',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

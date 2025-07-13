@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-// Páginas públicas
+import 'core/injection/injection.dart';
+import 'core/network/api_client.dart';
+import 'core/storage/shared_preferences_helper.dart';
+
 import 'presentation/pages/public/splash_screen.dart';
 import 'presentation/pages/public/landing_page.dart';
 import 'presentation/pages/public/login_page.dart';
 import 'presentation/pages/public/register_type_selection_page.dart';
 import 'presentation/pages/public/register_owner_page.dart';
 import 'presentation/pages/public/register_veterinarian_page.dart';
-import 'presentation/pages/public/email_verification_page.dart';
 
-// Dashboards y navegación
 import 'presentation/pages/owner/dashboard/owner_dashboard_page.dart';
 import 'presentation/pages/veterinarian/dashboard/veterinarian_dashboard_page.dart';
 import 'presentation/widgets/common/bottom_navigation_bar.dart';
 
-// Páginas del dueño
 import 'presentation/pages/owner/pets/my_pets_page.dart';
 import 'presentation/pages/owner/pets/add_pet_page.dart';
 import 'presentation/pages/owner/pets/edit_pet_page.dart';
@@ -31,7 +31,6 @@ import 'presentation/pages/owner/medical_records/active_treatments_page.dart';
 import 'presentation/pages/common/notifications/notifications_page.dart';
 import 'presentation/pages/owner/profile/owner_profile_page.dart';
 
-// Páginas del veterinario
 import 'presentation/pages/veterinarian/schedule/my_schedule_page.dart';
 import 'presentation/pages/veterinarian/appointments/appointment_detail_vet_page.dart';
 import 'presentation/pages/veterinarian/medical_records/create_medical_record_page.dart';
@@ -44,7 +43,10 @@ import 'presentation/pages/veterinarian/schedule/configure_schedule_page.dart';
 import 'presentation/pages/veterinarian/settings/vet_settings_page.dart';
 import 'presentation/pages/veterinarian/analytics/statistics_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await setupInjection();
+  sl<ApiClient>().initialize();
   runApp(const MyApp());
 }
 
@@ -60,56 +62,46 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.green,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const SplashScreen(),
+      home: const AuthWrapper(),
       routes: {
-        // Rutas públicas
         '/landing': (context) => const LandingPage(),
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterTypeSelectionPage(),
         '/register/owner': (context) => const RegisterOwnerPage(),
         '/register/veterinarian': (context) => const RegisterVeterinarianPage(),
-        '/email-verification': (context) => const EmailVerificationPage(),
         '/professional-verification': (context) => const Placeholder(),
         '/reset-password': (context) => const Placeholder(),
 
-        // Dashboards principales
         '/dashboard': (context) => const DashboardWrapper(),
         '/dashboard/owner': (context) => const MainScreenOwner(),
         '/dashboard/veterinarian': (context) => const MainScreenVeterinarian(),
 
-        // Rutas del dueño - Mascotas
         '/my-pets': (context) => const MyPetsPage(),
         '/add-pet': (context) => const AddPetPage(),
         '/edit-pet': (context) => const EditPetPage(),
         '/pet-detail': (context) => const PetDetailPage(),
 
-        // Rutas del dueño - Veterinarios
         '/search-veterinarians': (context) => const SearchVeterinariansPage(),
         '/veterinarians-list': (context) => const VeterinariansListPage(),
         '/veterinarian-profile': (context) => const VeterinarianProfilePage(),
 
-        // Rutas del dueño - Citas
         '/schedule-appointment': (context) => const ScheduleAppointmentPage(),
         '/my-appointments': (context) => const MyAppointmentsPage(),
         '/appointment-detail': (context) => const AppointmentDetailPage(),
 
-        // Rutas del dueño - Registros médicos
         '/medical-record': (context) => const MedicalRecordPage(),
         '/consultation-detail': (context) => const ConsultationDetailPage(),
         '/vaccination-history': (context) => const VaccinationHistoryPage(),
         '/active-treatments': (context) => const ActiveTreatmentsPage(),
 
-        // Rutas del veterinario - Agenda
         '/my-schedule': (context) => const MySchedulePage(),
         '/appointment-detail-vet':
             (context) => const AppointmentDetailVetPage(),
 
-        // Rutas del veterinario - Registros médicos
         '/create-medical-record': (context) => const CreateMedicalRecordPage(),
         '/prescribe-treatment': (context) => const PrescribeTreatmentPage(),
         '/register-vaccination': (context) => const RegisterVaccinationPage(),
 
-        // Rutas del veterinario - Pacientes
         '/patients-list': (context) => const PatientsListPage(),
         '/patient-history': (context) {
           final args =
@@ -118,17 +110,55 @@ class MyApp extends StatelessWidget {
           return PatientHistoryPage(patient: args);
         },
 
-        // Rutas de notificaciones
         '/notifications': (context) => const NotificationsPage(),
 
-        // Rutas de perfil
         '/owner-profile': (context) => const OwnerProfilePage(),
         '/professional-profile': (context) => const ProfessionalProfilePage(),
 
-        // Rutas de configuración
         '/configure-schedule': (context) => const ConfigureSchedulePage(),
         '/vet-settings': (context) => const VetSettingsPage(),
         '/statistics': (context) => const StatisticsPage(),
+      },
+    );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: SharedPreferencesHelper.isLoggedIn(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.data == true) {
+          return FutureBuilder<String?>(
+            future: SharedPreferencesHelper.getUserRole(),
+            builder: (context, roleSnapshot) {
+              if (roleSnapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              if (roleSnapshot.data == 'PET_OWNER') {
+                return const MainScreenOwner();
+              } else if (roleSnapshot.data == 'VETERINARIAN') {
+                return const MainScreenVeterinarian();
+              }
+
+              return const LoginPage();
+            },
+          );
+        }
+
+        return const SplashScreen();
       },
     );
   }
@@ -139,16 +169,27 @@ class DashboardWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const bool isVeterinarian = false; //true para probar veterinario
+    return FutureBuilder<String?>(
+      future: SharedPreferencesHelper.getUserRole(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-    return isVeterinarian
-        ? const MainScreenVeterinarian()
-        // ignore: dead_code
-        : const MainScreenOwner();
+        if (snapshot.data == 'PET_OWNER') {
+          return const MainScreenOwner();
+        } else if (snapshot.data == 'VETERINARIAN') {
+          return const MainScreenVeterinarian();
+        }
+
+        return const LoginPage();
+      },
+    );
   }
 }
 
-// Screen principal para dueños con navegación
 class MainScreenOwner extends StatefulWidget {
   const MainScreenOwner({super.key});
 
@@ -184,7 +225,6 @@ class _MainScreenOwnerState extends State<MainScreenOwner> {
   }
 }
 
-// Screen principal para veterinarios con navegación
 class MainScreenVeterinarian extends StatefulWidget {
   const MainScreenVeterinarian({super.key});
 

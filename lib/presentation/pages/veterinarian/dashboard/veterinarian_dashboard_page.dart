@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/services/user_service.dart';
 
 class VeterinarianDashboardPage extends StatefulWidget {
   const VeterinarianDashboardPage({super.key});
@@ -9,6 +10,21 @@ class VeterinarianDashboardPage extends StatefulWidget {
 }
 
 class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
+  String userGreeting = 'Cargando...';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final greeting = await UserService.getUserGreeting();
+    setState(() {
+      userGreeting = greeting;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -59,9 +75,9 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Dr. María González',
-                        style: TextStyle(
+                      Text(
+                        userGreeting,
+                        style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,

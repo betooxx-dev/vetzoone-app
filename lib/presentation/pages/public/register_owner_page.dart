@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../core/injection/injection.dart';
+import '../../../domain/usecases/auth/register_usecase.dart';
+import '../../../core/errors/exceptions.dart';
 
 class RegisterOwnerPage extends StatefulWidget {
   const RegisterOwnerPage({super.key});
@@ -9,7 +12,8 @@ class RegisterOwnerPage extends StatefulWidget {
 
 class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -22,7 +26,8 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
@@ -36,15 +41,52 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
         _isLoading = true;
       });
 
-      // Simular llamada API
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        final registerUseCase = sl<RegisterUseCase>();
+        await registerUseCase.call({
+          'firstName': _firstNameController.text.trim(),
+          'lastName': _lastNameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'phone': _phoneController.text.trim(),
+          'password': _passwordController.text,
+          'role': 'PET_OWNER',
+        });
 
-      setState(() {
-        _isLoading = false;
-      });
+        if (mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/login',
+            (route) => route.settings.name == '/landing',
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cuenta creada exitosamente. Inicia sesión'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          String errorMessage = 'Error al registrar usuario';
 
-      if (mounted) {
-        Navigator.pushNamed(context, '/email-verification');
+          if (e is ConflictException) {
+            errorMessage = 'El correo ya está registrado';
+          } else if (e is ValidationException) {
+            errorMessage = 'Datos inválidos';
+          } else if (e is ServerException) {
+            errorMessage = e.message;
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     } else if (!_acceptTerms) {
       _showTermsDialog();
@@ -66,10 +108,7 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Entendido',
-                  style: TextStyle(color: Color(0xFF4CAF50)),
-                ),
+                child: const Text('Entendido'),
               ),
             ],
           ),
@@ -79,18 +118,21 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: _buildBackButton(),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildBackButton(),
               const SizedBox(height: 20),
               _buildHeader(),
-              const SizedBox(height: 32),
-              _buildRegistrationForm(),
+              const SizedBox(height: 40),
+              _buildRegisterForm(),
             ],
           ),
         ),
@@ -100,14 +142,12 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
 
   Widget _buildBackButton() {
     return Container(
-      width: 48,
-      height: 48,
+      margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
             color: Colors.black.withOpacity(0.08),
             blurRadius: 10,
             offset: const Offset(0, 2),
@@ -127,69 +167,48 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
 
   Widget _buildHeader() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    // ignore: deprecated_member_use
-                    color: const Color(0xFF4CAF50).withOpacity(0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.pets_rounded,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 16),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Registro Dueño',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                  Text(
-                    'Crea tu cuenta para cuidar mejor a tu mascota',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF757575),
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        Center(
+          child: Image.asset(
+            'assets/images/LogoV.png',
+            width: 200,
+            height: 120,
+            fit: BoxFit.contain,
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          'Crear cuenta de dueño',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF212121),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Regístrate para cuidar mejor a tu mascota',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            color: Color(0xFF757575),
+            fontWeight: FontWeight.w400,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildRegistrationForm() {
+  Widget _buildRegisterForm() {
     return Form(
       key: _formKey,
       child: Column(
         children: [
-          _buildNameField(),
+          _buildFirstNameField(),
+          const SizedBox(height: 20),
+          _buildLastNameField(),
           const SizedBox(height: 20),
           _buildEmailField(),
           const SizedBox(height: 20),
@@ -209,14 +228,14 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
     );
   }
 
-  Widget _buildNameField() {
+  Widget _buildFirstNameField() {
     return TextFormField(
-      controller: _nameController,
+      controller: _firstNameController,
       textCapitalization: TextCapitalization.words,
       style: const TextStyle(fontSize: 16),
       decoration: InputDecoration(
-        labelText: 'Nombre completo',
-        hintText: 'Ej: Juan Pérez',
+        labelText: 'Nombre',
+        hintText: 'Ej: Juan',
         prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF4CAF50)),
         filled: true,
         fillColor: Colors.white,
@@ -245,8 +264,52 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
         if (value == null || value.trim().isEmpty) {
           return 'Por favor ingresa tu nombre';
         }
-        if (value.trim().length < 2) {
-          return 'El nombre debe tener al menos 2 caracteres';
+        if (value.trim().length < 2 || value.trim().length > 50) {
+          return 'El nombre debe tener entre 2 y 50 caracteres';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildLastNameField() {
+    return TextFormField(
+      controller: _lastNameController,
+      textCapitalization: TextCapitalization.words,
+      style: const TextStyle(fontSize: 16),
+      decoration: InputDecoration(
+        labelText: 'Apellido',
+        hintText: 'Ej: Pérez',
+        prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF4CAF50)),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFFE57373)),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return 'Por favor ingresa tu apellido';
+        }
+        if (value.trim().length < 2 || value.trim().length > 50) {
+          return 'El apellido debe tener entre 2 y 50 caracteres';
         }
         return null;
       },
@@ -348,7 +411,7 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
       style: const TextStyle(fontSize: 16),
       decoration: InputDecoration(
         labelText: 'Contraseña',
-        hintText: 'Mínimo 6 caracteres',
+        hintText: 'Mínimo 9 caracteres',
         prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF4CAF50)),
         suffixIcon: IconButton(
           onPressed: () {
@@ -386,10 +449,10 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Por favor ingresa una contraseña';
+          return 'Por favor ingresa tu contraseña';
         }
-        if (value.length < 6) {
-          return 'La contraseña debe tener al menos 6 caracteres';
+        if (value.length < 9) {
+          return 'La contraseña debe tener al menos 9 caracteres';
         }
         return null;
       },
@@ -455,23 +518,16 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 24,
-          height: 24,
-          child: Checkbox(
-            value: _acceptTerms,
-            onChanged: (value) {
-              setState(() {
-                _acceptTerms = value ?? false;
-              });
-            },
-            activeColor: const Color(0xFF4CAF50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
+        Checkbox(
+          value: _acceptTerms,
+          onChanged: (value) {
+            setState(() {
+              _acceptTerms = value ?? false;
+            });
+          },
+          activeColor: const Color(0xFF4CAF50),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         ),
-        const SizedBox(width: 12),
         Expanded(
           child: GestureDetector(
             onTap: () {
@@ -479,32 +535,9 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
                 _acceptTerms = !_acceptTerms;
               });
             },
-            child: RichText(
-              text: const TextSpan(
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF757575),
-                  height: 1.4,
-                ),
-                children: [
-                  TextSpan(text: 'Acepto los '),
-                  TextSpan(
-                    text: 'Términos y Condiciones',
-                    style: TextStyle(
-                      color: Color(0xFF4CAF50),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  TextSpan(text: ' y la '),
-                  TextSpan(
-                    text: 'Política de Privacidad',
-                    style: TextStyle(
-                      color: Color(0xFF4CAF50),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+            child: const Text(
+              'Acepto los términos y condiciones y la política de privacidad',
+              style: TextStyle(fontSize: 14, color: Color(0xFF424242)),
             ),
           ),
         ),
@@ -523,7 +556,6 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
         ),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
             color: const Color(0xFF4CAF50).withOpacity(0.3),
             blurRadius: 15,
             offset: const Offset(0, 6),
@@ -565,17 +597,21 @@ class _RegisterOwnerPageState extends State<RegisterOwnerPage> {
       children: [
         const Text(
           '¿Ya tienes cuenta? ',
-          style: TextStyle(color: Color(0xFF757575), fontSize: 16),
+          style: TextStyle(color: Color(0xFF757575), fontSize: 14),
         ),
         TextButton(
           onPressed: () {
-            Navigator.pushNamed(context, '/login');
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/login',
+              (route) => route.settings.name == '/landing',
+            );
           },
           child: const Text(
             'Inicia sesión',
             style: TextStyle(
               color: Color(0xFF4CAF50),
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
           ),

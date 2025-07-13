@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/services/user_service.dart';
 
 class OwnerProfilePage extends StatefulWidget {
   const OwnerProfilePage({super.key});
@@ -9,26 +10,11 @@ class OwnerProfilePage extends StatefulWidget {
 
 class _OwnerProfilePageState extends State<OwnerProfilePage> {
   bool _isEditing = false;
+  Map<String, dynamic> userData = {};
 
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _emergencyContactController = TextEditingController();
-  final _emergencyPhoneController = TextEditingController();
-
-  Map<String, dynamic> userData = {
-    'name': 'María González',
-    'email': 'maria.gonzalez@email.com',
-    'phone': '+52 999 123 4567',
-    'address': 'Calle Principal #123, Mérida, Yucatán',
-    'emergencyContact': 'Juan González',
-    'emergencyPhone': '+52 999 765 4321',
-    'registrationDate': '15 de Marzo, 2024',
-    'totalPets': 3,
-    'totalAppointments': 12,
-    'profileImage': 'https://via.placeholder.com/120',
-  };
 
   @override
   void initState() {
@@ -36,13 +22,26 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
     _loadUserData();
   }
 
-  void _loadUserData() {
-    _nameController.text = userData['name'];
-    _emailController.text = userData['email'];
-    _phoneController.text = userData['phone'];
-    _addressController.text = userData['address'] ?? '';
-    _emergencyContactController.text = userData['emergencyContact'] ?? '';
-    _emergencyPhoneController.text = userData['emergencyPhone'] ?? '';
+  Future<void> _loadUserData() async {
+    final user = await UserService.getCurrentUser();
+    setState(() {
+      userData = {
+        'name': user['fullName'],
+        'email': user['email'],
+        'phone': user['phone'],
+        'registrationDate': '15 de Marzo, 2024',
+        'totalPets': 3,
+        'totalAppointments': 12,
+        'profileImage': user['profilePhoto'],
+      };
+    });
+    _updateControllers();
+  }
+
+  void _updateControllers() {
+    _nameController.text = userData['name'] ?? '';
+    _emailController.text = userData['email'] ?? '';
+    _phoneController.text = userData['phone'] ?? '';
   }
 
   @override
@@ -50,14 +49,15 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _addressController.dispose();
-    _emergencyContactController.dispose();
-    _emergencyPhoneController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (userData.isEmpty) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -89,23 +89,12 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            // Header con foto y info básica
             _buildProfileHeader(),
             const SizedBox(height: 20),
-
-            // Estadísticas rápidas
             _buildStatsCard(),
             const SizedBox(height: 20),
-
-            // Información personal
             _buildPersonalInfoCard(),
             const SizedBox(height: 20),
-
-            // Contacto de emergencia
-            _buildEmergencyContactCard(),
-            const SizedBox(height: 20),
-
-            // Opciones adicionales
             _buildOptionsCard(),
           ],
         ),
@@ -130,7 +119,6 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
       ),
       child: Column(
         children: [
-          // Foto de perfil
           Stack(
             children: [
               Container(
@@ -142,7 +130,8 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
                 ),
                 child: ClipOval(
                   child:
-                      userData['profileImage'] != null
+                      (userData['profileImage'] != null &&
+                              userData['profileImage'].isNotEmpty)
                           ? Image.network(
                             userData['profileImage'],
                             fit: BoxFit.cover,
@@ -177,10 +166,8 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             ],
           ),
           const SizedBox(height: 16),
-
-          // Nombre
           Text(
-            userData['name'],
+            userData['name'] ?? '',
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
@@ -188,15 +175,11 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             ),
           ),
           const SizedBox(height: 4),
-
-          // Email
           Text(
-            userData['email'],
+            userData['email'] ?? '',
             style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
           ),
           const SizedBox(height: 8),
-
-          // Fecha de registro
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -330,7 +313,6 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             ),
           ),
           const SizedBox(height: 20),
-
           _buildInfoField(
             icon: Icons.person_outline,
             label: 'Nombre completo',
@@ -338,75 +320,17 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             enabled: _isEditing,
           ),
           const SizedBox(height: 16),
-
           _buildInfoField(
             icon: Icons.email_outlined,
             label: 'Correo electrónico',
             controller: _emailController,
-            enabled: false, // Email no se puede editar
+            enabled: false,
           ),
           const SizedBox(height: 16),
-
           _buildInfoField(
             icon: Icons.phone_outlined,
             label: 'Teléfono',
             controller: _phoneController,
-            enabled: _isEditing,
-          ),
-          const SizedBox(height: 16),
-
-          _buildInfoField(
-            icon: Icons.location_on_outlined,
-            label: 'Dirección',
-            controller: _addressController,
-            enabled: _isEditing,
-            maxLines: 2,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmergencyContactCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Contacto de Emergencia',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          _buildInfoField(
-            icon: Icons.contact_phone_outlined,
-            label: 'Nombre del contacto',
-            controller: _emergencyContactController,
-            enabled: _isEditing,
-          ),
-          const SizedBox(height: 16),
-
-          _buildInfoField(
-            icon: Icons.phone_outlined,
-            label: 'Teléfono de emergencia',
-            controller: _emergencyPhoneController,
             enabled: _isEditing,
           ),
         ],
@@ -424,45 +348,47 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Color(0xFF6B7280),
-            fontWeight: FontWeight.w500,
-          ),
+        Row(
+          children: [
+            Icon(icon, size: 20, color: const Color(0xFF6B7280)),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF6B7280),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: enabled ? const Color(0xFFF9FAFB) : const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color:
-                  enabled ? const Color(0xFFD1D5DB) : const Color(0xFFE5E7EB),
+        TextFormField(
+          controller: controller,
+          enabled: enabled,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: enabled ? Colors.white : const Color(0xFFF8F9FA),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
             ),
-          ),
-          child: TextField(
-            controller: controller,
-            enabled: enabled,
-            maxLines: maxLines,
-            style: TextStyle(
-              fontSize: 14,
-              color:
-                  enabled ? const Color(0xFF1A1A1A) : const Color(0xFF6B7280),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
             ),
-            decoration: InputDecoration(
-              prefixIcon: Icon(
-                icon,
-                color:
-                    enabled ? const Color(0xFF0D9488) : const Color(0xFF9CA3AF),
-                size: 20,
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF0D9488)),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
             ),
           ),
         ),
@@ -489,7 +415,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Configuración',
+            'Opciones',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -497,21 +423,15 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             ),
           ),
           const SizedBox(height: 20),
-
           _buildOptionItem(
-            icon: Icons.security_outlined,
-            title: 'Cambiar Contraseña',
-            subtitle: 'Actualizar tu contraseña',
-            onTap: () {
-              _showChangePasswordDialog();
-            },
+            icon: Icons.lock_outline,
+            title: 'Cambiar contraseña',
+            onTap: _showChangePasswordDialog,
           ),
           _buildDivider(),
-
           _buildOptionItem(
             icon: Icons.logout,
-            title: 'Cerrar Sesión',
-            subtitle: 'Salir de la aplicación',
+            title: 'Cerrar sesión',
             onTap: _showLogoutDialog,
             isDestructive: true,
           ),
@@ -523,67 +443,35 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
   Widget _buildOptionItem({
     required IconData icon,
     required String title,
-    required String subtitle,
     required VoidCallback onTap,
     bool isDestructive = false,
   }) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color:
-                    isDestructive
-                        ? const Color(0xFFEF4444).withOpacity(0.1)
-                        : const Color(0xFF0D9488).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                icon,
-                size: 20,
-                color:
-                    isDestructive
-                        ? const Color(0xFFEF4444)
-                        : const Color(0xFF0D9488),
-              ),
+            Icon(
+              icon,
+              size: 20,
+              color: isDestructive ? Colors.red : const Color(0xFF6B7280),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color:
-                          isDestructive
-                              ? const Color(0xFFEF4444)
-                              : const Color(0xFF1A1A1A),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF6B7280),
-                    ),
-                  ),
-                ],
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: isDestructive ? Colors.red : const Color(0xFF1A1A1A),
+                ),
               ),
             ),
             Icon(
               Icons.arrow_forward_ios,
               size: 16,
-              color: const Color(0xFF9CA3AF),
+              color: isDestructive ? Colors.red : const Color(0xFF6B7280),
             ),
           ],
         ),
@@ -606,17 +494,12 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
   }
 
   void _saveProfile() {
-    // Aquí guardarías los cambios
     setState(() {
       userData['name'] = _nameController.text;
       userData['phone'] = _phoneController.text;
-      userData['address'] = _addressController.text;
-      userData['emergencyContact'] = _emergencyContactController.text;
-      userData['emergencyPhone'] = _emergencyPhoneController.text;
       _isEditing = false;
     });
 
-    // Mostrar mensaje de éxito
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Perfil actualizado correctamente'),
@@ -626,7 +509,6 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
   }
 
   void _changeProfileImage() {
-    // Implementar cambio de imagen de perfil
     showModalBottomSheet(
       context: context,
       builder:
@@ -640,7 +522,6 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
                   title: const Text('Tomar foto'),
                   onTap: () {
                     Navigator.pop(context);
-                    // Implementar cámara
                   },
                 ),
                 ListTile(
@@ -648,7 +529,6 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
                   title: const Text('Seleccionar de galería'),
                   onTap: () {
                     Navigator.pop(context);
-                    // Implementar galería
                   },
                 ),
               ],
@@ -658,33 +538,40 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
   }
 
   void _showChangePasswordDialog() {
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
             title: const Text('Cambiar Contraseña'),
-            content: const Column(
+            content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
+                  controller: currentPasswordController,
                   obscureText: true,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Contraseña actual',
                     border: OutlineInputBorder(),
                   ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 TextField(
+                  controller: newPasswordController,
                   obscureText: true,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Nueva contraseña',
                     border: OutlineInputBorder(),
                   ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 TextField(
+                  controller: confirmPasswordController,
                   obscureText: true,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Confirmar nueva contraseña',
                     border: OutlineInputBorder(),
                   ),
@@ -698,9 +585,28 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context);
-                  // Implementar cambio de contraseña
+                  if (newPasswordController.text ==
+                          confirmPasswordController.text &&
+                      newPasswordController.text.isNotEmpty) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Contraseña cambiada exitosamente'),
+                        backgroundColor: Color(0xFF0D9488),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Las contraseñas no coinciden'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0D9488),
+                ),
                 child: const Text('Cambiar'),
               ),
             ],
@@ -721,12 +627,9 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
                 child: const Text('Cancelar'),
               ),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFEF4444),
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                 onPressed: () {
                   Navigator.pop(context);
-                  // Implementar logout
                   Navigator.pushNamedAndRemoveUntil(
                     context,
                     '/login',

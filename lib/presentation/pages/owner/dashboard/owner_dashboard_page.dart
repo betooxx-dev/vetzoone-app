@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../widgets/cards/appointment_card.dart';
+import '../../../../core/services/user_service.dart';
 
 class OwnerDashboardPage extends StatefulWidget {
   const OwnerDashboardPage({super.key});
@@ -9,6 +10,21 @@ class OwnerDashboardPage extends StatefulWidget {
 }
 
 class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
+  String userGreeting = 'Cargando...';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final greeting = await UserService.getUserGreeting();
+    setState(() {
+      userGreeting = greeting;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,9 +76,9 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      '¡Hola, Usuario!',
-                      style: TextStyle(
+                    Text(
+                      userGreeting,
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
