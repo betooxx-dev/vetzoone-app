@@ -1,63 +1,61 @@
 import 'package:dio/dio.dart';
-import '../constants/api_endpoints.dart';
-import '../interceptors/auth_interceptor.dart';
 
 class ApiClient {
-  static final ApiClient _instance = ApiClient._internal();
-  factory ApiClient() => _instance;
-  ApiClient._internal();
+  final Dio _dio;
 
-  late final Dio _dio;
+  ApiClient({required Dio dio}) : _dio = dio;
 
   Dio get dio => _dio;
 
-  void initialize() {
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: ApiEndpoints.baseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
-        headers: {'Content-Type': 'application/json'},
-      ),
-    );
-
-    _dio.interceptors.add(AuthInterceptor());
-    _dio.interceptors.add(
-      LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        logPrint: (obj) => print(obj),
-      ),
-    );
+  Future<Response> get(String url, {Map<String, dynamic>? queryParameters}) async {
+    try {
+      return await _dio.get(url, queryParameters: queryParameters);
+    } catch (e) {
+      throw _handleError(e);
+    }
   }
 
-  Future<Response> get(
-    String path, {
-    Map<String, dynamic>? queryParameters,
-  }) async {
-    return await _dio.get(path, queryParameters: queryParameters);
+  Future<Response> post(String url, {dynamic data, Map<String, dynamic>? queryParameters}) async {
+    try {
+      return await _dio.post(url, data: data, queryParameters: queryParameters);
+    } catch (e) {
+      throw _handleError(e);
+    }
   }
 
-  Future<Response> post(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-  }) async {
-    return await _dio.post(path, data: data, queryParameters: queryParameters);
+  Future<Response> put(String url, {dynamic data, Map<String, dynamic>? queryParameters}) async {
+    try {
+      return await _dio.put(url, data: data, queryParameters: queryParameters);
+    } catch (e) {
+      throw _handleError(e);
+    }
   }
 
-  Future<Response> put(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-  }) async {
-    return await _dio.put(path, data: data, queryParameters: queryParameters);
+  Future<Response> delete(String url, {Map<String, dynamic>? queryParameters}) async {
+    try {
+      return await _dio.delete(url, queryParameters: queryParameters);
+    } catch (e) {
+      throw _handleError(e);
+    }
   }
 
-  Future<Response> delete(
-    String path, {
-    Map<String, dynamic>? queryParameters,
-  }) async {
-    return await _dio.delete(path, queryParameters: queryParameters);
+  Exception _handleError(dynamic error) {
+    if (error is DioException) {
+      switch (error.type) {
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+          return Exception('Tiempo de conexión agotado');
+        case DioExceptionType.badResponse:
+          return Exception('Error del servidor: ${error.response?.statusCode}');
+        case DioExceptionType.cancel:
+          return Exception('Solicitud cancelada');
+        case DioExceptionType.unknown:
+          return Exception('Error de conexión');
+        default:
+          return Exception('Error desconocido');
+      }
+    }
+    return Exception('Error inesperado: $error');
   }
 }

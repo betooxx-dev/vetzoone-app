@@ -1,9 +1,16 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../domain/entities/pet.dart';
+import '../../../blocs/pet/pet_bloc.dart';
+import '../../../blocs/pet/pet_event.dart';
+import '../../../blocs/pet/pet_state.dart';
+import '../../../widgets/common/image_picker_widget.dart';
 
 class EditPetPage extends StatefulWidget {
-  final Map<String, dynamic>? petData;
+  final Pet pet;
 
-  const EditPetPage({super.key, this.petData});
+  const EditPetPage({super.key, required this.pet});
 
   @override
   State<EditPetPage> createState() => _EditPetPageState();
@@ -11,467 +18,79 @@ class EditPetPage extends StatefulWidget {
 
 class _EditPetPageState extends State<EditPetPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _breedController = TextEditingController();
-  final _weightController = TextEditingController();
-  final _colorController = TextEditingController();
-  final _notesController = TextEditingController();
-
-  String? _selectedSpecies;
-  String? _selectedGender;
-  DateTime? _selectedBirthDate;
-
-  final List<String> _species = [
-    'Perro',
-    'Gato',
-    'Ave',
-    'Pez',
-    'Reptil',
-    'Hamster',
-    'Conejo',
-    'Otro',
-  ];
-
-  final List<String> _genders = ['Macho', 'Hembra'];
-
-  late Map<String, dynamic> petData;
+  late TextEditingController _nameController;
+  late TextEditingController _breedController;
+  late TextEditingController _descriptionController;
+  
+  late PetType _selectedType;
+  late PetGender _selectedGender;
+  late PetStatus _selectedStatus;
+  late DateTime _selectedDate;
+  File? _selectedImageFile;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _initializePetData();
-  }
-
-  void _initializePetData() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final arguments = ModalRoute.of(context)?.settings.arguments;
-      if (arguments != null && arguments is Map<String, dynamic>) {
-        setState(() {
-          petData = arguments;
-          _populateFields();
-        });
-      } else if (widget.petData != null) {
-        setState(() {
-          petData = widget.petData!;
-          _populateFields();
-        });
-      }
-    });
-  }
-
-  void _populateFields() {
-    _nameController.text = petData['name'] ?? '';
-    _breedController.text = petData['breed'] ?? '';
-    _weightController.text =
-        petData['weight']?.toString().replaceAll(' kg', '') ?? '';
-    _colorController.text = petData['color'] ?? '';
-    _notesController.text = petData['notes'] ?? '';
-    _selectedSpecies = petData['species'];
-    _selectedGender = petData['gender'];
-
-    if (petData['birthDate'] != null) {
-      try {
-        _selectedBirthDate = DateTime.parse(petData['birthDate']);
-      } catch (e) {
-        _selectedBirthDate = null;
-      }
-    }
+    _nameController = TextEditingController(text: widget.pet.name);
+    _breedController = TextEditingController(text: widget.pet.breed);
+    _descriptionController = TextEditingController(text: widget.pet.description ?? '');
+    _selectedType = widget.pet.type;
+    _selectedGender = widget.pet.gender;
+    _selectedStatus = widget.pet.status ?? PetStatus.HEALTHY;
+    _selectedDate = widget.pet.birthDate;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _breedController.dispose();
-    _weightController.dispose();
-    _colorController.dispose();
-    _notesController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      appBar: _buildAppBar(),
-      body: _buildBody(),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      title: const Text(
-        'Editar Mascota',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF212121),
-        ),
-      ),
-      backgroundColor: Colors.white,
-      elevation: 0,
-      leading: IconButton(
-        onPressed: () => Navigator.pop(context),
-        icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF212121)),
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [_buildHeader(), const SizedBox(height: 32), _buildForm()],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: const Color(0xFF4CAF50).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: const Icon(
-            Icons.edit_outlined,
-            color: Color(0xFF4CAF50),
-            size: 30,
-          ),
-        ),
-        const SizedBox(width: 16),
-        const Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Editar Mascota',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF212121),
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: BlocListener<PetBloc, PetState>(
+        listener: (context, state) {
+          if (state is PetLoading) {
+            setState(() => _isLoading = true);
+          } else {
+            setState(() => _isLoading = false);
+            if (state is PetOperationSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: const Color(0xFF4CAF50),
+                ),
+              );
+              Navigator.pop(context, true);
+            } else if (state is PetError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        },
+        child: Column(
+          children: [
+            _buildAppBar(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    _buildFormCard(),
+                    const SizedBox(height: 24),
+                    _buildSubmitButton(),
+                  ],
                 ),
               ),
-              Text(
-                'Actualiza la información de tu mascota',
-                style: TextStyle(fontSize: 14, color: Color(0xFF757575)),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildForm() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildBasicInfoSection(),
-          const SizedBox(height: 24),
-          _buildPhysicalInfoSection(),
-          const SizedBox(height: 24),
-          _buildAdditionalInfoSection(),
-          const SizedBox(height: 40),
-          _buildSaveButton(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBasicInfoSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Información Básica',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF212121),
-          ),
-        ),
-        const SizedBox(height: 16),
-        _buildTextField(
-          controller: _nameController,
-          label: 'Nombre',
-          hint: 'Ej: Max, Luna, Rocky',
-          icon: Icons.pets_rounded,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Por favor ingresa el nombre';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        _buildSpeciesDropdown(),
-        const SizedBox(height: 16),
-        _buildTextField(
-          controller: _breedController,
-          label: 'Raza',
-          hint: 'Ej: Labrador, Persa, Mestizo',
-          icon: Icons.category_outlined,
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Por favor ingresa la raza';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        _buildGenderDropdown(),
-      ],
-    );
-  }
-
-  Widget _buildPhysicalInfoSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Información Física',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF212121),
-          ),
-        ),
-        const SizedBox(height: 16),
-        _buildBirthDateField(),
-        const SizedBox(height: 16),
-        _buildTextField(
-          controller: _weightController,
-          label: 'Peso (kg)',
-          hint: 'Ej: 15.5',
-          icon: Icons.monitor_weight_outlined,
-          keyboardType: TextInputType.number,
-        ),
-        const SizedBox(height: 16),
-        _buildTextField(
-          controller: _colorController,
-          label: 'Color',
-          hint: 'Ej: Dorado, Negro, Blanco con manchas',
-          icon: Icons.palette_outlined,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAdditionalInfoSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Información Adicional',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF212121),
-          ),
-        ),
-        const SizedBox(height: 16),
-        _buildTextField(
-          controller: _notesController,
-          label: 'Notas (opcional)',
-          hint: 'Características especiales, comportamiento, etc.',
-          icon: Icons.note_outlined,
-          maxLines: 3,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    TextInputType? keyboardType,
-    int maxLines = 1,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      style: const TextStyle(fontSize: 16),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixIcon: Icon(icon, color: const Color(0xFF4CAF50)),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE57373)),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-      ),
-      validator: validator,
-    );
-  }
-
-  Widget _buildSpeciesDropdown() {
-    return DropdownButtonFormField<String>(
-      value: _selectedSpecies,
-      decoration: InputDecoration(
-        labelText: 'Especie',
-        hintText: 'Selecciona la especie',
-        prefixIcon: const Icon(Icons.pets_rounded, color: Color(0xFF4CAF50)),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-      ),
-      items:
-          _species.map((String species) {
-            return DropdownMenuItem<String>(
-              value: species,
-              child: Text(species),
-            );
-          }).toList(),
-      onChanged: (String? newValue) {
-        setState(() {
-          _selectedSpecies = newValue;
-        });
-      },
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Por favor selecciona una especie';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildGenderDropdown() {
-    return DropdownButtonFormField<String>(
-      value: _selectedGender,
-      decoration: InputDecoration(
-        labelText: 'Género',
-        hintText: 'Selecciona el género',
-        prefixIcon: Icon(
-          _selectedGender == 'Hembra'
-              ? Icons.female
-              : _selectedGender == 'Macho'
-              ? Icons.male
-              : Icons.pets_rounded,
-          color: const Color(0xFF4CAF50),
-        ),
-
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-      ),
-      items:
-          _genders.map((String gender) {
-            return DropdownMenuItem<String>(value: gender, child: Text(gender));
-          }).toList(),
-      onChanged: (String? newValue) {
-        setState(() {
-          _selectedGender = newValue;
-        });
-      },
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Por favor selecciona el género';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget _buildBirthDateField() {
-    return GestureDetector(
-      onTap: _selectBirthDate,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE0E0E0)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.cake_outlined, color: Color(0xFF4CAF50)),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Fecha de nacimiento',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF757575)),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _selectedBirthDate != null
-                        ? _formatDate(_selectedBirthDate!)
-                        : 'Selecciona la fecha de nacimiento',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color:
-                          _selectedBirthDate != null
-                              ? const Color(0xFF212121)
-                              : const Color(0xFF757575),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Color(0xFF757575),
-              size: 16,
             ),
           ],
         ),
@@ -479,114 +98,388 @@ class _EditPetPageState extends State<EditPetPage> {
     );
   }
 
-  Widget _buildSaveButton() {
+  Widget _buildAppBar() {
     return Container(
+      padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x10000000),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFF4CAF50).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: Color(0xFF4CAF50),
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Editar Mascota',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF212121),
+                  ),
+                ),
+                Text(
+                  'Actualiza la información de tu mascota',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF757575),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ImagePickerWidget(
+              imageFile: _selectedImageFile,
+              imageUrl: widget.pet.imageUrl,
+              onImageSelected: (file) {
+                setState(() {
+                  _selectedImageFile = file;
+                });
+              },
+              size: 120,
+            ),
+            const SizedBox(height: 24),
+            _buildTextField(
+              controller: _nameController,
+              label: 'Nombre de la mascota',
+              icon: Icons.pets,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Por favor ingresa el nombre';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 20),
+            _buildDropdown<PetType>(
+              label: 'Tipo de mascota',
+              icon: Icons.category,
+              value: _selectedType,
+              items: PetType.values.map((type) => DropdownMenuItem(
+                value: type,
+                child: Text(_getPetTypeText(type)),
+              )).toList(),
+              onChanged: (value) => setState(() => _selectedType = value!),
+            ),
+            const SizedBox(height: 20),
+            _buildTextField(
+              controller: _breedController,
+              label: 'Raza',
+              icon: Icons.info_outline,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Por favor ingresa la raza';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 20),
+            _buildDropdown<PetGender>(
+              label: 'Género',
+              icon: Icons.male,
+              value: _selectedGender,
+              items: PetGender.values.map((gender) => DropdownMenuItem(
+                value: gender,
+                child: Text(_getGenderText(gender)),
+              )).toList(),
+              onChanged: (value) => setState(() => _selectedGender = value!),
+            ),
+            const SizedBox(height: 20),
+            _buildDropdown<PetStatus>(
+              label: 'Estado de salud',
+              icon: Icons.health_and_safety,
+              value: _selectedStatus,
+              items: PetStatus.values.map((status) => DropdownMenuItem(
+                value: status,
+                child: Text(_getStatusText(status)),
+              )).toList(),
+              onChanged: (value) => setState(() => _selectedStatus = value!),
+            ),
+            const SizedBox(height: 20),
+            _buildDateField(),
+            const SizedBox(height: 20),
+            _buildTextField(
+              controller: _descriptionController,
+              label: 'Descripción (opcional)',
+              icon: Icons.description,
+              maxLines: 3,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    String? Function(String?)? validator,
+    int maxLines = 1,
+  }) {
+    return TextFormField(
+      controller: controller,
+      validator: validator,
+      maxLines: maxLines,
+      style: const TextStyle(fontSize: 16),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: const Color(0xFF4CAF50)),
+        filled: true,
+        fillColor: const Color(0xFFF8F9FA),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown<T>({
+    required String label,
+    required IconData icon,
+    required T value,
+    required List<DropdownMenuItem<T>> items,
+    required void Function(T?) onChanged,
+  }) {
+    return DropdownButtonFormField<T>(
+      value: value,
+      items: items,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: const Color(0xFF4CAF50)),
+        filled: true,
+        fillColor: const Color(0xFFF8F9FA),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateField() {
+    return GestureDetector(
+      onTap: _selectDate,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F9FA),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE0E0E0)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.calendar_today, color: Color(0xFF4CAF50)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Fecha de nacimiento',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF757575),
+                    ),
+                  ),
+                  Text(
+                    '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return SizedBox(
       width: double.infinity,
       height: 56,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: ElevatedButton(
-        onPressed: _savePet,
+        onPressed: _isLoading ? null : _submitForm,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
+          backgroundColor: const Color(0xFF4CAF50),
           foregroundColor: Colors.white,
           elevation: 0,
-          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: const Text(
-          'Guardar Cambios',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
+        child: _isLoading
+            ? const CircularProgressIndicator(color: Colors.white)
+            : const Text(
+                'Actualizar Mascota',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
       ),
     );
   }
 
-  Future<void> _selectBirthDate() async {
-    final picked = await showDatePicker(
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate:
-          _selectedBirthDate ??
-          DateTime.now().subtract(const Duration(days: 365)),
-      firstDate: DateTime.now().subtract(const Duration(days: 365 * 30)),
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
       lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF4CAF50),
-              onPrimary: Colors.white,
-              onSurface: Color(0xFF212121),
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
-
-    if (picked != null && picked != _selectedBirthDate) {
+    if (picked != null && picked != _selectedDate) {
       setState(() {
-        _selectedBirthDate = picked;
+        _selectedDate = picked;
       });
     }
   }
 
-  void _savePet() {
-    if (!_formKey.currentState!.validate()) {
-      return;
+  Future<void> _submitForm() async {
+    if (_formKey.currentState!.validate()) {
+      final updatedPet = Pet(
+        id: widget.pet.id,
+        name: _nameController.text.trim(),
+        type: _selectedType,
+        breed: _breedController.text.trim(),
+        gender: _selectedGender,
+        status: _selectedStatus,
+        description: _descriptionController.text.trim().isEmpty 
+            ? null 
+            : _descriptionController.text.trim(),
+        birthDate: _selectedDate,
+        imageUrl: widget.pet.imageUrl,
+        userId: widget.pet.userId,
+        createdAt: widget.pet.createdAt,
+        updatedAt: DateTime.now(),
+      );
+
+      context.read<PetBloc>().add(UpdatePetEvent(
+        petId: widget.pet.id,
+        pet: updatedPet,
+        imageFile: _selectedImageFile,
+      ));
     }
-
-    final updatedPet = {
-      ...petData,
-      'name': _nameController.text.trim(),
-      'species': _selectedSpecies,
-      'breed': _breedController.text.trim(),
-      'gender': _selectedGender,
-      'weight':
-          _weightController.text.isNotEmpty
-              ? '${_weightController.text.trim()} kg'
-              : null,
-      'color': _colorController.text.trim(),
-      'notes': _notesController.text.trim(),
-      'birthDate': _selectedBirthDate?.toIso8601String(),
-    };
-
-    Navigator.pop(context, updatedPet);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${_nameController.text} actualizado exitosamente'),
-        backgroundColor: const Color(0xFF4CAF50),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Enero',
-      'Febrero',
-      'Marzo',
-      'Abril',
-      'Mayo',
-      'Junio',
-      'Julio',
-      'Agosto',
-      'Septiembre',
-      'Octubre',
-      'Noviembre',
-      'Diciembre',
-    ];
+  String _getPetTypeText(PetType type) {
+    switch (type) {
+      case PetType.DOG:
+        return 'Perro';
+      case PetType.CAT:
+        return 'Gato';
+      case PetType.BIRD:
+        return 'Ave';
+      case PetType.FISH:
+        return 'Pez';
+      case PetType.RABBIT:
+        return 'Conejo';
+      case PetType.HAMSTER:
+        return 'Hámster';
+      case PetType.REPTILE:
+        return 'Reptil';
+      case PetType.OTHER:
+        return 'Otro';
+    }
+  }
 
-    return '${date.day} de ${months[date.month - 1]} de ${date.year}';
+  String _getGenderText(PetGender gender) {
+    switch (gender) {
+      case PetGender.MALE:
+        return 'Macho';
+      case PetGender.FEMALE:
+        return 'Hembra';
+      case PetGender.UNKNOWN:
+        return 'Desconocido';
+    }
+  }
+
+  String _getStatusText(PetStatus status) {
+    switch (status) {
+      case PetStatus.HEALTHY:
+        return 'Saludable';
+      case PetStatus.TREATMENT:
+        return 'En tratamiento';
+      case PetStatus.ATTENTION:
+        return 'Requiere atención';
+    }
   }
 }

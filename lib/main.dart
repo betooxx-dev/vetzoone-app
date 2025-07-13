@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/injection/injection.dart';
-import 'core/network/api_client.dart';
 import 'core/storage/shared_preferences_helper.dart';
+
+import 'presentation/blocs/pet/pet_bloc.dart';
 
 import 'presentation/pages/public/splash_screen.dart';
 import 'presentation/pages/public/landing_page.dart';
@@ -43,10 +45,11 @@ import 'presentation/pages/veterinarian/schedule/configure_schedule_page.dart';
 import 'presentation/pages/veterinarian/settings/vet_settings_page.dart';
 import 'presentation/pages/veterinarian/analytics/statistics_page.dart';
 
+import 'domain/entities/pet.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await setupInjection();
-  sl<ApiClient>().initialize();
+  await init();
   runApp(const MyApp());
 }
 
@@ -55,70 +58,83 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'VetZoone',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: const AuthWrapper(),
-      routes: {
-        '/landing': (context) => const LandingPage(),
-        '/login': (context) => const LoginPage(),
-        '/register': (context) => const RegisterTypeSelectionPage(),
-        '/register/owner': (context) => const RegisterOwnerPage(),
-        '/register/veterinarian': (context) => const RegisterVeterinarianPage(),
-        '/professional-verification': (context) => const Placeholder(),
-        '/reset-password': (context) => const Placeholder(),
+    return MultiBlocProvider(
+      providers: [BlocProvider<PetBloc>(create: (context) => sl<PetBloc>())],
+      child: MaterialApp(
+        title: 'VetZoone',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primarySwatch: Colors.green,
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+        ),
+        home: const AuthWrapper(),
+        routes: {
+          '/landing': (context) => const LandingPage(),
+          '/login': (context) => const LoginPage(),
+          '/register': (context) => const RegisterTypeSelectionPage(),
+          '/register/owner': (context) => const RegisterOwnerPage(),
+          '/register/veterinarian':
+              (context) => const RegisterVeterinarianPage(),
+          '/professional-verification': (context) => const Placeholder(),
+          '/reset-password': (context) => const Placeholder(),
 
-        '/dashboard': (context) => const DashboardWrapper(),
-        '/dashboard/owner': (context) => const MainScreenOwner(),
-        '/dashboard/veterinarian': (context) => const MainScreenVeterinarian(),
+          '/dashboard': (context) => const DashboardWrapper(),
+          '/dashboard/owner': (context) => const MainScreenOwner(),
+          '/dashboard/veterinarian':
+              (context) => const MainScreenVeterinarian(),
 
-        '/my-pets': (context) => const MyPetsPage(),
-        '/add-pet': (context) => const AddPetPage(),
-        '/edit-pet': (context) => const EditPetPage(),
-        '/pet-detail': (context) => const PetDetailPage(),
+          '/my-pets': (context) => const MyPetsPage(),
+          '/add-pet': (context) => const AddPetPage(),
+          '/edit-pet': (context) {
+            final Pet pet = ModalRoute.of(context)!.settings.arguments as Pet;
+            return EditPetPage(pet: pet);
+          },
+          '/pet-detail': (context) {
+            final String petId =
+                ModalRoute.of(context)!.settings.arguments as String;
+            return PetDetailPage(petId: petId);
+          },
 
-        '/search-veterinarians': (context) => const SearchVeterinariansPage(),
-        '/veterinarians-list': (context) => const VeterinariansListPage(),
-        '/veterinarian-profile': (context) => const VeterinarianProfilePage(),
+          '/search-veterinarians': (context) => const SearchVeterinariansPage(),
+          '/veterinarians-list': (context) => const VeterinariansListPage(),
+          '/veterinarian-profile': (context) => const VeterinarianProfilePage(),
 
-        '/schedule-appointment': (context) => const ScheduleAppointmentPage(),
-        '/my-appointments': (context) => const MyAppointmentsPage(),
-        '/appointment-detail': (context) => const AppointmentDetailPage(),
+          '/schedule-appointment': (context) => const ScheduleAppointmentPage(),
+          '/my-appointments': (context) => const MyAppointmentsPage(),
+          '/appointment-detail': (context) => const AppointmentDetailPage(),
 
-        '/medical-record': (context) => const MedicalRecordPage(),
-        '/consultation-detail': (context) => const ConsultationDetailPage(),
-        '/vaccination-history': (context) => const VaccinationHistoryPage(),
-        '/active-treatments': (context) => const ActiveTreatmentsPage(),
+          '/medical-record': (context) => const MedicalRecordPage(),
+          '/consultation-detail': (context) => const ConsultationDetailPage(),
+          '/vaccination-history': (context) => const VaccinationHistoryPage(),
+          '/active-treatments': (context) => const ActiveTreatmentsPage(),
 
-        '/my-schedule': (context) => const MySchedulePage(),
-        '/appointment-detail-vet':
-            (context) => const AppointmentDetailVetPage(),
+          '/my-schedule': (context) => const MySchedulePage(),
+          '/appointment-detail-vet':
+              (context) => const AppointmentDetailVetPage(),
 
-        '/create-medical-record': (context) => const CreateMedicalRecordPage(),
-        '/prescribe-treatment': (context) => const PrescribeTreatmentPage(),
-        '/register-vaccination': (context) => const RegisterVaccinationPage(),
+          '/create-medical-record':
+              (context) => const CreateMedicalRecordPage(),
+          '/prescribe-treatment': (context) => const PrescribeTreatmentPage(),
+          '/register-vaccination': (context) => const RegisterVaccinationPage(),
 
-        '/patients-list': (context) => const PatientsListPage(),
-        '/patient-history': (context) {
-          final args =
-              ModalRoute.of(context)?.settings.arguments
-                  as Map<String, dynamic>?;
-          return PatientHistoryPage(patient: args);
+          '/patients-list': (context) => const PatientsListPage(),
+          '/patient-history': (context) {
+            final args =
+                ModalRoute.of(context)?.settings.arguments
+                    as Map<String, dynamic>?;
+            return PatientHistoryPage(patient: args);
+          },
+
+          '/notifications': (context) => const NotificationsPage(),
+
+          '/owner-profile': (context) => const OwnerProfilePage(),
+          '/professional-profile': (context) => const ProfessionalProfilePage(),
+
+          '/configure-schedule': (context) => const ConfigureSchedulePage(),
+          '/vet-settings': (context) => const VetSettingsPage(),
+          '/statistics': (context) => const StatisticsPage(),
         },
-
-        '/notifications': (context) => const NotificationsPage(),
-
-        '/owner-profile': (context) => const OwnerProfilePage(),
-        '/professional-profile': (context) => const ProfessionalProfilePage(),
-
-        '/configure-schedule': (context) => const ConfigureSchedulePage(),
-        '/vet-settings': (context) => const VetSettingsPage(),
-        '/statistics': (context) => const StatisticsPage(),
-      },
+      ),
     );
   }
 }

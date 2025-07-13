@@ -14,24 +14,42 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final response = await apiClient.post(
-      ApiEndpoints.authLogin,
-      data: {'email': email, 'password': password},
-    );
-    return response.data;
+    try {
+      final url = '${ApiEndpoints.baseUrl}${ApiEndpoints.authLogin}';
+      final response = await apiClient.post(
+        url,
+        data: {
+          'email': email,
+          'password': password,
+        },
+      );
+      return response.data;
+    } catch (e) {
+      throw Exception('Error en login: $e');
+    }
   }
 
   @override
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
-    final response = await apiClient.post(
-      ApiEndpoints.authRegister,
-      data: userData,
-    );
-    return response.data;
+    try {
+      final url = '${ApiEndpoints.baseUrl}${ApiEndpoints.authRegister}';
+      final response = await apiClient.post(
+        url,
+        data: userData,
+      );
+      return response.data;
+    } catch (e) {
+      throw Exception('Error en registro: $e');
+    }
   }
 
   @override
   Future<void> logout() async {
-    await apiClient.post(ApiEndpoints.authLogout);
+    try {
+      final url = '${ApiEndpoints.baseUrl}${ApiEndpoints.authLogout}';
+      await apiClient.post(url);
+    } catch (e) {
+      throw Exception('Error en logout: $e');
+    }
   }
 }
