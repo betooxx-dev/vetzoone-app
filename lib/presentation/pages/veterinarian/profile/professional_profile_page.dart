@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../../../../core/services/user_service.dart';
+import '../../../../core/injection/injection.dart';
+import '../../../../data/datasources/user/user_remote_data_source.dart';
+import '../../../../core/storage/shared_preferences_helper.dart';
+import '../../../widgets/common/profile_image_picker_widget.dart';
 
 class ProfessionalProfilePage extends StatefulWidget {
   const ProfessionalProfilePage({super.key});
@@ -13,9 +18,12 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
     with TickerProviderStateMixin {
   late TabController _tabController;
   bool _isEditing = false;
+  bool _isLoading = false;
   Map<String, dynamic> professionalData = {};
+  File? _selectedImageFile;
 
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   final _experienceController = TextEditingController();
@@ -32,7 +40,9 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
     final user = await UserService.getCurrentUser();
     setState(() {
       professionalData = {
-        'name': user['fullName'],
+        'firstName': user['firstName'],
+        'lastName': user['lastName'],
+        'fullName': user['fullName'], // Para mostrar en el header
         'license': 'MV-12345',
         'email': user['email'],
         'phone': user['phone'],
@@ -61,7 +71,8 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
   }
 
   void _initializeControllers() {
-    _nameController.text = professionalData['name'] ?? '';
+    _firstNameController.text = professionalData['firstName'] ?? '';
+    _lastNameController.text = professionalData['lastName'] ?? '';
     _phoneController.text = professionalData['phone'] ?? '';
     _addressController.text = professionalData['address'] ?? '';
     _experienceController.text = professionalData['experience'] ?? '';
@@ -71,7 +82,8 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
   @override
   void dispose() {
     _tabController.dispose();
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
     _experienceController.dispose();
@@ -105,13 +117,26 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
             onPressed: () => Navigator.of(context).pop(),
           ),
           actions: [
-            IconButton(
-              icon: Icon(
-                _isEditing ? Icons.check : Icons.edit,
-                color: const Color(0xFF0D9488),
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0D9488)),
+                  ),
+                ),
+              )
+            else
+              IconButton(
+                icon: Icon(
+                  _isEditing ? Icons.check : Icons.edit,
+                  color: const Color(0xFF0D9488),
+                ),
+                onPressed: _isEditing ? _saveProfile : _toggleEditing,
               ),
-              onPressed: _isEditing ? _saveProfile : _toggleEditing,
-            ),
           ],
           bottom: TabBar(
             controller: _tabController,
@@ -149,8 +174,15 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
             children: [
               _buildInfoField(
                 icon: Icons.person_outline,
-                label: 'Nombre completo',
-                controller: _nameController,
+                label: 'Nombre',
+                controller: _firstNameController,
+                enabled: _isEditing,
+              ),
+              const SizedBox(height: 16),
+              _buildInfoField(
+                icon: Icons.person,
+                label: 'Apellido',
+                controller: _lastNameController,
                 enabled: _isEditing,
               ),
               const SizedBox(height: 16),
@@ -263,30 +295,42 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
         children: [
           Row(
             children: [
-              Stack(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF0D9488),
-                        width: 3,
-                      ),
+              if (_isEditing)
+                ProfileImagePickerWidget(
+                  imageFile: _selectedImageFile,
+                  imageUrl: professionalData['profileImage'],
+                  onImageSelected: (file) {
+                    setState(() {
+                      _selectedImageFile = file;
+                    });
+                  },
+                  size: 80,
+                )
+              else
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF0D9488),
+                      width: 3,
                     ),
-                    child: ClipOval(
-                      child:
-                          (professionalData['profileImage'] != null &&
-                                  professionalData['profileImage'].isNotEmpty)
-                              ? Image.network(
+                  ),
+                  child: ClipOval(
+                    child: _selectedImageFile != null
+                        ? Image.file(
+                            _selectedImageFile!,
+                            fit: BoxFit.cover,
+                          )
+                        : (professionalData['profileImage'] != null &&
+                                professionalData['profileImage'].isNotEmpty)
+                            ? Image.network(
                                 professionalData['profileImage'],
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(
-                                    color: const Color(
-                                      0xFF0D9488,
-                                    ).withOpacity(0.1),
+                                    color: const Color(0xFF0D9488).withOpacity(0.1),
                                     child: const Icon(
                                       Icons.person,
                                       size: 40,
@@ -295,7 +339,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
                                   );
                                 },
                               )
-                              : Container(
+                            : Container(
                                 color: const Color(0xFF0D9488).withOpacity(0.1),
                                 child: const Icon(
                                   Icons.person,
@@ -303,38 +347,15 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
                                   color: Color(0xFF0D9488),
                                 ),
                               ),
-                    ),
                   ),
-                  if (_isEditing)
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: _changeProfileImage,
-                        child: Container(
-                          width: 24,
-                          height: 24,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF0D9488),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            color: Colors.white,
-                            size: 12,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+                ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      professionalData['name'] ?? '',
+                      professionalData['fullName'] ?? '',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -556,50 +577,85 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
     });
   }
 
-  void _saveProfile() {
+  Future<void> _saveProfile() async {
+    if (_isLoading) return;
+
     setState(() {
-      professionalData['name'] = _nameController.text;
-      professionalData['phone'] = _phoneController.text;
-      professionalData['address'] = _addressController.text;
-      professionalData['experience'] = _experienceController.text;
-      professionalData['bio'] = _bioController.text;
-      _isEditing = false;
+      _isLoading = true;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Perfil actualizado correctamente'),
-        backgroundColor: Color(0xFF0D9488),
-      ),
-    );
+    try {
+      final userId = await SharedPreferencesHelper.getUserId();
+      if (userId == null) {
+        throw Exception('No se encontró ID del usuario');
+      }
+
+      final userRemoteDataSource = sl<UserRemoteDataSource>();
+      
+      // Obtener nombre y apellido de los controladores
+      final firstName = _firstNameController.text.trim();
+      final lastName = _lastNameController.text.trim();
+
+      final userData = {
+        'first_name': firstName,
+        'last_name': lastName,
+        'phone': _phoneController.text.trim(),
+      };
+
+      Map<String, dynamic> updatedUser;
+
+      if (_selectedImageFile != null) {
+        updatedUser = await userRemoteDataSource.updateUserWithFile(
+          userId,
+          userData,
+          _selectedImageFile!,
+        );
+      } else {
+        updatedUser = await userRemoteDataSource.updateUser(userId, userData);
+      }
+
+      // Actualizar datos locales
+      setState(() {
+        professionalData['firstName'] = updatedUser['first_name'];
+        professionalData['lastName'] = updatedUser['last_name'];
+        professionalData['fullName'] = '${updatedUser['first_name']} ${updatedUser['last_name']}';
+        professionalData['phone'] = updatedUser['phone'];
+        if (updatedUser['profile_photo'] != null) {
+          professionalData['profileImage'] = updatedUser['profile_photo'];
+        }
+        _isEditing = false;
+        _selectedImageFile = null;
+      });
+
+      // Actualizar controladores
+      _initializeControllers();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Perfil actualizado correctamente'),
+            backgroundColor: Color(0xFF0D9488),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error actualizando perfil profesional: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al actualizar el perfil: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
-  void _changeProfileImage() {
-    showModalBottomSheet(
-      context: context,
-      builder:
-          (context) => Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.camera_alt),
-                  title: const Text('Tomar foto'),
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.photo_library),
-                  title: const Text('Seleccionar de galería'),
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-          ),
-    );
-  }
+
 }

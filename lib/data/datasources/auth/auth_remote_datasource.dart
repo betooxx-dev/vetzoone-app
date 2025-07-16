@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/constants/api_endpoints.dart';
 
@@ -33,12 +34,36 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
     try {
       final url = '${ApiEndpoints.baseUrl}${ApiEndpoints.authRegister}';
+      
+      // Logs detallados para depurar la petición
+      print('🌐 PETICIÓN HTTP REGISTRO:');
+      print('URL completa: $url');
+      print('Datos enviados: $userData');
+      print('Headers configurados en Dio: ${apiClient.dio.options.headers}');
+      
       final response = await apiClient.post(
         url,
         data: userData,
       );
+      
+      print('✅ RESPUESTA EXITOSA:');
+      print('Status: ${response.statusCode}');
+      print('Data: ${response.data}');
+      
       return response.data;
     } catch (e) {
+      print('❌ ERROR EN PETICIÓN HTTP:');
+      print('Error completo: $e');
+      
+      // Si es un DioException, mostrar más detalles
+      if (e is DioException) {
+        print('Tipo de error: ${e.type}');
+        print('Status code: ${e.response?.statusCode}');
+        print('Response data: ${e.response?.data}');
+        print('Request data: ${e.requestOptions.data}');
+        print('Request headers: ${e.requestOptions.headers}');
+      }
+      
       throw Exception('Error en registro: $e');
     }
   }

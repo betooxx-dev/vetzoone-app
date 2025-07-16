@@ -4,6 +4,7 @@ import '../network/api_client.dart';
 import '../interceptors/auth_interceptor.dart';
 import '../services/user_service.dart';
 import '../../data/datasources/auth/auth_remote_datasource.dart';
+import '../../data/datasources/user/user_remote_data_source.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/auth/login_usecase.dart';
@@ -17,15 +18,18 @@ import '../../domain/usecases/pet/add_pet_usecase.dart';
 import '../../domain/usecases/pet/update_pet_usecase.dart';
 import '../../domain/usecases/pet/delete_pet_usecase.dart';
 import '../../presentation/blocs/pet/pet_bloc.dart';
+import '../../data/datasources/vet/vet_remote_datasource.dart';
 
 final GetIt sl = GetIt.instance;
 
 Future<void> init() async {
   // Dio para Auth (puerto 3000)
   final authDio = Dio();
-  authDio.options.baseUrl = 'http://192.168.0.22:3000';
-  authDio.options.connectTimeout = const Duration(seconds: 30);
-  authDio.options.receiveTimeout = const Duration(seconds: 30);
+  // authDio.options.baseUrl = 'http://192.168.0.22:3000';
+  authDio.options.baseUrl = 'http://10.0.2.2:3000';
+  authDio.options.connectTimeout = const Duration(minutes: 5); // 2 minutos
+  authDio.options.sendTimeout = const Duration(minutes: 5);    // 2 minutos
+  authDio.options.receiveTimeout = const Duration(minutes: 5); // 2 minutos
   authDio.options.headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -34,8 +38,9 @@ Future<void> init() async {
 
   // Dio para Pets (puerto 3001)
   final petDio = Dio();
-  petDio.options.connectTimeout = const Duration(seconds: 30);
-  petDio.options.receiveTimeout = const Duration(seconds: 30);
+  petDio.options.connectTimeout = const Duration(minutes: 2); // 2 minutos
+  petDio.options.sendTimeout = const Duration(minutes: 2);    // 2 minutos
+  petDio.options.receiveTimeout = const Duration(minutes: 2); // 2 minutos
   petDio.options.headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -57,9 +62,19 @@ Future<void> init() async {
     () => AuthRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
   );
 
+  // User Data sources
+  sl.registerLazySingleton<UserRemoteDataSource>(
+    () => UserRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
+  );
+
   // Pet Data sources
   sl.registerLazySingleton<PetRemoteDataSource>(
     () => PetRemoteDataSourceImpl(dio: sl<Dio>(instanceName: 'petDio')),
+  );
+
+  // Vet Data sources
+  sl.registerLazySingleton<VetRemoteDataSource>(
+    () => VetRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
   );
 
   // Auth Repositories

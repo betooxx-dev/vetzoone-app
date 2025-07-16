@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/injection/injection.dart';
 import 'core/storage/shared_preferences_helper.dart';
+import 'core/services/image_picker_service.dart';
 
 import 'presentation/blocs/pet/pet_bloc.dart';
 
@@ -9,8 +10,7 @@ import 'presentation/pages/public/splash_screen.dart';
 import 'presentation/pages/public/landing_page.dart';
 import 'presentation/pages/public/login_page.dart';
 import 'presentation/pages/public/register_type_selection_page.dart';
-import 'presentation/pages/public/register_owner_page.dart';
-import 'presentation/pages/public/register_veterinarian_page.dart';
+import 'presentation/pages/public/unified_register_page.dart';
 
 import 'presentation/pages/owner/dashboard/owner_dashboard_page.dart';
 import 'presentation/pages/veterinarian/dashboard/veterinarian_dashboard_page.dart';
@@ -50,6 +50,15 @@ import 'domain/entities/pet.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await init();
+  
+  // Limpiar archivos de imagen antiguos al iniciar la app
+  try {
+    await ImagePickerService.cleanOldImages();
+    print('✅ Limpieza de archivos antiguos completada');
+  } catch (e) {
+    print('⚠️ Error durante la limpieza de archivos: $e');
+  }
+  
   runApp(const MyApp());
 }
 
@@ -72,9 +81,8 @@ class MyApp extends StatelessWidget {
           '/landing': (context) => const LandingPage(),
           '/login': (context) => const LoginPage(),
           '/register': (context) => const RegisterTypeSelectionPage(),
-          '/register/owner': (context) => const RegisterOwnerPage(),
-          '/register/veterinarian':
-              (context) => const RegisterVeterinarianPage(),
+          '/register/owner': (context) => const UnifiedRegisterPage(userRole: 'PET_OWNER'),
+          '/register/veterinarian': (context) => const UnifiedRegisterPage(userRole: 'VETERINARIAN'),
           '/professional-verification': (context) => const Placeholder(),
           '/reset-password': (context) => const Placeholder(),
 

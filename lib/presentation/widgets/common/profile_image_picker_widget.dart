@@ -5,148 +5,127 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 
-class ImagePickerWidget extends StatelessWidget {
+class ProfileImagePickerWidget extends StatelessWidget {
   final File? imageFile;
   final String? imageUrl;
   final Function(File?) onImageSelected;
   final double size;
-  final bool isRequired;
+  final Color borderColor;
+  final bool showEditIcon;
 
-  const ImagePickerWidget({
+  const ProfileImagePickerWidget({
     super.key,
     this.imageFile,
     this.imageUrl,
     required this.onImageSelected,
     this.size = 120,
-    this.isRequired = false,
+    this.borderColor = const Color(0xFF4CAF50),
+    this.showEditIcon = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Foto de la mascota',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF212121),
+    return Center(
+      child: Stack(
+        children: [
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: borderColor,
+                width: 3,
               ),
             ),
-            if (isRequired)
-              const Text(
-                ' *',
-                style: TextStyle(color: Colors.red, fontSize: 16),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Center(
-          child: GestureDetector(
-            onTap: () => _selectImage(context),
-            child: Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.grey[300]!,
-                  width: 2,
-                  style: BorderStyle.solid,
-                ),
-              ),
+            child: ClipOval(
               child: _buildImageContent(),
             ),
           ),
-        ),
-        if (imageFile != null || (imageUrl != null && imageUrl!.isNotEmpty))
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: TextButton.icon(
-                onPressed: () => onImageSelected(null),
-                icon: const Icon(
-                  Icons.delete_outline,
-                  color: Colors.red,
-                  size: 18,
+          if (showEditIcon)
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: borderColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 2,
+                  ),
                 ),
-                label: const Text(
-                  'Eliminar imagen',
-                  style: TextStyle(color: Colors.red, fontSize: 14),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.camera_alt,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  onPressed: () => _selectImage(context),
                 ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildImageContent() {
     // Prioridad: archivo local > URL de red > placeholder
     if (imageFile != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: Image.file(
-          imageFile!,
-          fit: BoxFit.cover,
-          width: size,
-          height: size,
-          errorBuilder: (context, error, stackTrace) {
-            print('❌ Error cargando imagen local: $error');
-            return _buildPlaceholder();
-          },
-        ),
+      return Image.file(
+        imageFile!,
+        fit: BoxFit.cover,
+        width: size,
+        height: size,
+        errorBuilder: (context, error, stackTrace) {
+          print('❌ Error cargando imagen de perfil local: $error');
+          return _buildDefaultAvatar();
+        },
       );
     } else if (imageUrl != null && imageUrl!.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: Image.network(
-          imageUrl!,
-          fit: BoxFit.cover,
-          width: size,
-          height: size,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Center(
-              child: CircularProgressIndicator(
-                value:
-                    loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
-                        : null,
-                color: const Color(0xFF4CAF50),
-              ),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) {
-            return _buildPlaceholder();
-          },
-        ),
+      return Image.network(
+        imageUrl!,
+        fit: BoxFit.cover,
+        width: size,
+        height: size,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                  : null,
+              color: borderColor,
+              strokeWidth: 2,
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return _buildDefaultAvatar();
+        },
       );
     } else {
-      return _buildPlaceholder();
+      return _buildDefaultAvatar();
     }
   }
 
-  Widget _buildPlaceholder() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.add_a_photo_outlined, size: 32, color: Colors.grey[600]),
-        const SizedBox(height: 8),
-        Text(
-          'Agregar foto',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+  Widget _buildDefaultAvatar() {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: borderColor.withOpacity(0.1),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        Icons.person,
+        size: size * 0.5,
+        color: borderColor,
+      ),
     );
   }
 
@@ -167,17 +146,17 @@ class ImagePickerWidget extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Seleccionar imagen',
+              Text(
+                'Foto de perfil',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF212121),
+                  color: borderColor,
                 ),
               ),
               const SizedBox(height: 20),
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: Color(0xFF4CAF50)),
+                leading: Icon(Icons.camera_alt, color: borderColor),
                 title: const Text('Tomar foto'),
                 onTap: () async {
                   final file = await _pickFromCamera(picker);
@@ -185,16 +164,21 @@ class ImagePickerWidget extends StatelessWidget {
                 },
               ),
               ListTile(
-                leading: const Icon(
-                  Icons.photo_library,
-                  color: Color(0xFF4CAF50),
-                ),
+                leading: Icon(Icons.photo_library, color: borderColor),
                 title: const Text('Seleccionar de galería'),
                 onTap: () async {
                   final file = await _pickFromGallery(picker);
                   Navigator.pop(context, file);
                 },
               ),
+              if (imageFile != null || (imageUrl != null && imageUrl!.isNotEmpty))
+                ListTile(
+                  leading: const Icon(Icons.delete_outline, color: Colors.red),
+                  title: const Text('Eliminar foto', style: TextStyle(color: Colors.red)),
+                  onTap: () {
+                    Navigator.pop(context, File(''));
+                  },
+                ),
               const SizedBox(height: 10),
             ],
           ),
@@ -203,8 +187,13 @@ class ImagePickerWidget extends StatelessWidget {
     );
 
     if (selectedImage != null) {
-      print('📸 Image selected: ${selectedImage.path}');
-      onImageSelected(selectedImage);
+      // Si el path está vacío, significa que se quiere eliminar la imagen
+      if (selectedImage.path.isEmpty) {
+        onImageSelected(null);
+      } else {
+        print('📸 Profile image selected: ${selectedImage.path}');
+        onImageSelected(selectedImage);
+      }
     }
   }
 
@@ -279,13 +268,13 @@ class ImagePickerWidget extends StatelessWidget {
       // Generar nombre único para el archivo
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final extension = path.extension(tempFile.path);
-      final fileName = 'pet_image_$timestamp$extension';
+      final fileName = 'profile_image_$timestamp$extension';
       final newPath = path.join(imagesDir.path, fileName);
 
       // Copiar archivo
       final newFile = await tempFile.copy(newPath);
       
-      print('📁 Imagen de mascota copiada a directorio permanente: ${newFile.path}');
+      print('📁 Imagen de perfil copiada a directorio permanente: ${newFile.path}');
       print('📏 Tamaño del archivo: ${await newFile.length()} bytes');
       
       return newFile;
@@ -294,4 +283,4 @@ class ImagePickerWidget extends StatelessWidget {
       return tempFile; // Retornar archivo original como fallback
     }
   }
-}
+} 

@@ -63,16 +63,26 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
       });
       
       if (imageFile != null) {
-        String fileName = imageFile.path.split('/').last;
-        formData.files.add(
-          MapEntry(
-            'file',
-            await MultipartFile.fromFile(
-              imageFile.path,
-              filename: fileName,
+        // Verificar que el archivo existe antes de enviarlo
+        if (await imageFile.exists()) {
+          String fileName = imageFile.path.split('/').last;
+          final fileSize = await imageFile.length();
+          print('📁 Archivo encontrado: ${imageFile.path}');
+          print('📏 Tamaño: $fileSize bytes');
+          
+          formData.files.add(
+            MapEntry(
+              'file',
+              await MultipartFile.fromFile(
+                imageFile.path,
+                filename: fileName,
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          print('❌ Archivo no encontrado: ${imageFile.path}');
+          throw Exception('Archivo de imagen no encontrado. Por favor, selecciona la imagen nuevamente.');
+        }
       }
       
       print('🐾 Creating pet with FormData...');
@@ -126,16 +136,26 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
       });
       
       if (imageFile != null) {
-        String fileName = imageFile.path.split('/').last;
-        formData.files.add(
-          MapEntry(
-            'file',
-            await MultipartFile.fromFile(
-              imageFile.path,
-              filename: fileName,
+        // Verificar que el archivo existe antes de enviarlo
+        if (await imageFile.exists()) {
+          String fileName = imageFile.path.split('/').last;
+          final fileSize = await imageFile.length();
+          print('📁 Archivo encontrado: ${imageFile.path}');
+          print('📏 Tamaño: $fileSize bytes');
+          
+          formData.files.add(
+            MapEntry(
+              'file',
+              await MultipartFile.fromFile(
+                imageFile.path,
+                filename: fileName,
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          print('❌ Archivo no encontrado: ${imageFile.path}');
+          throw Exception('Archivo de imagen no encontrado. Por favor, selecciona la imagen nuevamente.');
+        }
       }
       
       print('🐾 Updating pet with FormData...');

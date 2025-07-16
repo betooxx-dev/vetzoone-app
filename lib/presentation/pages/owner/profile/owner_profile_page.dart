@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../../../../core/services/user_service.dart';
+import '../../../../core/injection/injection.dart';
+import '../../../../data/datasources/user/user_remote_data_source.dart';
+import '../../../../core/storage/shared_preferences_helper.dart';
+import '../../../widgets/common/profile_image_picker_widget.dart';
 
 class OwnerProfilePage extends StatefulWidget {
   const OwnerProfilePage({super.key});
@@ -10,10 +15,12 @@ class OwnerProfilePage extends StatefulWidget {
 
 class _OwnerProfilePageState extends State<OwnerProfilePage> {
   bool _isEditing = false;
+  bool _isLoading = false;
   Map<String, dynamic> userData = {};
+  File? _selectedImageFile;
 
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
 
   @override
@@ -26,12 +33,11 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
     final user = await UserService.getCurrentUser();
     setState(() {
       userData = {
-        'name': user['fullName'],
+        'firstName': user['firstName'],
+        'lastName': user['lastName'],
+        'fullName': user['fullName'], // Para mostrar en el header
         'email': user['email'],
         'phone': user['phone'],
-        'registrationDate': '15 de Marzo, 2024',
-        'totalPets': 3,
-        'totalAppointments': 12,
         'profileImage': user['profilePhoto'],
       };
     });
@@ -39,15 +45,15 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
   }
 
   void _updateControllers() {
-    _nameController.text = userData['name'] ?? '';
-    _emailController.text = userData['email'] ?? '';
+    _firstNameController.text = userData['firstName'] ?? '';
+    _lastNameController.text = userData['lastName'] ?? '';
     _phoneController.text = userData['phone'] ?? '';
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
@@ -76,13 +82,26 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
-          IconButton(
-            icon: Icon(
-              _isEditing ? Icons.check : Icons.edit,
-              color: const Color(0xFF0D9488),
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0D9488)),
+                ),
+              ),
+            )
+          else
+            IconButton(
+              icon: Icon(
+                _isEditing ? Icons.check : Icons.edit,
+                color: const Color(0xFF0D9488),
+              ),
+              onPressed: _isEditing ? _saveProfile : _toggleEditing,
             ),
-            onPressed: _isEditing ? _saveProfile : _toggleEditing,
-          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -90,8 +109,6 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
         child: Column(
           children: [
             _buildProfileHeader(),
-            const SizedBox(height: 20),
-            _buildStatsCard(),
             const SizedBox(height: 20),
             _buildPersonalInfoCard(),
             const SizedBox(height: 20),
@@ -119,55 +136,46 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
       ),
       child: Column(
         children: [
-          Stack(
-            children: [
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF0D9488), width: 3),
-                ),
-                child: ClipOval(
-                  child:
-                      (userData['profileImage'] != null &&
-                              userData['profileImage'].isNotEmpty)
-                          ? Image.network(
+          if (_isEditing)
+            ProfileImagePickerWidget(
+              imageFile: _selectedImageFile,
+              imageUrl: userData['profileImage'],
+              onImageSelected: (file) {
+                setState(() {
+                  _selectedImageFile = file;
+                });
+              },
+              size: 100,
+            )
+          else
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFF0D9488), width: 3),
+              ),
+              child: ClipOval(
+                child: _selectedImageFile != null
+                    ? Image.file(
+                        _selectedImageFile!,
+                        fit: BoxFit.cover,
+                      )
+                    : (userData['profileImage'] != null &&
+                            userData['profileImage'].isNotEmpty)
+                        ? Image.network(
                             userData['profileImage'],
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return _buildDefaultAvatar();
                             },
                           )
-                          : _buildDefaultAvatar(),
-                ),
+                        : _buildDefaultAvatar(),
               ),
-              if (_isEditing)
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: GestureDetector(
-                    onTap: _changeProfileImage,
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF0D9488),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+            ),
           const SizedBox(height: 16),
           Text(
-            userData['name'] ?? '',
+            userData['fullName'] ?? '',
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
@@ -179,22 +187,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             userData['email'] ?? '',
             style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
           ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0D9488).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              'Miembro desde ${userData['registrationDate']}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF0D9488),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
+
         ],
       ),
     );
@@ -212,79 +205,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
     );
   }
 
-  Widget _buildStatsCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildStatItem(
-              icon: Icons.pets,
-              count: userData['totalPets'].toString(),
-              label: 'Mascotas',
-              color: const Color(0xFF8B5CF6),
-            ),
-          ),
-          Container(width: 1, height: 50, color: const Color(0xFFE5E7EB)),
-          Expanded(
-            child: _buildStatItem(
-              icon: Icons.calendar_today,
-              count: userData['totalAppointments'].toString(),
-              label: 'Citas',
-              color: const Color(0xFF06B6D4),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildStatItem({
-    required IconData icon,
-    required String count,
-    required String label,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          count,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1A1A),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-        ),
-      ],
-    );
-  }
 
   Widget _buildPersonalInfoCard() {
     return Container(
@@ -315,15 +236,22 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
           const SizedBox(height: 20),
           _buildInfoField(
             icon: Icons.person_outline,
-            label: 'Nombre completo',
-            controller: _nameController,
+            label: 'Nombre',
+            controller: _firstNameController,
+            enabled: _isEditing,
+          ),
+          const SizedBox(height: 16),
+          _buildInfoField(
+            icon: Icons.person,
+            label: 'Apellido',
+            controller: _lastNameController,
             enabled: _isEditing,
           ),
           const SizedBox(height: 16),
           _buildInfoField(
             icon: Icons.email_outlined,
             label: 'Correo electrónico',
-            controller: _emailController,
+            value: userData['email'],
             enabled: false,
           ),
           const SizedBox(height: 16),
@@ -341,7 +269,8 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
   Widget _buildInfoField({
     required IconData icon,
     required String label,
-    required TextEditingController controller,
+    TextEditingController? controller,
+    String? value,
     required bool enabled,
     int maxLines = 1,
   }) {
@@ -365,6 +294,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
+          initialValue: controller == null ? value : null,
           enabled: enabled,
           maxLines: maxLines,
           decoration: InputDecoration(
@@ -493,49 +423,87 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
     });
   }
 
-  void _saveProfile() {
+  Future<void> _saveProfile() async {
+    if (_isLoading) return;
+
     setState(() {
-      userData['name'] = _nameController.text;
-      userData['phone'] = _phoneController.text;
-      _isEditing = false;
+      _isLoading = true;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Perfil actualizado correctamente'),
-        backgroundColor: Color(0xFF0D9488),
-      ),
-    );
+    try {
+      final userId = await SharedPreferencesHelper.getUserId();
+      if (userId == null) {
+        throw Exception('No se encontró ID del usuario');
+      }
+
+      final userRemoteDataSource = sl<UserRemoteDataSource>();
+      
+      // Obtener nombre y apellido de los controladores
+      final firstName = _firstNameController.text.trim();
+      final lastName = _lastNameController.text.trim();
+
+      final userData = {
+        'first_name': firstName,
+        'last_name': lastName,
+        'phone': _phoneController.text.trim(),
+      };
+
+      Map<String, dynamic> updatedUser;
+
+      if (_selectedImageFile != null) {
+        updatedUser = await userRemoteDataSource.updateUserWithFile(
+          userId,
+          userData,
+          _selectedImageFile!,
+        );
+      } else {
+        updatedUser = await userRemoteDataSource.updateUser(userId, userData);
+      }
+
+      // Actualizar datos locales
+      setState(() {
+        this.userData['firstName'] = updatedUser['first_name'];
+        this.userData['lastName'] = updatedUser['last_name'];
+        this.userData['fullName'] = '${updatedUser['first_name']} ${updatedUser['last_name']}';
+        this.userData['phone'] = updatedUser['phone'];
+        if (updatedUser['profile_photo'] != null) {
+          this.userData['profileImage'] = updatedUser['profile_photo'];
+        }
+        _isEditing = false;
+        _selectedImageFile = null;
+      });
+
+      // Actualizar controladores
+      _updateControllers();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Perfil actualizado correctamente'),
+            backgroundColor: Color(0xFF0D9488),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error actualizando perfil: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al actualizar el perfil: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
-  void _changeProfileImage() {
-    showModalBottomSheet(
-      context: context,
-      builder:
-          (context) => Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.camera_alt),
-                  title: const Text('Tomar foto'),
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.photo_library),
-                  title: const Text('Seleccionar de galería'),
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-          ),
-    );
-  }
+
 
   void _showChangePasswordDialog() {
     final currentPasswordController = TextEditingController();

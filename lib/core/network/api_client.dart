@@ -31,6 +31,14 @@ class ApiClient {
     }
   }
 
+  Future<Response> patch(String url, {dynamic data, Map<String, dynamic>? queryParameters}) async {
+    try {
+      return await _dio.patch(url, data: data, queryParameters: queryParameters);
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   Future<Response> delete(String url, {Map<String, dynamic>? queryParameters}) async {
     try {
       return await _dio.delete(url, queryParameters: queryParameters);
