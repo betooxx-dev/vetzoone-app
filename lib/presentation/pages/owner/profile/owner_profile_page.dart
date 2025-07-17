@@ -354,12 +354,6 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
           ),
           const SizedBox(height: 20),
           _buildOptionItem(
-            icon: Icons.lock_outline,
-            title: 'Cambiar contraseña',
-            onTap: _showChangePasswordDialog,
-          ),
-          _buildDivider(),
-          _buildOptionItem(
             icon: Icons.logout,
             title: 'Cerrar sesión',
             onTap: _showLogoutDialog,
@@ -505,82 +499,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
 
 
 
-  void _showChangePasswordDialog() {
-    final currentPasswordController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
 
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Cambiar Contraseña'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: currentPasswordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Contraseña actual',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: newPasswordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Nueva contraseña',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: confirmPasswordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirmar nueva contraseña',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (newPasswordController.text ==
-                          confirmPasswordController.text &&
-                      newPasswordController.text.isNotEmpty) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Contraseña cambiada exitosamente'),
-                        backgroundColor: Color(0xFF0D9488),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Las contraseñas no coinciden'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0D9488),
-                ),
-                child: const Text('Cambiar'),
-              ),
-            ],
-          ),
-    );
-  }
 
   void _showLogoutDialog() {
     showDialog(

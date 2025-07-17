@@ -209,18 +209,7 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
   }
 
   Widget _buildSecuritySettings() {
-    return _buildSettingsSection(
-      title: 'Seguridad',
-      icon: Icons.security_outlined,
-      children: [
-        _buildActionTile(
-          icon: Icons.lock_outline,
-          title: 'Cambiar contraseña',
-          subtitle: 'Actualiza tu contraseña de acceso',
-          onTap: _showChangePasswordDialog,
-        ),
-      ],
-    );
+    return Container(); // Sección vacía ya que se eliminó el botón de cambiar contraseña
   }
 
   Widget _buildAccountSettings() {
@@ -486,80 +475,7 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
     );
   }
 
-  void _showChangePasswordDialog() {
-    final currentPasswordController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
 
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Text(
-              'Cambiar Contraseña',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A1A),
-              ),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: currentPasswordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Contraseña actual',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: newPasswordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Nueva contraseña',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: confirmPasswordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirmar nueva contraseña',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0D9488),
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Contraseña actualizada correctamente'),
-                      backgroundColor: Color(0xFF10B981),
-                    ),
-                  );
-                },
-                child: const Text('Cambiar'),
-              ),
-            ],
-          ),
-    );
-  }
 
   void _showLogoutDialog() {
     showDialog(
