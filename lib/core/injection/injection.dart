@@ -26,9 +26,9 @@ Future<void> init() async {
   // Dio para Auth (puerto 3000)
   final authDio = Dio();
   // authDio.options.baseUrl = 'http://192.168.0.22:3000';
-  authDio.options.baseUrl = 'http://10.0.2.2:3000';
+  authDio.options.baseUrl = 'http://192.168.0.22:3000';
   authDio.options.connectTimeout = const Duration(minutes: 5); // 2 minutos
-  authDio.options.sendTimeout = const Duration(minutes: 5);    // 2 minutos
+  authDio.options.sendTimeout = const Duration(minutes: 5); // 2 minutos
   authDio.options.receiveTimeout = const Duration(minutes: 5); // 2 minutos
   authDio.options.headers = {
     'Content-Type': 'application/json',
@@ -39,7 +39,7 @@ Future<void> init() async {
   // Dio para Pets (puerto 3001)
   final petDio = Dio();
   petDio.options.connectTimeout = const Duration(minutes: 2); // 2 minutos
-  petDio.options.sendTimeout = const Duration(minutes: 2);    // 2 minutos
+  petDio.options.sendTimeout = const Duration(minutes: 2); // 2 minutos
   petDio.options.receiveTimeout = const Duration(minutes: 2); // 2 minutos
   petDio.options.headers = {
     'Content-Type': 'application/json',
@@ -88,15 +88,29 @@ Future<void> init() async {
   );
 
   // Auth Use cases
-  sl.registerLazySingleton(() => LoginUseCase(repository: sl<AuthRepository>()));
-  sl.registerLazySingleton(() => LogoutUseCase(repository: sl<AuthRepository>()));
-  sl.registerLazySingleton(() => RegisterUseCase(repository: sl<AuthRepository>()));
+  sl.registerLazySingleton(
+    () => LoginUseCase(repository: sl<AuthRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => LogoutUseCase(repository: sl<AuthRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => RegisterUseCase(repository: sl<AuthRepository>()),
+  );
 
   // Pet Use cases
-  sl.registerLazySingleton(() => GetPetsUseCase(repository: sl<PetRepository>()));
-  sl.registerLazySingleton(() => AddPetUseCase(repository: sl<PetRepository>()));
-  sl.registerLazySingleton(() => UpdatePetUseCase(repository: sl<PetRepository>()));
-  sl.registerLazySingleton(() => DeletePetUseCase(repository: sl<PetRepository>()));
+  sl.registerLazySingleton(
+    () => GetPetsUseCase(repository: sl<PetRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => AddPetUseCase(repository: sl<PetRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => UpdatePetUseCase(repository: sl<PetRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => DeletePetUseCase(repository: sl<PetRepository>()),
+  );
 
   // Blocs
   sl.registerFactory(() => PetBloc(petRepository: sl<PetRepository>()));

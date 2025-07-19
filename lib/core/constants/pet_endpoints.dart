@@ -1,6 +1,6 @@
 class PetEndpoints {
   // static const String baseUrl = 'http://192.168.0.22:3001';
-  static const String baseUrl = 'http://10.0.2.2:3001';
+  static const String baseUrl = 'http://192.168.0.22:3001';
 
   static const String getAllPets = '/pet/all';
   static const String getPetById = '/pet';
