@@ -4,13 +4,17 @@ import '../../../domain/usecases/pet/add_pet_usecase.dart';
 import '../../../domain/usecases/pet/update_pet_usecase.dart';
 import '../../../domain/usecases/pet/delete_pet_usecase.dart';
 import '../../../domain/repositories/pet_repository.dart';
+import '../../../domain/entities/appointment.dart';
+import '../../../domain/repositories/appointment_repository.dart';
+import '../../../data/datasources/pet/pet_remote_datasource.dart';
 import 'pet_event.dart';
 import 'pet_state.dart';
 
 class PetBloc extends Bloc<PetEvent, PetState> {
   final PetRepository petRepository;
+  final AppointmentRepository appointmentRepository;
 
-  PetBloc({required this.petRepository}) : super(PetInitial()) {
+  PetBloc({required this.petRepository, required this.appointmentRepository}) : super(PetInitial()) {
     on<LoadPetsEvent>(_onLoadPets);
     on<AddPetEvent>(_onAddPet);
     on<UpdatePetEvent>(_onUpdatePet);
@@ -65,8 +69,8 @@ class PetBloc extends Bloc<PetEvent, PetState> {
   Future<void> _onGetPetById(GetPetByIdEvent event, Emitter<PetState> emit) async {
     emit(PetLoading());
     try {
-      final pet = await petRepository.getPetById(event.petId);
-      emit(PetLoaded(pet: pet));
+      final petDetail = await petRepository.getPetById(event.petId);
+      emit(PetLoaded(pet: petDetail.pet, appointments: petDetail.appointments));
     } catch (e) {
       emit(PetError(message: e.toString()));
     }

@@ -3,10 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/pet/pet_bloc.dart';
 import '../../../blocs/pet/pet_event.dart';
 import '../../../blocs/pet/pet_state.dart';
+import '../../../blocs/appointment/index.dart';
 import '../../../../core/services/user_service.dart';
 import '../../../../core/storage/shared_preferences_helper.dart';
 import '../../../../domain/entities/pet.dart';
-import '../../../../data/models/pet/pet_model.dart';
+import '../../../../domain/entities/appointment.dart';
+
 
 class OwnerDashboardPage extends StatefulWidget {
   const OwnerDashboardPage({super.key});
@@ -23,6 +25,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
     super.initState();
     _loadUserData();
     _loadPets();
+    _loadUpcomingAppointments();
   }
 
   Future<void> _loadUserData() async {
@@ -39,13 +42,25 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
     }
   }
 
+  Future<void> _loadUpcomingAppointments() async {
+    final userId = await SharedPreferencesHelper.getUserId();
+    if (userId != null) {
+      final now = DateTime.now();
+      final fifteenDaysLater = now.add(const Duration(days: 15));
+      context.read<AppointmentBloc>().add(LoadUpcomingAppointmentsEvent(userId: userId, dateFrom: now, dateTo: fifteenDaysLater));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _loadPets,
+          onRefresh: () async {
+            await _loadPets();
+            await _loadUpcomingAppointments();
+          },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
@@ -329,7 +344,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: const Color(0xFF4CAF50).withOpacity(0.1),
+                color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: pet.imageUrl != null && pet.imageUrl!.isNotEmpty
@@ -548,6 +563,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
+            key: const Key('retry_pets_button'),
             onPressed: _loadPets,
             child: const Text('Reintentar'),
           ),
@@ -586,14 +602,52 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
             ],
           ),
           const SizedBox(height: 16),
-          _buildUpcomingAppointmentCard(),
+          BlocBuilder<AppointmentBloc, AppointmentState>(
+            builder: (context, state) {
+              if (state is AppointmentsOverviewState) {
+                if (state.loadingUpcoming) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                } else if (state.errorUpcoming != null) {
+                  return _buildAppointmentErrorCard(state.errorUpcoming!);
+                } else if (state.upcoming.isEmpty) {
+                  return _buildNoAppointmentsCard();
+                } else {
+                  return _buildUpcomingAppointmentsList(state.upcoming);
+                }
+              }
+              return _buildNoAppointmentsCard();
+            },
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildUpcomingAppointmentCard() {
+  Widget _buildUpcomingAppointmentsList(List<Appointment> appointments) {
+    // Mostrar máximo 3 citas próximas en el dashboard
+    final displayAppointments = appointments.take(3).toList();
+    
+    return Column(
+      children: displayAppointments.asMap().entries.map((entry) {
+        final index = entry.key;
+        final appointment = entry.value;
+        return Padding(
+          key: Key('appointment_card_${appointment.id}_$index'),
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildAppointmentCard(appointment),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildAppointmentCard(Appointment appointment) {
     return Container(
+      key: Key('appointment_container_${appointment.id}'),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -606,64 +660,314 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
           ),
         ],
       ),
-      child: Row(
+      child: InkWell(
+        onTap: () {
+          // Crear un mapa simple para evitar conflictos de tipos
+          final appointmentData = {
+            'id': appointment.id,
+            'appointmentType': appointment.notes ?? 'Consulta',
+            'petName': 'Mascota', // Placeholder hasta que tengamos datos del pet
+            'veterinarianName': 'Veterinario', // Placeholder hasta que tengamos datos del vet
+            'date': _formatAppointmentDate(appointment.appointmentDate),
+            'time': _formatTime(appointment.appointmentDate),
+            'notes': appointment.notes ?? '',
+            'status': _mapAppointmentStatusToString(appointment.status),
+          };
+          
+          Navigator.pushNamed(
+            context,
+            '/appointment-detail',
+            arguments: appointmentData,
+          );
+        },
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: _getStatusColor(appointment.status).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                _getStatusIcon(appointment.status),
+                color: _getStatusColor(appointment.status),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    appointment.notes ?? 'Consulta',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF212121),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _getStatusText(appointment.status),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: _getStatusColor(appointment.status),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatAppointmentDate(appointment.appointmentDate),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF757575),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: _getStatusColor(appointment.status),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoAppointmentsCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
               color: const Color(0xFF4CAF50).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(32),
             ),
             child: const Icon(
-              Icons.pets,
+              Icons.calendar_today_outlined,
               color: Color(0xFF4CAF50),
-              size: 24,
+              size: 32,
             ),
           ),
-          const SizedBox(width: 16),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Max - Consulta General',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF212121),
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Dr. María González',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF757575),
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Hoy, 3:00 PM',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF757575),
-                  ),
-                ),
-              ],
+          const SizedBox(height: 16),
+          const Text(
+            'No tienes citas próximas',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF212121),
             ),
           ),
-          Container(
-            width: 8,
-            height: 8,
-            decoration: const BoxDecoration(
-              color: Color(0xFF4CAF50),
-              shape: BoxShape.circle,
+          const SizedBox(height: 8),
+          const Text(
+            'Agenda una consulta para tu mascota',
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF757575),
             ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            key: const Key('schedule_appointment_button'),
+            onPressed: () => Navigator.pushNamed(context, '/search-veterinarians'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4CAF50),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Agendar Cita'),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildAppointmentErrorCard(String error) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.error_outline,
+            color: Colors.red,
+            size: 48,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Error al cargar citas',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF212121),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF757575),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            key: const Key('retry_appointments_button'),
+            onPressed: _loadUpcomingAppointments,
+            child: const Text('Reintentar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper methods para appointments
+  Color _getStatusColor(AppointmentStatus status) {
+    switch (status) {
+      case AppointmentStatus.pending:
+        return const Color(0xFFFF9800);
+      case AppointmentStatus.confirmed:
+        return const Color(0xFF4CAF50);
+      case AppointmentStatus.inProgress:
+        return const Color(0xFF2196F3);
+      case AppointmentStatus.completed:
+        return const Color(0xFF8BC34A);
+      case AppointmentStatus.cancelled:
+        return const Color(0xFFF44336);
+      case AppointmentStatus.rescheduled:
+        return const Color(0xFF9C27B0);
+    }
+  }
+
+  IconData _getStatusIcon(AppointmentStatus status) {
+    switch (status) {
+      case AppointmentStatus.pending:
+        return Icons.schedule_outlined;
+      case AppointmentStatus.confirmed:
+        return Icons.check_circle_outline;
+      case AppointmentStatus.inProgress:
+        return Icons.medical_services_outlined;
+      case AppointmentStatus.completed:
+        return Icons.task_alt;
+      case AppointmentStatus.cancelled:
+        return Icons.cancel_outlined;
+      case AppointmentStatus.rescheduled:
+        return Icons.update_outlined;
+    }
+  }
+
+  String _getStatusText(AppointmentStatus status) {
+    switch (status) {
+      case AppointmentStatus.pending:
+        return 'Pendiente';
+      case AppointmentStatus.confirmed:
+        return 'Confirmada';
+      case AppointmentStatus.inProgress:
+        return 'En curso';
+      case AppointmentStatus.completed:
+        return 'Completada';
+      case AppointmentStatus.cancelled:
+        return 'Cancelada';
+      case AppointmentStatus.rescheduled:
+        return 'Reprogramada';
+    }
+  }
+
+  String _formatAppointmentDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = date.difference(now);
+    
+    // Si es hoy
+    if (date.day == now.day && 
+        date.month == now.month && 
+        date.year == now.year) {
+      return 'Hoy, ${_formatTime(date)}';
+    }
+    
+    // Si es mañana
+    final tomorrow = now.add(const Duration(days: 1));
+    if (date.day == tomorrow.day && 
+        date.month == tomorrow.month && 
+        date.year == tomorrow.year) {
+      return 'Mañana, ${_formatTime(date)}';
+    }
+    
+    // Si es en los próximos 7 días
+    if (difference.inDays >= 0 && difference.inDays <= 7) {
+      final weekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+      final weekday = weekdays[date.weekday - 1];
+      return '$weekday, ${_formatTime(date)}';
+    }
+    
+    // Fecha completa
+    return '${date.day}/${date.month} ${_formatTime(date)}';
+  }
+
+  String _formatTime(DateTime date) {
+    final hour = date.hour;
+    final minute = date.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    return '$displayHour:$minute $period';
+  }
+
+  // Helper para mapear el enum interno al enum de la UI existente
+  String _mapAppointmentStatusToString(AppointmentStatus status) {
+    // Esto devuelve strings que la página de destino puede interpretar
+    switch (status) {
+      case AppointmentStatus.pending:
+        return 'scheduled'; // Mapeamos pending a scheduled para compatibilidad
+      case AppointmentStatus.confirmed:
+        return 'confirmed';
+      case AppointmentStatus.inProgress:
+        return 'inProgress';
+      case AppointmentStatus.completed:
+        return 'completed';
+      case AppointmentStatus.cancelled:
+        return 'cancelled';
+      case AppointmentStatus.rescheduled:
+        return 'rescheduled';
+    }
   }
 
   String _getPetTypeText(PetType type) {

@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../blocs/pet/pet_bloc.dart';
+import '../../../blocs/pet/pet_event.dart';
+import '../../../blocs/pet/pet_state.dart';
+import '../../../../domain/entities/appointment.dart';
+import 'package:intl/intl.dart';
 
 class MedicalRecordPage extends StatefulWidget {
-  const MedicalRecordPage({super.key});
+  final String petId;
+  final String petName;
+  const MedicalRecordPage({super.key, required this.petId, required this.petName});
 
   @override
   State<MedicalRecordPage> createState() => _MedicalRecordPageState();
@@ -72,7 +80,7 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -81,6 +89,11 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
     _animationController.forward();
+
+    // Cargar historial real de citas
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<PetBloc>().add(GetPetByIdEvent(petId: widget.petId));
+    });
   }
 
   @override
@@ -182,19 +195,7 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
 
   Widget _buildPetHeader() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Row(
         children: [
           Container(
@@ -211,55 +212,15 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Max',
-                  style: TextStyle(
+                Text(
+                  widget.petName,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF212121),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'Golden Retriever • 3 años',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.monitor_weight_outlined,
-                      size: 12,
-                      color: Colors.grey[600],
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        'Último peso: 25.5 kg',
-                        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
               ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF4CAF50).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Text(
-              'Saludable',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF4CAF50),
-              ),
             ),
           ),
         ],
@@ -297,9 +258,8 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
           fontWeight: FontWeight.w500,
         ),
         tabs: const [
-          Tab(text: 'Consultas'),
+          Tab(text: 'Citas'),
           Tab(text: 'Medicamentos'),
-          Tab(text: 'Signos Vitales'),
         ],
       ),
     );
@@ -309,189 +269,46 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
     return TabBarView(
       controller: _tabController,
       children: [
-        _buildConsultationsTab(),
+        _buildAppointmentsTab(),
         _buildMedicationsTab(),
-        _buildVitalSignsTab(),
       ],
     );
   }
 
-  Widget _buildConsultationsTab() {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-      itemCount: _medicalRecords.length,
-      itemBuilder: (context, index) {
-        final record = _medicalRecords[index];
-        return AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return SlideTransition(
-              position: Tween<Offset>(
-                begin: Offset(0, 0.5 + (index * 0.1)),
-                end: Offset.zero,
-              ).animate(
-                CurvedAnimation(
-                  parent: _animationController,
-                  curve: Interval(
-                    (index * 0.1).clamp(0.0, 1.0),
-                    1.0,
-                    curve: Curves.easeOut,
-                  ),
-                ),
-              ),
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: _buildConsultationCard(record),
-              ),
+  Widget _buildAppointmentsTab() {
+    return BlocBuilder<PetBloc, PetState>(
+      builder: (context, state) {
+        if (state is PetLoading) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (state is PetLoaded) {
+          final appointments = state.appointments;
+          if (appointments.isEmpty) {
+            return _buildEmptyState(
+              'No hay citas registradas',
+              'Las citas médicas aparecerán aquí',
+              Icons.event_busy,
             );
-          },
-        );
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            itemCount: appointments.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final appointment = appointments[index];
+              final formattedDate = DateFormat('dd/MM/yyyy').format(appointment.appointmentDate);
+              return ListTile(
+                leading: const Icon(Icons.calendar_today, color: Color(0xFF4CAF50)),
+                title: Text('Fecha: $formattedDate', style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(appointment.notes ?? 'Sin notas'),
+                trailing: Text(_mapAppointmentStatusToString(appointment.status)),
+              );
+            },
+          );
+        } else if (state is PetError) {
+          return _buildEmptyState('Error', state.message, Icons.error_outline);
+        }
+        return _buildEmptyState('Sin datos', 'No se pudo cargar la información.', Icons.info_outline);
       },
-    );
-  }
-
-  Widget _buildConsultationCard(Map<String, dynamic> record) {
-    return GestureDetector(
-      onTap: () => _navigateToConsultationDetail(record),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: _getTypeColor(record['type']).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          _getTypeIcon(record['type']),
-                          color: _getTypeColor(record['type']),
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              record['type'],
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF212121),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _formatDate(record['date']),
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.arrow_forward_ios,
-                        size: 16,
-                        color: Colors.grey[400],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: 16,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        record['veterinarian'],
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.local_hospital_outlined,
-                        size: 16,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          record['clinic'],
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (record['diagnosis'] != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      'Diagnóstico:',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      record['diagnosis'],
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF212121),
-                      ),
-                    ),
-                  ],
-                  if (record['notes'] != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      record['notes'],
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF757575),
-                        height: 1.4,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -599,172 +416,6 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
     );
   }
 
-  Widget _buildVitalSignsTab() {
-    final vitalSigns = <Map<String, dynamic>>[];
-
-    for (final record in _medicalRecords) {
-      final signs = <String, dynamic>{
-        'date': record['date'],
-        'veterinarian': record['veterinarian'],
-      };
-
-      if (record['weight'] != null) signs['weight'] = record['weight'];
-      if (record['temperature'] != null)
-        signs['temperature'] = record['temperature'];
-      if (record['heartRate'] != null) signs['heartRate'] = record['heartRate'];
-
-      if (signs.length > 2) {
-        vitalSigns.add(signs);
-      }
-    }
-
-    if (vitalSigns.isEmpty) {
-      return _buildEmptyState(
-        'No hay signos vitales registrados',
-        'Los datos de peso, temperatura y frecuencia cardíaca aparecerán aquí',
-        Icons.monitor_heart_outlined,
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-      itemCount: vitalSigns.length,
-      itemBuilder: (context, index) {
-        final signs = vitalSigns[index];
-        return _buildVitalSignsCard(signs);
-      },
-    );
-  }
-
-  Widget _buildVitalSignsCard(Map<String, dynamic> signs) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF81D4FA).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.monitor_heart_outlined,
-                  color: Color(0xFF81D4FA),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _formatDate(signs['date']),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF212121),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      signs['veterinarian'],
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              if (signs['weight'] != null)
-                Expanded(
-                  child: _buildVitalSignItem(
-                    'Peso',
-                    signs['weight'],
-                    Icons.monitor_weight_outlined,
-                    const Color(0xFF4CAF50),
-                  ),
-                ),
-              if (signs['temperature'] != null)
-                Expanded(
-                  child: _buildVitalSignItem(
-                    'Temperatura',
-                    signs['temperature'],
-                    Icons.thermostat_outlined,
-                    const Color(0xFFFF7043),
-                  ),
-                ),
-              if (signs['heartRate'] != null)
-                Expanded(
-                  child: _buildVitalSignItem(
-                    'Freq. Cardíaca',
-                    signs['heartRate'],
-                    Icons.monitor_heart_outlined,
-                    const Color(0xFF81D4FA),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVitalSignItem(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildEmptyState(String title, String subtitle, IconData icon) {
     return Center(
       child: Padding(
@@ -857,7 +508,20 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
-  void _navigateToConsultationDetail(Map<String, dynamic> record) {
-    Navigator.pushNamed(context, '/consultation-detail', arguments: record);
+  String _mapAppointmentStatusToString(AppointmentStatus status) {
+    switch (status) {
+      case AppointmentStatus.pending:
+        return 'Pendiente';
+      case AppointmentStatus.confirmed:
+        return 'Confirmada';
+      case AppointmentStatus.inProgress:
+        return 'En progreso';
+      case AppointmentStatus.completed:
+        return 'Completada';
+      case AppointmentStatus.cancelled:
+        return 'Cancelada';
+      case AppointmentStatus.rescheduled:
+        return 'Reprogramada';
+    }
   }
 }

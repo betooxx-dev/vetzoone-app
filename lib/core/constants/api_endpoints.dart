@@ -12,4 +12,8 @@ class ApiEndpoints {
   // Veterinarian endpoints
   static const String vetCreate = '/vet';
   static const String vetGetByUserId = '/vet/user';
+  
+  // Appointment endpoints
+  static const String appointmentBaseUrl = 'http://10.0.2.2:3002';
+  static const String appointmentsByUser = '/appointments/user';
 }

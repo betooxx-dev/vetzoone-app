@@ -5,6 +5,7 @@ import 'core/storage/shared_preferences_helper.dart';
 import 'core/services/image_picker_service.dart';
 
 import 'presentation/blocs/pet/pet_bloc.dart';
+import 'presentation/blocs/appointment/index.dart';
 
 import 'presentation/pages/public/splash_screen.dart';
 import 'presentation/pages/public/landing_page.dart';
@@ -68,7 +69,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: [BlocProvider<PetBloc>(create: (context) => sl<PetBloc>())],
+      providers: [
+        BlocProvider<PetBloc>(create: (context) => sl<PetBloc>()),
+        BlocProvider<AppointmentBloc>(create: (context) => sl<AppointmentBloc>()),
+      ],
       child: MaterialApp(
         title: 'VetZoone',
         debugShowCheckedModeBanner: false,
@@ -111,7 +115,10 @@ class MyApp extends StatelessWidget {
           '/my-appointments': (context) => const MyAppointmentsPage(),
           '/appointment-detail': (context) => const AppointmentDetailPage(),
 
-          '/medical-record': (context) => const MedicalRecordPage(),
+          '/medical-record': (context) {
+            final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+            return MedicalRecordPage(petId: args['petId'], petName: args['petName']);
+          },
           '/consultation-detail': (context) => const ConsultationDetailPage(),
           '/vaccination-history': (context) => const VaccinationHistoryPage(),
           '/active-treatments': (context) => const ActiveTreatmentsPage(),

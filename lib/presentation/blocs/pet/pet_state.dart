@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/pet.dart';
+import '../../../domain/entities/appointment.dart';
 
 abstract class PetState extends Equatable {
   const PetState();
@@ -23,11 +24,12 @@ class PetsLoaded extends PetState {
 
 class PetLoaded extends PetState {
   final Pet pet;
+  final List<Appointment> appointments;
 
-  const PetLoaded({required this.pet});
+  const PetLoaded({required this.pet, required this.appointments});
 
   @override
-  List<Object?> get props => [pet];
+  List<Object?> get props => [pet, appointments];
 }
 
 class PetOperationSuccess extends PetState {

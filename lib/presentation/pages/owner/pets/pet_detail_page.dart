@@ -5,7 +5,9 @@ import '../../../blocs/pet/pet_event.dart';
 import '../../../blocs/pet/pet_state.dart';
 import '../../../widgets/common/empty_state_widget.dart';
 import '../../../../domain/entities/pet.dart';
-import '../../../../data/models/pet/pet_model.dart';
+import '../../../../domain/entities/appointment.dart';
+import 'package:intl/intl.dart';
+
 
 class PetDetailPage extends StatefulWidget {
   final String petId;
@@ -38,7 +40,7 @@ class _PetDetailPageState extends State<PetDetailPage> {
               body: Center(child: CircularProgressIndicator()),
             );
           } else if (state is PetLoaded) {
-            return _buildPetDetail(state.pet);
+            return _buildPetDetail(state.pet, state.appointments);
           } else if (state is PetError) {
             return Scaffold(
               body: EmptyStateWidget(
@@ -66,7 +68,7 @@ class _PetDetailPageState extends State<PetDetailPage> {
     );
   }
 
-  Widget _buildPetDetail(Pet pet) {
+  Widget _buildPetDetail(Pet pet, List<Appointment> appointments) {
     return CustomScrollView(
       slivers: [
         _buildSliverAppBar(pet),
@@ -82,7 +84,7 @@ class _PetDetailPageState extends State<PetDetailPage> {
               const SizedBox(height: 16),
               _buildMedicalRecordsCard(pet),
               const SizedBox(height: 16),
-              _buildAppointmentsCard(pet),
+              _buildAppointmentsCard(appointments),
             ]),
           ),
         ),
@@ -370,7 +372,7 @@ class _PetDetailPageState extends State<PetDetailPage> {
                   () => Navigator.pushNamed(
                     context,
                     '/medical-record',
-                    arguments: pet.id,
+                    arguments: {'petId': pet.id, 'petName': pet.name},
                   ),
                 ),
               ),
@@ -427,7 +429,7 @@ class _PetDetailPageState extends State<PetDetailPage> {
                     () => Navigator.pushNamed(
                       context,
                       '/medical-record',
-                      arguments: pet.id,
+                      arguments: {'petId': pet.id, 'petName': pet.name},
                     ),
                 child: const Text('Ver todo'),
               ),
@@ -443,7 +445,7 @@ class _PetDetailPageState extends State<PetDetailPage> {
     );
   }
 
-  Widget _buildAppointmentsCard(Pet pet) {
+  Widget _buildAppointmentsCard(List<Appointment> appointments) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -476,29 +478,61 @@ class _PetDetailPageState extends State<PetDetailPage> {
               ),
               const SizedBox(width: 12),
               const Text(
-                'Próximas Citas',
+                'Historial de Citas',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF1A1A1A),
                 ),
               ),
-              const Spacer(),
-              TextButton(
-                onPressed:
-                    () => Navigator.pushNamed(context, '/my-appointments'),
-                child: const Text('Ver todas'),
-              ),
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'No hay citas programadas',
-            style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
-          ),
+          if (appointments.isEmpty)
+            const Text(
+              'No han habido citas para esta mascota.',
+              style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: appointments.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final appointment = appointments[index];
+                final formattedDate = DateFormat('dd/MM/yyyy').format(appointment.appointmentDate);
+                return ListTile(
+                  leading: const Icon(Icons.calendar_today, color: Color(0xFF4CAF50)),
+                  title: Text(
+                    'Fecha: $formattedDate',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(appointment.notes ?? 'Sin notas'),
+                  trailing: Text(_mapAppointmentStatusToString(appointment.status)),
+                );
+              },
+            ),
         ],
       ),
     );
+  }
+
+  String _mapAppointmentStatusToString(AppointmentStatus status) {
+    switch (status) {
+      case AppointmentStatus.pending:
+        return 'Pendiente';
+      case AppointmentStatus.confirmed:
+        return 'Confirmada';
+      case AppointmentStatus.inProgress:
+        return 'En progreso';
+      case AppointmentStatus.completed:
+        return 'Completada';
+      case AppointmentStatus.cancelled:
+        return 'Cancelada';
+      case AppointmentStatus.rescheduled:
+        return 'Reprogramada';
+    }
   }
 
   Widget _buildInfoRow(String label, String value, IconData icon) {

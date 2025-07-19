@@ -20,10 +20,10 @@ class PetRepositoryImpl implements PetRepository {
   }
 
   @override
-  Future<Pet> getPetById(String petId) async {
+  Future<PetDetailDTO> getPetById(String petId) async {
     try {
-      final pet = await remoteDataSource.getPetById(petId);
-      return pet;
+      final petDetail = await remoteDataSource.getPetById(petId);
+      return petDetail;
     } catch (e) {
       throw Exception('Failed to get pet: $e');
     }

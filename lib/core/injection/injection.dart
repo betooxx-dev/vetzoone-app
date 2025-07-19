@@ -19,6 +19,13 @@ import '../../domain/usecases/pet/update_pet_usecase.dart';
 import '../../domain/usecases/pet/delete_pet_usecase.dart';
 import '../../presentation/blocs/pet/pet_bloc.dart';
 import '../../data/datasources/vet/vet_remote_datasource.dart';
+import '../../data/datasources/appointment/appointment_remote_datasource.dart';
+import '../../data/repositories/appointment_repository_impl.dart';
+import '../../domain/repositories/appointment_repository.dart';
+import '../../domain/usecases/appointment/get_upcoming_appointments_usecase.dart';
+import '../../domain/usecases/appointment/get_upcoming_appointments_usecase.dart' show GetPastAppointmentsUseCase, GetAllAppointmentsUseCase;
+import '../../presentation/blocs/appointment/appointment_bloc.dart';
+import '../../domain/usecases/appointment/get_upcoming_appointments_usecase.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -47,13 +54,29 @@ Future<void> init() async {
   };
   petDio.interceptors.add(AuthInterceptor());
 
+  // Dio para Appointments (puerto 3002)
+  final appointmentDio = Dio();
+  appointmentDio.options.connectTimeout = const Duration(minutes: 2);
+  appointmentDio.options.sendTimeout = const Duration(minutes: 2);
+  appointmentDio.options.receiveTimeout = const Duration(minutes: 2);
+  appointmentDio.options.headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+  appointmentDio.interceptors.add(AuthInterceptor());
+
   // Registrar con nombres específicos y tipos explícitos
   sl.registerLazySingleton<Dio>(() => authDio, instanceName: 'authDio');
   sl.registerLazySingleton<Dio>(() => petDio, instanceName: 'petDio');
+  sl.registerLazySingleton<Dio>(() => appointmentDio, instanceName: 'appointmentDio');
 
   // Core
   sl.registerLazySingleton<ApiClient>(
     () => ApiClient(dio: sl<Dio>(instanceName: 'authDio')),
+  );
+  sl.registerLazySingleton<ApiClient>(
+    () => ApiClient(dio: sl<Dio>(instanceName: 'appointmentDio')),
+    instanceName: 'appointmentApiClient',
   );
   sl.registerLazySingleton<UserService>(() => UserService());
 
@@ -77,6 +100,13 @@ Future<void> init() async {
     () => VetRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
   );
 
+  // Appointment Data sources
+  sl.registerLazySingleton<AppointmentRemoteDataSource>(
+    () => AppointmentRemoteDataSourceImpl(
+      apiClient: sl<ApiClient>(instanceName: 'appointmentApiClient'),
+    ),
+  );
+
   // Auth Repositories
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(remoteDataSource: sl<AuthRemoteDataSource>()),
@@ -85,6 +115,11 @@ Future<void> init() async {
   // Pet Repositories
   sl.registerLazySingleton<PetRepository>(
     () => PetRepositoryImpl(remoteDataSource: sl<PetRemoteDataSource>()),
+  );
+
+  // Appointment Repositories
+  sl.registerLazySingleton<AppointmentRepository>(
+    () => AppointmentRepositoryImpl(remoteDataSource: sl<AppointmentRemoteDataSource>()),
   );
 
   // Auth Use cases
@@ -112,6 +147,21 @@ Future<void> init() async {
     () => DeletePetUseCase(repository: sl<PetRepository>()),
   );
 
+  // Appointment Use cases
+  sl.registerLazySingleton(() => GetUpcomingAppointmentsUseCase(sl<AppointmentRepository>()));
+  sl.registerLazySingleton(() => GetPastAppointmentsUseCase(sl<AppointmentRepository>()));
+  sl.registerLazySingleton(() => GetAllAppointmentsUseCase(sl<AppointmentRepository>()));
+
+  // Appointment Use cases
+  sl.registerLazySingleton(() => GetUpcomingAppointmentsUseCase(sl<AppointmentRepository>()));
+  sl.registerLazySingleton(() => GetPastAppointmentsUseCase(sl<AppointmentRepository>()));
+  sl.registerLazySingleton(() => GetAllAppointmentsUseCase(sl<AppointmentRepository>()));
+
   // Blocs
-  sl.registerFactory(() => PetBloc(petRepository: sl<PetRepository>()));
+  sl.registerFactory(() => PetBloc(petRepository: sl<PetRepository>(), appointmentRepository: sl<AppointmentRepository>()));
+  sl.registerFactory(() => AppointmentBloc(
+    getUpcomingAppointmentsUseCase: sl<GetUpcomingAppointmentsUseCase>(),
+    getPastAppointmentsUseCase: sl<GetPastAppointmentsUseCase>(),
+    getAllAppointmentsUseCase: sl<GetAllAppointmentsUseCase>(),
+  ));
 }

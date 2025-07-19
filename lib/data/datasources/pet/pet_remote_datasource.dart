@@ -3,10 +3,17 @@ import 'package:dio/dio.dart';
 import '../../../core/constants/pet_endpoints.dart';
 import '../../../core/storage/shared_preferences_helper.dart';
 import '../../models/pet/pet_model.dart';
+import '../../models/appointment/appointment_model.dart';
+
+class PetDetailDTO {
+  final PetModel pet;
+  final List<AppointmentModel> appointments;
+  PetDetailDTO({required this.pet, required this.appointments});
+}
 
 abstract class PetRemoteDataSource {
   Future<List<PetModel>> getAllPets(String userId);
-  Future<PetModel> getPetById(String petId);
+  Future<PetDetailDTO> getPetById(String petId);
   Future<PetModel> createPet(PetModel pet, {File? imageFile});
   Future<PetModel> updatePet(String petId, PetModel pet, {File? imageFile});
   Future<void> deletePet(String petId);
@@ -35,13 +42,16 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
   }
 
   @override
-  Future<PetModel> getPetById(String petId) async {
+  Future<PetDetailDTO> getPetById(String petId) async {
     try {
       final url = PetEndpoints.getPetByIdUrl(petId);
       final response = await _dio.get(url);
-      
       if (response.statusCode == 200) {
-        return PetModel.fromJson(response.data['data']['pet']);
+        final data = response.data['data'];
+        final pet = PetModel.fromJson(data['pet']);
+        final appointments = (data['appointments'] as List<dynamic>? ?? [])
+            .map((json) => AppointmentModel.fromJson(json)).toList();
+        return PetDetailDTO(pet: pet, appointments: appointments);
       } else {
         throw Exception('Failed to load pet');
       }
