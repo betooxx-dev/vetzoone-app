@@ -15,7 +15,7 @@ class VetRemoteDataSourceImpl implements VetRemoteDataSource {
   @override
   Future<Map<String, dynamic>> getVetByUserId(String userId) async {
     try {
-      final url = '${ApiEndpoints.baseUrl}/vet/user/$userId';
+      final url = ApiEndpoints.getVetByUserIdUrl(userId);
       
       print('🔍 PETICIÓN GET VET BY USER:');
       print('URL: $url');
@@ -36,7 +36,6 @@ class VetRemoteDataSourceImpl implements VetRemoteDataSource {
         print('Status code: ${e.response?.statusCode}');
         print('Response data: ${e.response?.data}');
         
-        // Si es 404, significa que el veterinario no existe
         if (e.response?.statusCode == 404) {
           throw VetNotFoundException('Veterinario no encontrado para el usuario $userId');
         }
@@ -49,7 +48,7 @@ class VetRemoteDataSourceImpl implements VetRemoteDataSource {
   @override
   Future<Map<String, dynamic>> createVet(Map<String, dynamic> vetData) async {
     try {
-      final url = '${ApiEndpoints.baseUrl}/vet';
+      final url = ApiEndpoints.createVetUrl;
       
       print('🏥 INICIANDO PETICIÓN CREAR VET:');
       print('URL: $url');
@@ -79,13 +78,12 @@ class VetRemoteDataSourceImpl implements VetRemoteDataSource {
         print('Response data: ${e.response?.data}');
         print('Error message: ${e.message}');
         
-        // Manejar específicamente errores de timeout
         if (e.type == DioExceptionType.connectionTimeout) {
           throw Exception('Tiempo de conexión agotado. Verifica tu conexión a internet e intenta nuevamente.');
         } else if (e.type == DioExceptionType.sendTimeout) {
-          throw Exception('Tiempo de envío agotado. La petición tardó demasiado en enviarse.');
+          throw Exception('Tiempo de envío agotado. Intenta nuevamente.');
         } else if (e.type == DioExceptionType.receiveTimeout) {
-          throw Exception('Tiempo de recepción agotado. El servidor tardó demasiado en responder.');
+          throw Exception('Tiempo de respuesta agotado. Intenta nuevamente.');
         }
       }
       
@@ -94,11 +92,10 @@ class VetRemoteDataSourceImpl implements VetRemoteDataSource {
   }
 }
 
-// Excepción personalizada para veterinario no encontrado
 class VetNotFoundException implements Exception {
   final String message;
   VetNotFoundException(this.message);
   
   @override
-  String toString() => message;
-} 
+  String toString() => 'VetNotFoundException: $message';
+}

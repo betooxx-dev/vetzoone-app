@@ -1,292 +1,289 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_sizes.dart';
 
-class RegisterTypeSelectionPage extends StatefulWidget {
+class RegisterTypeSelectionPage extends StatelessWidget {
   const RegisterTypeSelectionPage({super.key});
 
   @override
-  State<RegisterTypeSelectionPage> createState() =>
-      _RegisterTypeSelectionPageState();
-}
-
-class _RegisterTypeSelectionPageState extends State<RegisterTypeSelectionPage>
-    with TickerProviderStateMixin {
-  late AnimationController _fadeController;
-  late AnimationController _slideController;
-
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
-    );
-
-    // Iniciar animaciones
-    _fadeController.forward();
-    _slideController.forward();
-  }
-
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    _slideController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.backgroundDark,
-              AppColors.backgroundDarkSecondary,
-              AppColors.backgroundDarkCard,
-            ],
-            stops: [0.0, 0.5, 1.0],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(children: [_buildHeader(), _buildContent()]),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Row(
+        decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
+        child: Stack(
           children: [
-            GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                Navigator.pop(context);
-              },
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundDarkCard,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.gray700, width: 1),
-                  boxShadow: AppColors.cardShadow,
-                ),
-                child: const Icon(
-                  Icons.arrow_back_ios,
-                  color: AppColors.textSecondaryDark,
-                  size: 20,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+            // Formas decorativas de fondo
+            _buildDecorativeShapes(),
 
-  Widget _buildContent() {
-    return SlideTransition(
-      position: _slideAnimation,
-      child: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-
-            // Logo
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 25,
-                    offset: const Offset(0, 8),
+            // Contenido principal
+            SafeArea(
+              child: SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight:
+                        screenHeight -
+                        MediaQuery.of(context).padding.top -
+                        MediaQuery.of(context).padding.bottom,
                   ),
-                ],
-              ),
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: const BoxDecoration(
-                  color: AppColors.white,
-                  shape: BoxShape.circle,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.paddingL,
+                    ),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: AppSizes.spaceL),
+
+                        // Botón de retroceso
+                        Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                padding: const EdgeInsets.all(
+                                  AppSizes.paddingM,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.white,
+                                  borderRadius: BorderRadius.circular(
+                                    AppSizes.radiusM,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.black.withOpacity(0.1),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.arrow_back_ios,
+                                  color: AppColors.primary,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: AppSizes.spaceXXL),
+
+                        // Logo en círculo blanco
+                        Container(
+                          width: 140,
+                          height: 140,
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusRound,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.black.withOpacity(0.1),
+                                blurRadius: 15,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSizes.paddingM),
+                            child: Image.asset(
+                              'assets/images/LogoV.png',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: AppSizes.spaceXXL),
+
+                        // Título
+                        const Text(
+                          'Únete a VetZoone',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textOnDark,
+                          ),
+                        ),
+
+                        const SizedBox(height: AppSizes.spaceM),
+
+                        const Text(
+                          'Selecciona el tipo de cuenta que mejor\nse adapte a ti',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppColors.textOnDark,
+                            height: 1.3,
+                          ),
+                        ),
+
+                        const SizedBox(height: AppSizes.spaceXXL * 1.5),
+
+                        // Tarjetas de tipo de cuenta
+                        _buildAccountTypeCard(
+                          context: context,
+                          icon: Icons.pets,
+                          iconColor: AppColors.white,
+                          backgroundColor: AppColors.secondary,
+                          title: 'Dueño de\nMascota',
+                          subtitle:
+                              'Agenda citas y\nlleva el control\nmédico de tu\nmascota',
+                          onTap: () {
+                            Navigator.pushNamed(context, '/register/owner');
+                          },
+                        ),
+
+                        const SizedBox(height: AppSizes.spaceL),
+
+                        _buildAccountTypeCard(
+                          context: context,
+                          icon: Icons.medical_services,
+                          iconColor: AppColors.white,
+                          backgroundColor: AppColors.accent,
+                          title: 'Veterinario',
+                          subtitle:
+                              'Gestiona tu consulta y\natiende a más pacientes',
+                          onTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              '/register/veterinarian',
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: AppSizes.spaceXL),
+
+                        // Enlace a login
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              '¿Ya tienes cuenta? ',
+                              style: TextStyle(color: AppColors.textOnDark),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/login');
+                              },
+                              child: const Text(
+                                'Iniciar sesión',
+                                style: TextStyle(
+                                  color: AppColors.secondary,
+                                  fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: AppSizes.spaceL),
+                      ],
+                    ),
+                  ),
                 ),
-                padding: const EdgeInsets.all(12),
-                child: Image.asset(
-                  'assets/images/LogoV.png',
-                  fit: BoxFit.contain,
-                ),
               ),
             ),
-
-            const SizedBox(height: 40),
-
-            // Título principal
-            const Text(
-              'Únete a VetZoone',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimaryDark,
-              ),
-              textAlign: TextAlign.center,
-            ),
-
-            const SizedBox(height: 16),
-
-            // Subtítulo
-            const Text(
-              'Selecciona el tipo de cuenta que mejor\nse adapte a ti',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textTertiaryDark,
-                height: 1.5,
-              ),
-            ),
-
-            const SizedBox(height: 50),
-
-            // Card Dueño de Mascota
-            _buildAccountTypeCard(
-              context: context,
-              icon: Icons.pets,
-              title: 'Dueño de\nMascota',
-              subtitle: 'Agenda citas y lleva el control\nmédico de tu mascota',
-              gradient: [AppColors.vetSecondary, AppColors.secondary],
-              onTap: () {
-                HapticFeedback.lightImpact();
-                Navigator.pushNamed(context, '/register/owner');
-              },
-            ),
-
-            const SizedBox(height: 20),
-
-            // Card Veterinario
-            _buildAccountTypeCard(
-              context: context,
-              icon: Icons.medical_services,
-              title: 'Veterinario',
-              subtitle: 'Gestiona tu consulta y\natiende a más pacientes',
-              gradient: [AppColors.vetPrimary, AppColors.primary],
-              onTap: () {
-                HapticFeedback.lightImpact();
-                Navigator.pushNamed(context, '/register/veterinarian');
-              },
-            ),
-
-            const SizedBox(height: 40),
-
-            // Link de inicio de sesión
-            TextButton(
-              onPressed: () {
-                HapticFeedback.selectionClick();
-                Navigator.pushNamed(context, '/login');
-              },
-              child: const Text(
-                '¿Ya tienes cuenta? Inicia sesión',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.textSecondaryDark,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 30),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDecorativeShapes() {
+    return Stack(
+      children: [
+        // Forma morada superior izquierda
+        Positioned(
+          top: -50,
+          left: -80,
+          child: Container(
+            width: AppSizes.decorativeShapeXL,
+            height: AppSizes.decorativeShapeL,
+            decoration: BoxDecoration(
+              color: AppColors.purpleOverlay,
+              borderRadius: BorderRadius.circular(AppSizes.radiusRound),
+            ),
+          ),
+        ),
+
+        // Forma naranja superior derecha
+        Positioned(
+          top: 50,
+          right: -60,
+          child: Container(
+            width: AppSizes.decorativeShapeM,
+            height: AppSizes.decorativeShapeM,
+            decoration: BoxDecoration(
+              color: AppColors.orangeOverlay,
+              borderRadius: BorderRadius.circular(AppSizes.radiusRound),
+            ),
+          ),
+        ),
+
+        // Forma amarilla inferior izquierda
+        Positioned(
+          bottom: -30,
+          left: -40,
+          child: Container(
+            width: AppSizes.decorativeShapeS,
+            height: AppSizes.decorativeShapeL,
+            decoration: BoxDecoration(
+              color: AppColors.yellowOverlay,
+              borderRadius: BorderRadius.circular(AppSizes.radiusRound),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildAccountTypeCard({
     required BuildContext context,
     required IconData icon,
+    required Color iconColor,
+    required Color backgroundColor,
     required String title,
     required String subtitle,
-    required List<Color> gradient,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSizes.paddingL),
         decoration: BoxDecoration(
-          color: AppColors.backgroundDarkCard,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.gray700, width: 1),
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withValues(alpha: 0.1),
-              blurRadius: 15,
-              offset: const Offset(0, 4),
+              color: AppColors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Row(
           children: [
-            // Ícono con gradiente
             Container(
               width: 70,
               height: 70,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: gradient,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(18),
+                color: backgroundColor,
+                borderRadius: BorderRadius.circular(AppSizes.radiusL),
                 boxShadow: [
                   BoxShadow(
-                    color: gradient[0].withValues(alpha: 0.3),
+                    color: backgroundColor.withOpacity(0.3),
                     blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
-              child: Icon(icon, color: AppColors.white, size: 32),
+              child: Icon(icon, color: iconColor, size: AppSizes.iconL),
             ),
-
-            const SizedBox(width: 20),
-
-            // Contenido de texto
+            const SizedBox(width: AppSizes.spaceL),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,35 +291,33 @@ class _RegisterTypeSelectionPageState extends State<RegisterTypeSelectionPage>
                   Text(
                     title,
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimaryDark,
+                      color: AppColors.textPrimary,
                       height: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSizes.spaceS),
                   Text(
                     subtitle,
                     style: const TextStyle(
                       fontSize: 14,
-                      color: AppColors.textTertiaryDark,
-                      height: 1.4,
+                      color: AppColors.textSecondary,
+                      height: 1.3,
                     ),
                   ),
                 ],
               ),
             ),
-
-            // Flecha
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(AppSizes.spaceS),
               decoration: BoxDecoration(
-                color: AppColors.gray800,
-                borderRadius: BorderRadius.circular(8),
+                color: backgroundColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppSizes.radiusS),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_forward_ios,
-                color: AppColors.textSecondaryDark,
+                color: backgroundColor,
                 size: 16,
               ),
             ),

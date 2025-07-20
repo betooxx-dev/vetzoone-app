@@ -25,10 +25,10 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
     DateTime dateTo,
   ) async {
     try {
-      final url = '${ApiEndpoints.appointmentBaseUrl}${ApiEndpoints.appointmentsByUser}/$userId';
+      final url = ApiEndpoints.getAppointmentsByUserUrl(userId);
       
       final queryParams = {
-        'dateFrom': dateFrom.toIso8601String().split('T')[0], // Solo la fecha en formato YYYY-MM-DD
+        'dateFrom': dateFrom.toIso8601String().split('T')[0],
         'dateTo': dateTo.toIso8601String().split('T')[0],
       };
       
@@ -67,32 +67,72 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
   @override
   Future<List<AppointmentModel>> getAppointmentsByPetId(String petId) async {
     try {
-      final url = '${ApiEndpoints.appointmentBaseUrl}/pet/$petId';
+      final url = ApiEndpoints.getAppointmentsByPetUrl(petId);
+      
+      print('🗓️ PETICIÓN APPOINTMENTS BY PET:');
+      print('URL: $url');
+      print('Pet ID: $petId');
+      
       final response = await apiClient.get(url);
+      
+      print('✅ PET APPOINTMENTS RESPONSE:');
+      print('Status: ${response.statusCode}');
+      print('Data: ${response.data}');
+      
       if (response.statusCode == 200) {
         final List<dynamic> appointmentsData = response.data['data'] ?? [];
-        return appointmentsData.map((json) => AppointmentModel.fromJson(json)).toList();
+        return appointmentsData
+            .map((json) => AppointmentModel.fromJson(json))
+            .toList();
       } else {
-        throw Exception('Failed to load appointments by pet');
+        throw Exception('Failed to load pet appointments - Status: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error fetching appointments by pet: $e');
+      print('❌ ERROR FETCHING PET APPOINTMENTS:');
+      print('Error: $e');
+      
+      if (e is DioException) {
+        print('Status code: ${e.response?.statusCode}');
+        print('Response data: ${e.response?.data}');
+      }
+      
+      throw Exception('Error fetching pet appointments: $e');
     }
   }
 
   @override
   Future<List<AppointmentModel>> getAllAppointmentsByUserId(String userId) async {
     try {
-      final url = '${ApiEndpoints.appointmentBaseUrl}${ApiEndpoints.appointmentsByUser}/$userId';
+      final url = ApiEndpoints.getAppointmentsByUserUrl(userId);
+      
+      print('🗓️ PETICIÓN ALL APPOINTMENTS BY USER:');
+      print('URL: $url');
+      print('User ID: $userId');
+      
       final response = await apiClient.get(url);
+      
+      print('✅ ALL APPOINTMENTS RESPONSE:');
+      print('Status: ${response.statusCode}');
+      print('Data: ${response.data}');
+      
       if (response.statusCode == 200) {
         final List<dynamic> appointmentsData = response.data['data'] ?? [];
-        return appointmentsData.map((json) => AppointmentModel.fromJson(json)).toList();
+        return appointmentsData
+            .map((json) => AppointmentModel.fromJson(json))
+            .toList();
       } else {
-        throw Exception('Failed to load all appointments');
+        throw Exception('Failed to load all appointments - Status: ${response.statusCode}');
       }
     } catch (e) {
+      print('❌ ERROR FETCHING ALL APPOINTMENTS:');
+      print('Error: $e');
+      
+      if (e is DioException) {
+        print('Status code: ${e.response?.statusCode}');
+        print('Response data: ${e.response?.data}');
+      }
+      
       throw Exception('Error fetching all appointments: $e');
     }
   }
-} 
+}

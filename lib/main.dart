@@ -5,6 +5,7 @@ import 'core/storage/shared_preferences_helper.dart';
 import 'core/services/image_picker_service.dart';
 
 import 'presentation/blocs/pet/pet_bloc.dart';
+import 'presentation/blocs/pet/pet_event.dart';
 import 'presentation/blocs/appointment/index.dart';
 
 import 'presentation/pages/public/splash_screen.dart';
@@ -45,21 +46,21 @@ import 'presentation/pages/veterinarian/profile/professional_profile_page.dart';
 import 'presentation/pages/veterinarian/schedule/configure_schedule_page.dart';
 import 'presentation/pages/veterinarian/settings/vet_settings_page.dart';
 import 'presentation/pages/veterinarian/analytics/statistics_page.dart';
-
 import 'domain/entities/pet.dart';
+
+final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await init();
-  
-  // Limpiar archivos de imagen antiguos al iniciar la app
+
   try {
     await ImagePickerService.cleanOldImages();
     print('✅ Limpieza de archivos antiguos completada');
   } catch (e) {
     print('⚠️ Error durante la limpieza de archivos: $e');
   }
-  
+
   runApp(const MyApp());
 }
 
@@ -71,11 +72,14 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<PetBloc>(create: (context) => sl<PetBloc>()),
-        BlocProvider<AppointmentBloc>(create: (context) => sl<AppointmentBloc>()),
+        BlocProvider<AppointmentBloc>(
+          create: (context) => sl<AppointmentBloc>(),
+        ),
       ],
       child: MaterialApp(
         title: 'VetZoone',
         debugShowCheckedModeBanner: false,
+        navigatorObservers: [routeObserver],
         theme: ThemeData(
           primarySwatch: Colors.green,
           visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -85,8 +89,10 @@ class MyApp extends StatelessWidget {
           '/landing': (context) => const LandingPage(),
           '/login': (context) => const LoginPage(),
           '/register': (context) => const RegisterTypeSelectionPage(),
-          '/register/owner': (context) => const UnifiedRegisterPage(userRole: 'PET_OWNER'),
-          '/register/veterinarian': (context) => const UnifiedRegisterPage(userRole: 'VETERINARIAN'),
+          '/register/owner':
+              (context) => const UnifiedRegisterPage(userRole: 'PET_OWNER'),
+          '/register/veterinarian':
+              (context) => const UnifiedRegisterPage(userRole: 'VETERINARIAN'),
           '/professional-verification': (context) => const Placeholder(),
           '/reset-password': (context) => const Placeholder(),
 
@@ -116,8 +122,13 @@ class MyApp extends StatelessWidget {
           '/appointment-detail': (context) => const AppointmentDetailPage(),
 
           '/medical-record': (context) {
-            final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-            return MedicalRecordPage(petId: args['petId'], petName: args['petName']);
+            final args =
+                ModalRoute.of(context)!.settings.arguments
+                    as Map<String, dynamic>;
+            return MedicalRecordPage(
+              petId: args['petId'],
+              petName: args['petName'],
+            );
           },
           '/consultation-detail': (context) => const ConsultationDetailPage(),
           '/vaccination-history': (context) => const VaccinationHistoryPage(),
@@ -230,6 +241,7 @@ class MainScreenOwner extends StatefulWidget {
 
 class _MainScreenOwnerState extends State<MainScreenOwner> {
   int _currentIndex = 0;
+  late final PetBloc petBloc;
 
   final List<Widget> _pages = [
     const OwnerDashboardPage(),
@@ -238,6 +250,21 @@ class _MainScreenOwnerState extends State<MainScreenOwner> {
     const MyAppointmentsPage(),
     const OwnerProfilePage(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    petBloc = context.read<PetBloc>();
+  }
+
+  Future<void> _reloadPetsIfNeeded() async {
+    if (_currentIndex == 0 || _currentIndex == 1) {
+      final userId = await SharedPreferencesHelper.getUserId();
+      if (userId != null && mounted) {
+        petBloc.add(LoadPetsEvent(userId: userId));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -249,6 +276,7 @@ class _MainScreenOwnerState extends State<MainScreenOwner> {
           setState(() {
             _currentIndex = index;
           });
+          _reloadPetsIfNeeded();
         },
         isVeterinarian: false,
       ),

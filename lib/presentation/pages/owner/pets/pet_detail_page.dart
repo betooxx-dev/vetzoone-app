@@ -6,8 +6,8 @@ import '../../../blocs/pet/pet_state.dart';
 import '../../../widgets/common/empty_state_widget.dart';
 import '../../../../domain/entities/pet.dart';
 import '../../../../domain/entities/appointment.dart';
+import '../../../../core/storage/shared_preferences_helper.dart';
 import 'package:intl/intl.dart';
-
 
 class PetDetailPage extends StatefulWidget {
   final String petId;
@@ -29,41 +29,54 @@ class _PetDetailPageState extends State<PetDetailPage> {
     context.read<PetBloc>().add(GetPetByIdEvent(petId: widget.petId));
   }
 
+  Future<void> _reloadPetsOnPop() async {
+    final userId = await SharedPreferencesHelper.getUserId();
+    if (userId != null && mounted) {
+      context.read<PetBloc>().add(LoadPetsEvent(userId: userId));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: BlocBuilder<PetBloc, PetState>(
-        builder: (context, state) {
-          if (state is PetLoading) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          } else if (state is PetLoaded) {
-            return _buildPetDetail(state.pet, state.appointments);
-          } else if (state is PetError) {
+    return WillPopScope(
+      onWillPop: () async {
+        await _reloadPetsOnPop();
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        body: BlocBuilder<PetBloc, PetState>(
+          builder: (context, state) {
+            if (state is PetLoading) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            } else if (state is PetLoaded) {
+              return _buildPetDetail(state.pet, state.appointments);
+            } else if (state is PetError) {
+              return Scaffold(
+                body: EmptyStateWidget(
+                  icon: Icons.error_outline,
+                  title: 'Error al cargar mascota',
+                  message: state.message,
+                  iconColor: Colors.red,
+                  buttonText: 'Reintentar',
+                  onButtonPressed: _loadPetDetail,
+                ),
+              );
+            }
+
             return Scaffold(
               body: EmptyStateWidget(
-                icon: Icons.error_outline,
-                title: 'Error al cargar mascota',
-                message: state.message,
-                iconColor: Colors.red,
-                buttonText: 'Reintentar',
-                onButtonPressed: _loadPetDetail,
+                icon: Icons.pets_rounded,
+                title: 'Mascota no encontrada',
+                message: 'No se pudo cargar la información de la mascota.',
+                buttonText: 'Volver',
+                onButtonPressed: () => Navigator.pop(context),
               ),
             );
-          }
-
-          return Scaffold(
-            body: EmptyStateWidget(
-              icon: Icons.pets_rounded,
-              title: 'Mascota no encontrada',
-              message: 'No se pudo cargar la información de la mascota.',
-              buttonText: 'Volver',
-              onButtonPressed: () => Navigator.pop(context),
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }
@@ -104,7 +117,10 @@ class _PetDetailPageState extends State<PetDetailPage> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: IconButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () async {
+            await _reloadPetsOnPop();
+            Navigator.pop(context);
+          },
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
         ),
       ),
@@ -501,15 +517,22 @@ class _PetDetailPageState extends State<PetDetailPage> {
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final appointment = appointments[index];
-                final formattedDate = DateFormat('dd/MM/yyyy').format(appointment.appointmentDate);
+                final formattedDate = DateFormat(
+                  'dd/MM/yyyy',
+                ).format(appointment.appointmentDate);
                 return ListTile(
-                  leading: const Icon(Icons.calendar_today, color: Color(0xFF4CAF50)),
+                  leading: const Icon(
+                    Icons.calendar_today,
+                    color: Color(0xFF4CAF50),
+                  ),
                   title: Text(
                     'Fecha: $formattedDate',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(appointment.notes ?? 'Sin notas'),
-                  trailing: Text(_mapAppointmentStatusToString(appointment.status)),
+                  trailing: Text(
+                    _mapAppointmentStatusToString(appointment.status),
+                  ),
                 );
               },
             ),

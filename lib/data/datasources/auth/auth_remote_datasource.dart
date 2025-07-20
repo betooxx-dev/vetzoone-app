@@ -16,9 +16,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
-      final url = '${ApiEndpoints.baseUrl}${ApiEndpoints.authLogin}';
       final response = await apiClient.post(
-        url,
+        ApiEndpoints.authLoginUrl,
         data: {
           'email': email,
           'password': password,
@@ -33,16 +32,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
     try {
-      final url = '${ApiEndpoints.baseUrl}${ApiEndpoints.authRegister}';
-      
-      // Logs detallados para depurar la petición
       print('🌐 PETICIÓN HTTP REGISTRO:');
-      print('URL completa: $url');
+      print('URL completa: ${ApiEndpoints.authRegisterUrl}');
       print('Datos enviados: $userData');
       print('Headers configurados en Dio: ${apiClient.dio.options.headers}');
       
       final response = await apiClient.post(
-        url,
+        ApiEndpoints.authRegisterUrl,
         data: userData,
       );
       
@@ -55,7 +51,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       print('❌ ERROR EN PETICIÓN HTTP:');
       print('Error completo: $e');
       
-      // Si es un DioException, mostrar más detalles
       if (e is DioException) {
         print('Tipo de error: ${e.type}');
         print('Status code: ${e.response?.statusCode}');
@@ -71,8 +66,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> logout() async {
     try {
-      final url = '${ApiEndpoints.baseUrl}${ApiEndpoints.authLogout}';
-      await apiClient.post(url);
+      await apiClient.post(ApiEndpoints.authLogoutUrl);
     } catch (e) {
       throw Exception('Error en logout: $e');
     }

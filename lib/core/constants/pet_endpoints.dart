@@ -1,6 +1,5 @@
 class PetEndpoints {
-  // static const String baseUrl = 'http://192.168.0.22:3001';
-  static const String baseUrl = 'http://192.168.0.22:3001';
+  static const String baseUrl = 'https://web-hadgznlq066o.up-de-fra1-k8s-1.apps.run-on-seenode.com';
 
   static const String getAllPets = '/pet/all';
   static const String getPetById = '/pet';

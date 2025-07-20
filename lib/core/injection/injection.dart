@@ -23,106 +23,62 @@ import '../../data/datasources/appointment/appointment_remote_datasource.dart';
 import '../../data/repositories/appointment_repository_impl.dart';
 import '../../domain/repositories/appointment_repository.dart';
 import '../../domain/usecases/appointment/get_upcoming_appointments_usecase.dart';
-import '../../domain/usecases/appointment/get_upcoming_appointments_usecase.dart' show GetPastAppointmentsUseCase, GetAllAppointmentsUseCase;
 import '../../presentation/blocs/appointment/appointment_bloc.dart';
-import '../../domain/usecases/appointment/get_upcoming_appointments_usecase.dart';
 
 final GetIt sl = GetIt.instance;
 
 Future<void> init() async {
-  // Dio para Auth (puerto 3000)
-  final authDio = Dio();
-  // authDio.options.baseUrl = 'http://192.168.0.22:3000';
-  authDio.options.baseUrl = 'http://192.168.0.22:3000';
-  authDio.options.connectTimeout = const Duration(minutes: 5); // 2 minutos
-  authDio.options.sendTimeout = const Duration(minutes: 5); // 2 minutos
-  authDio.options.receiveTimeout = const Duration(minutes: 5); // 2 minutos
-  authDio.options.headers = {
+  final gatewayDio = Dio();
+  gatewayDio.options.connectTimeout = const Duration(minutes: 5);
+  gatewayDio.options.sendTimeout = const Duration(minutes: 5);
+  gatewayDio.options.receiveTimeout = const Duration(minutes: 5);
+  gatewayDio.options.headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   };
-  authDio.interceptors.add(AuthInterceptor());
+  gatewayDio.interceptors.add(AuthInterceptor());
 
-  // Dio para Pets (puerto 3001)
-  final petDio = Dio();
-  petDio.options.connectTimeout = const Duration(minutes: 2); // 2 minutos
-  petDio.options.sendTimeout = const Duration(minutes: 2); // 2 minutos
-  petDio.options.receiveTimeout = const Duration(minutes: 2); // 2 minutos
-  petDio.options.headers = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  };
-  petDio.interceptors.add(AuthInterceptor());
+  sl.registerLazySingleton<Dio>(() => gatewayDio);
 
-  // Dio para Appointments (puerto 3002)
-  final appointmentDio = Dio();
-  appointmentDio.options.connectTimeout = const Duration(minutes: 2);
-  appointmentDio.options.sendTimeout = const Duration(minutes: 2);
-  appointmentDio.options.receiveTimeout = const Duration(minutes: 2);
-  appointmentDio.options.headers = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  };
-  appointmentDio.interceptors.add(AuthInterceptor());
-
-  // Registrar con nombres específicos y tipos explícitos
-  sl.registerLazySingleton<Dio>(() => authDio, instanceName: 'authDio');
-  sl.registerLazySingleton<Dio>(() => petDio, instanceName: 'petDio');
-  sl.registerLazySingleton<Dio>(() => appointmentDio, instanceName: 'appointmentDio');
-
-  // Core
   sl.registerLazySingleton<ApiClient>(
-    () => ApiClient(dio: sl<Dio>(instanceName: 'authDio')),
-  );
-  sl.registerLazySingleton<ApiClient>(
-    () => ApiClient(dio: sl<Dio>(instanceName: 'appointmentDio')),
-    instanceName: 'appointmentApiClient',
+    () => ApiClient(dio: sl<Dio>()),
   );
   sl.registerLazySingleton<UserService>(() => UserService());
 
-  // Auth Data sources
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
   );
 
-  // User Data sources
   sl.registerLazySingleton<UserRemoteDataSource>(
     () => UserRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
   );
 
-  // Pet Data sources
   sl.registerLazySingleton<PetRemoteDataSource>(
-    () => PetRemoteDataSourceImpl(dio: sl<Dio>(instanceName: 'petDio')),
+    () => PetRemoteDataSourceImpl(dio: sl<Dio>()),
   );
 
-  // Vet Data sources
   sl.registerLazySingleton<VetRemoteDataSource>(
     () => VetRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
   );
 
-  // Appointment Data sources
   sl.registerLazySingleton<AppointmentRemoteDataSource>(
     () => AppointmentRemoteDataSourceImpl(
-      apiClient: sl<ApiClient>(instanceName: 'appointmentApiClient'),
+      apiClient: sl<ApiClient>(),
     ),
   );
 
-  // Auth Repositories
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(remoteDataSource: sl<AuthRemoteDataSource>()),
   );
 
-  // Pet Repositories
   sl.registerLazySingleton<PetRepository>(
     () => PetRepositoryImpl(remoteDataSource: sl<PetRemoteDataSource>()),
   );
 
-  // Appointment Repositories
   sl.registerLazySingleton<AppointmentRepository>(
     () => AppointmentRepositoryImpl(remoteDataSource: sl<AppointmentRemoteDataSource>()),
   );
 
-  // Auth Use cases
   sl.registerLazySingleton(
     () => LoginUseCase(repository: sl<AuthRepository>()),
   );
@@ -133,7 +89,6 @@ Future<void> init() async {
     () => RegisterUseCase(repository: sl<AuthRepository>()),
   );
 
-  // Pet Use cases
   sl.registerLazySingleton(
     () => GetPetsUseCase(repository: sl<PetRepository>()),
   );
@@ -147,17 +102,10 @@ Future<void> init() async {
     () => DeletePetUseCase(repository: sl<PetRepository>()),
   );
 
-  // Appointment Use cases
   sl.registerLazySingleton(() => GetUpcomingAppointmentsUseCase(sl<AppointmentRepository>()));
   sl.registerLazySingleton(() => GetPastAppointmentsUseCase(sl<AppointmentRepository>()));
   sl.registerLazySingleton(() => GetAllAppointmentsUseCase(sl<AppointmentRepository>()));
 
-  // Appointment Use cases
-  sl.registerLazySingleton(() => GetUpcomingAppointmentsUseCase(sl<AppointmentRepository>()));
-  sl.registerLazySingleton(() => GetPastAppointmentsUseCase(sl<AppointmentRepository>()));
-  sl.registerLazySingleton(() => GetAllAppointmentsUseCase(sl<AppointmentRepository>()));
-
-  // Blocs
   sl.registerFactory(() => PetBloc(petRepository: sl<PetRepository>(), appointmentRepository: sl<AppointmentRepository>()));
   sl.registerFactory(() => AppointmentBloc(
     getUpcomingAppointmentsUseCase: sl<GetUpcomingAppointmentsUseCase>(),
