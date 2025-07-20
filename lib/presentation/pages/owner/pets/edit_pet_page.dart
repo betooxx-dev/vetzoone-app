@@ -6,6 +6,8 @@ import '../../../blocs/pet/pet_bloc.dart';
 import '../../../blocs/pet/pet_event.dart';
 import '../../../blocs/pet/pet_state.dart';
 import '../../../widgets/common/image_picker_widget.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
 
 class EditPetPage extends StatefulWidget {
   final Pet pet;
@@ -21,7 +23,7 @@ class _EditPetPageState extends State<EditPetPage> {
   late TextEditingController _nameController;
   late TextEditingController _breedController;
   late TextEditingController _descriptionController;
-  
+
   late PetType _selectedType;
   late PetGender _selectedGender;
   late PetStatus _selectedStatus;
@@ -34,7 +36,9 @@ class _EditPetPageState extends State<EditPetPage> {
     super.initState();
     _nameController = TextEditingController(text: widget.pet.name);
     _breedController = TextEditingController(text: widget.pet.breed);
-    _descriptionController = TextEditingController(text: widget.pet.description ?? '');
+    _descriptionController = TextEditingController(
+      text: widget.pet.description ?? '',
+    );
     _selectedType = widget.pet.type;
     _selectedGender = widget.pet.gender;
     _selectedStatus = widget.pet.status ?? PetStatus.HEALTHY;
@@ -52,68 +56,106 @@ class _EditPetPageState extends State<EditPetPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: BlocListener<PetBloc, PetState>(
-        listener: (context, state) {
-          if (state is PetLoading) {
-            setState(() => _isLoading = true);
-          } else {
-            setState(() => _isLoading = false);
-            if (state is PetOperationSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: const Color(0xFF4CAF50),
-                ),
-              );
-              Navigator.pop(context, true);
-            } else if (state is PetError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: Colors.red,
-                ),
-              );
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFBDE3FF), Color(0xFFE8F5E8), Color(0xFFE5F3FF)],
+            stops: [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: BlocListener<PetBloc, PetState>(
+          listener: (context, state) {
+            if (state is PetLoading) {
+              setState(() => _isLoading = true);
+            } else {
+              setState(() => _isLoading = false);
+              if (state is PetOperationSuccess) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+                Navigator.pop(context, true);
+              } else if (state is PetError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+              }
             }
-          }
-        },
-        child: Column(
-          children: [
-            _buildAppBar(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+          },
+          child: Stack(
+            children: [
+              _buildDecorativeShapes(),
+              SafeArea(
                 child: Column(
                   children: [
-                    _buildFormCard(),
-                    const SizedBox(height: 24),
-                    _buildSubmitButton(),
+                    _buildAppBar(),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(AppSizes.paddingL),
+                        child: Column(
+                          children: [
+                            _buildFormCard(),
+                            const SizedBox(height: AppSizes.spaceL),
+                            _buildSubmitButton(),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
+  Widget _buildDecorativeShapes() {
+    return Stack(
+      children: [
+        Positioned(
+          top: -100,
+          right: -50,
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(100),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 200,
+          left: -80,
+          child: Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(75),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildAppBar() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x10000000),
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
-        ],
+      padding: EdgeInsets.fromLTRB(
+        AppSizes.paddingL,
+        AppSizes.spaceXL + 20,
+        AppSizes.paddingL,
+        AppSizes.paddingL,
       ),
       child: Row(
         children: [
@@ -121,20 +163,27 @@ class _EditPetPageState extends State<EditPetPage> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: const Color(0xFF4CAF50).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: IconButton(
               onPressed: () => Navigator.pop(context),
               icon: const Icon(
                 Icons.arrow_back_ios_new,
-                color: Color(0xFF4CAF50),
+                color: AppColors.primary,
                 size: 20,
               ),
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
+          const SizedBox(width: AppSizes.spaceM),
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -143,14 +192,14 @@ class _EditPetPageState extends State<EditPetPage> {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF212121),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 Text(
                   'Actualiza la información de tu mascota',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF757575),
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
@@ -163,15 +212,15 @@ class _EditPetPageState extends State<EditPetPage> {
 
   Widget _buildFormCard() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: AppColors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -180,17 +229,19 @@ class _EditPetPageState extends State<EditPetPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ImagePickerWidget(
-              imageFile: _selectedImageFile,
-              imageUrl: widget.pet.imageUrl,
-              onImageSelected: (file) {
-                setState(() {
-                  _selectedImageFile = file;
-                });
-              },
-              size: 120,
+            Center(
+              child: ImagePickerWidget(
+                imageFile: _selectedImageFile,
+                imageUrl: widget.pet.imageUrl,
+                onImageSelected: (file) {
+                  setState(() {
+                    _selectedImageFile = file;
+                  });
+                },
+                size: 120,
+              ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSizes.spaceXL),
             _buildTextField(
               controller: _nameController,
               label: 'Nombre de la mascota',
@@ -202,18 +253,23 @@ class _EditPetPageState extends State<EditPetPage> {
                 return null;
               },
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSizes.spaceL),
             _buildDropdown<PetType>(
               label: 'Tipo de mascota',
               icon: Icons.category,
               value: _selectedType,
-              items: PetType.values.map((type) => DropdownMenuItem(
-                value: type,
-                child: Text(_getPetTypeText(type)),
-              )).toList(),
+              items:
+                  PetType.values
+                      .map(
+                        (type) => DropdownMenuItem(
+                          value: type,
+                          child: Text(_getPetTypeText(type)),
+                        ),
+                      )
+                      .toList(),
               onChanged: (value) => setState(() => _selectedType = value!),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSizes.spaceL),
             _buildTextField(
               controller: _breedController,
               label: 'Raza',
@@ -225,31 +281,41 @@ class _EditPetPageState extends State<EditPetPage> {
                 return null;
               },
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSizes.spaceL),
             _buildDropdown<PetGender>(
               label: 'Género',
               icon: Icons.male,
               value: _selectedGender,
-              items: PetGender.values.map((gender) => DropdownMenuItem(
-                value: gender,
-                child: Text(_getGenderText(gender)),
-              )).toList(),
+              items:
+                  PetGender.values
+                      .map(
+                        (gender) => DropdownMenuItem(
+                          value: gender,
+                          child: Text(_getGenderText(gender)),
+                        ),
+                      )
+                      .toList(),
               onChanged: (value) => setState(() => _selectedGender = value!),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSizes.spaceL),
             _buildDropdown<PetStatus>(
               label: 'Estado de salud',
               icon: Icons.health_and_safety,
               value: _selectedStatus,
-              items: PetStatus.values.map((status) => DropdownMenuItem(
-                value: status,
-                child: Text(_getStatusText(status)),
-              )).toList(),
+              items:
+                  PetStatus.values
+                      .map(
+                        (status) => DropdownMenuItem(
+                          value: status,
+                          child: Text(_getStatusText(status)),
+                        ),
+                      )
+                      .toList(),
               onChanged: (value) => setState(() => _selectedStatus = value!),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSizes.spaceL),
             _buildDateField(),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSizes.spaceL),
             _buildTextField(
               controller: _descriptionController,
               label: 'Descripción (opcional)',
@@ -276,24 +342,24 @@ class _EditPetPageState extends State<EditPetPage> {
       style: const TextStyle(fontSize: 16),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: const Color(0xFF4CAF50)),
+        prefixIcon: Icon(icon, color: AppColors.secondary),
         filled: true,
-        fillColor: const Color(0xFFF8F9FA),
+        fillColor: AppColors.backgroundLight,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          borderSide: BorderSide(color: Colors.grey.shade300),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          borderSide: BorderSide(color: AppColors.secondary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red),
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          borderSide: BorderSide(color: AppColors.error),
         ),
       ),
     );
@@ -312,20 +378,20 @@ class _EditPetPageState extends State<EditPetPage> {
       onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: const Color(0xFF4CAF50)),
+        prefixIcon: Icon(icon, color: AppColors.secondary),
         filled: true,
-        fillColor: const Color(0xFFF8F9FA),
+        fillColor: AppColors.backgroundLight,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          borderSide: BorderSide(color: Colors.grey.shade300),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          borderSide: BorderSide(color: AppColors.secondary, width: 2),
         ),
       ),
     );
@@ -335,16 +401,19 @@ class _EditPetPageState extends State<EditPetPage> {
     return GestureDetector(
       onTap: _selectDate,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.paddingM,
+          vertical: AppSizes.paddingM,
+        ),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8F9FA),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE0E0E0)),
+          color: AppColors.backgroundLight,
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          border: Border.all(color: Colors.grey.shade300),
         ),
         child: Row(
           children: [
-            const Icon(Icons.calendar_today, color: Color(0xFF4CAF50)),
-            const SizedBox(width: 12),
+            Icon(Icons.calendar_today, color: AppColors.secondary),
+            const SizedBox(width: AppSizes.spaceM),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,14 +422,14 @@ class _EditPetPageState extends State<EditPetPage> {
                     'Fecha de nacimiento',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF757575),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                   Text(
                     '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
                     style: const TextStyle(
                       fontSize: 16,
-                      color: Color(0xFF212121),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],
@@ -375,26 +444,25 @@ class _EditPetPageState extends State<EditPetPage> {
   Widget _buildSubmitButton() {
     return SizedBox(
       width: double.infinity,
-      height: 56,
+      height: AppSizes.buttonHeight,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _submitForm,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4CAF50),
-          foregroundColor: Colors.white,
-          elevation: 0,
+          backgroundColor: AppColors.secondary,
+          foregroundColor: AppColors.white,
+          elevation: 8,
+          shadowColor: AppColors.secondary.withOpacity(0.3),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
           ),
         ),
-        child: _isLoading
-            ? const CircularProgressIndicator(color: Colors.white)
-            : const Text(
-                'Actualizar Mascota',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+        child:
+            _isLoading
+                ? const CircularProgressIndicator(color: AppColors.white)
+                : const Text(
+                  'Actualizar Mascota',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
-              ),
       ),
     );
   }
@@ -405,6 +473,19 @@ class _EditPetPageState extends State<EditPetPage> {
       initialDate: _selectedDate,
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppColors.secondary,
+              onPrimary: AppColors.white,
+              surface: AppColors.white,
+              onSurface: AppColors.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null && picked != _selectedDate) {
       setState(() {
@@ -422,9 +503,10 @@ class _EditPetPageState extends State<EditPetPage> {
         breed: _breedController.text.trim(),
         gender: _selectedGender,
         status: _selectedStatus,
-        description: _descriptionController.text.trim().isEmpty 
-            ? null 
-            : _descriptionController.text.trim(),
+        description:
+            _descriptionController.text.trim().isEmpty
+                ? null
+                : _descriptionController.text.trim(),
         birthDate: _selectedDate,
         imageUrl: widget.pet.imageUrl,
         userId: widget.pet.userId,
@@ -432,11 +514,13 @@ class _EditPetPageState extends State<EditPetPage> {
         updatedAt: DateTime.now(),
       );
 
-      context.read<PetBloc>().add(UpdatePetEvent(
-        petId: widget.pet.id,
-        pet: updatedPet,
-        imageFile: _selectedImageFile,
-      ));
+      context.read<PetBloc>().add(
+        UpdatePetEvent(
+          petId: widget.pet.id,
+          pet: updatedPet,
+          imageFile: _selectedImageFile,
+        ),
+      );
     }
   }
 

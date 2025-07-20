@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
+import '../../../widgets/cards/veterinarian_card.dart';
 
 class SearchVeterinariansPage extends StatefulWidget {
   const SearchVeterinariansPage({super.key});
@@ -12,6 +15,7 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
 
   final TextEditingController _searchController = TextEditingController();
   String _selectedSpecialty = 'Todas las especialidades';
@@ -22,25 +26,22 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
     'Todas las especialidades',
     'Medicina General',
     'Cirugía',
-    'Dermatología',
     'Cardiología',
+    'Dermatología',
     'Oftalmología',
     'Neurología',
-    'Odontología',
-    'Oncología',
-    'Ortopedia',
-    'Medicina de Emergencias',
+    'Emergencias',
+    'Exóticos',
   ];
 
   final List<String> _locations = [
     'Cualquier ubicación',
-    'Tuxtla Gutiérrez',
-    'San Cristóbal de las Casas',
-    'Tapachula',
-    'Comitán',
-    'Palenque',
-    'Ocosingo',
-    'Villaflores',
+    'Cerca de mí',
+    'Centro',
+    'Norte',
+    'Sur',
+    'Este',
+    'Oeste',
   ];
 
   @override
@@ -51,7 +52,13 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
       vsync: this,
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
     );
     _animationController.forward();
   }
@@ -66,92 +73,118 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildAppBar(),
-            Expanded(
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 24),
-                      _buildSearchField(),
-                      const SizedBox(height: 24),
-                      _buildFilters(),
-                      const SizedBox(height: 32),
-                      _buildQuickFilters(),
-                      const SizedBox(height: 32),
-                      _buildSearchButton(),
-                      const SizedBox(height: 32),
-                      _buildFeaturedVeterinarians(),
-                    ],
+      body: Stack(
+        children: [
+          // Fondo decorativo moderno
+          _buildDecorativeBackground(),
+
+          // Contenido principal
+          SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Column(
+                children: [
+                  _buildModernAppBar(),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: AppSizes.spaceL),
+                            _buildSearchField(),
+                            const SizedBox(height: AppSizes.spaceL),
+                            _buildFilters(),
+                            const SizedBox(height: AppSizes.spaceXL),
+                            _buildSearchButton(),
+                            const SizedBox(height: AppSizes.spaceXL),
+                            _buildFeaturedVeterinarians(),
+                            const SizedBox(height: AppSizes.spaceXL),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildDecorativeBackground() {
     return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.backgroundLight, Color(0xFFF0F4F8)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
         ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -100,
+            right: -50,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                color: AppColors.secondary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(100),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 150,
+            left: -80,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                color: AppColors.accent.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(75),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernAppBar() {
+    return Container(
+      margin: const EdgeInsets.all(AppSizes.paddingL),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.paddingL,
+        vertical: AppSizes.paddingM,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         boxShadow: [
           BoxShadow(
-            color: Color(0x10000000),
-            blurRadius: 10,
-            offset: Offset(0, 2),
+            color: AppColors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: const Color(0xFF4CAF50).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(
-                Icons.arrow_back_ios_new,
-                color: Color(0xFF4CAF50),
-                size: 20,
+          const SizedBox(width: AppSizes.spaceM),
+          Expanded(
+            child: Text(
+              'Buscar Veterinarios',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
               ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Buscar Veterinarios',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF212121),
-                  ),
-                ),
-                Text(
-                  'Encuentra al veterinario ideal',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF757575)),
-                ),
-              ],
             ),
           ),
         ],
@@ -160,62 +193,73 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
   }
 
   Widget _buildSearchField() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Buscar por nombre, especialidad...',
+          hintStyle: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+          prefixIcon: Container(
+            margin: const EdgeInsets.all(AppSizes.paddingS),
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
             ),
-          ],
-        ),
-        child: TextField(
-          controller: _searchController,
-          decoration: InputDecoration(
-            hintText: 'Buscar por nombre o especialidad...',
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 16),
-            prefixIcon: Icon(
+            child: const Icon(
               Icons.search_rounded,
-              color: Colors.grey[400],
+              color: AppColors.white,
               size: 24,
             ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 18,
-            ),
           ),
-          style: const TextStyle(fontSize: 16, color: Color(0xFF212121)),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.paddingL,
+            vertical: AppSizes.paddingM,
+          ),
         ),
       ),
     );
   }
 
   Widget _buildFilters() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Filtros',
+          Text(
+            'Filtros de Búsqueda',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF212121),
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSizes.spaceM),
           Row(
             children: [
               Expanded(
@@ -226,7 +270,7 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
                   (value) => setState(() => _selectedSpecialty = value!),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSizes.spaceM),
               Expanded(
                 child: _buildDropdownFilter(
                   'Ubicación',
@@ -253,31 +297,30 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF212121),
+            color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSizes.spaceS),
         Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            color: AppColors.backgroundLight,
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: value,
               onChanged: onChanged,
               isExpanded: true,
-              icon: const Icon(
+              icon: Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: Color(0xFF9CA3AF),
+                color: AppColors.primary,
               ),
-              style: const TextStyle(fontSize: 14, color: Color(0xFF212121)),
+              style: TextStyle(fontSize: 14, color: AppColors.textPrimary),
               items:
                   options.map((String option) {
                     return DropdownMenuItem<String>(
@@ -294,42 +337,45 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
 
   Widget _buildQuickFilters() {
     final quickFilters = [
-      'Medicina General',
-      'Cirugía',
-      'Emergencias',
-      'Vacunación',
-      'Cerca de mí',
-      'Mejor valorados',
+      {'name': 'Medicina General', 'icon': Icons.local_hospital},
+      {'name': 'Cirugía', 'icon': Icons.medical_services},
+      {'name': 'Emergencias', 'icon': Icons.emergency},
+      {'name': 'Vacunación', 'icon': Icons.vaccines},
+      {'name': 'Cerca de mí', 'icon': Icons.location_on},
+      {'name': 'Mejor valorados', 'icon': Icons.star},
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
           child: Text(
             'Filtros Rápidos',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF212121),
+              color: AppColors.textPrimary,
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSizes.spaceM),
         SizedBox(
-          height: 40,
+          height: 100,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
             itemCount: quickFilters.length,
             itemBuilder: (context, index) {
               final filter = quickFilters[index];
               return Container(
                 margin: EdgeInsets.only(
-                  right: index < quickFilters.length - 1 ? 12 : 0,
+                  right: index < quickFilters.length - 1 ? AppSizes.spaceM : 0,
                 ),
-                child: _buildQuickFilterChip(filter),
+                child: _buildQuickFilterCard(
+                  filter['name'] as String,
+                  filter['icon'] as IconData,
+                ),
               );
             },
           ),
@@ -338,30 +384,40 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
     );
   }
 
-  Widget _buildQuickFilterChip(String label) {
+  Widget _buildQuickFilterCard(String label, IconData icon) {
     return GestureDetector(
       onTap: () => _applyQuickFilter(label),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        width: 100,
+        padding: const EdgeInsets.all(AppSizes.paddingM),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.2)),
+          gradient: AppColors.primaryGradient,
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+              color: AppColors.primary.withValues(alpha: 0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF4CAF50),
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: AppColors.white, size: 28),
+            const SizedBox(height: AppSizes.spaceS),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.white,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );
@@ -373,58 +429,66 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
         _selectedSpecialty != 'Todas las especialidades' ||
         _selectedLocation != 'Cualquier ubicación';
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        width: double.infinity,
-        height: 56,
-        decoration: BoxDecoration(
-          gradient:
-              canSearch
-                  ? const LinearGradient(
-                    colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
-                  )
-                  : LinearGradient(
-                    colors: [Colors.grey[300]!, Colors.grey[300]!],
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
+      height: 56,
+      decoration: BoxDecoration(
+        gradient:
+            canSearch
+                ? AppColors.primaryGradient
+                : LinearGradient(
+                  colors: [
+                    AppColors.textSecondary.withValues(alpha: 0.3),
+                    AppColors.textSecondary.withValues(alpha: 0.3),
+                  ],
+                ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        boxShadow:
+            canSearch
+                ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.4),
+                    blurRadius: 15,
+                    offset: const Offset(0, 8),
                   ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: ElevatedButton(
-          onPressed: canSearch && !_isLoading ? _performSearch : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shadowColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
+                ]
+                : null,
+      ),
+      child: ElevatedButton(
+        onPressed: canSearch && !_isLoading ? _performSearch : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: AppColors.white,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
           ),
-          child:
-              _isLoading
-                  ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      strokeWidth: 2.5,
-                    ),
-                  )
-                  : const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.search_rounded, size: 24),
-                      SizedBox(width: 8),
-                      Text(
-                        'Buscar Veterinarios',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
         ),
+        child:
+            _isLoading
+                ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                    strokeWidth: 2.5,
+                  ),
+                )
+                : const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.search_rounded, size: 24),
+                    SizedBox(width: AppSizes.spaceS),
+                    Text(
+                      'Buscar Veterinarios',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
       ),
     );
   }
@@ -434,26 +498,24 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Opciones Recomendadas',
+              Text(
+                'Veterinarios Destacados',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF212121),
+                  color: AppColors.textPrimary,
                 ),
               ),
               TextButton(
-                onPressed: () {
-                  _navigateToVeterinariansList();
-                },
-                child: const Text(
+                onPressed: () => _navigateToVeterinariansList(),
+                child: Text(
                   'Ver todos',
                   style: TextStyle(
-                    color: Color(0xFF4CAF50),
+                    color: AppColors.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -461,35 +523,59 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSizes.spaceM),
         SizedBox(
-          height: 200,
+          height: 280,
           child: ListView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
             children: [
-              _buildFeaturedVetCard(
-                'Dr. María González',
-                'Medicina General',
-                'Clínica VetCare',
-                4.9,
-                '8 años',
+              VeterinarianCard(
+                veterinarian: {
+                  'id': '1',
+                  'name': 'Dr. María González',
+                  'specialty': 'Medicina General',
+                  'clinic': 'Clínica VetCare',
+                  'rating': 4.9,
+                  'experience': '8 años',
+                  'distance': '1.2 km',
+                  'consultationFee': 150,
+                  'available': true,
+                  'profileImage': null,
+                },
+                isHorizontal: true,
               ),
-              const SizedBox(width: 16),
-              _buildFeaturedVetCard(
-                'Dr. Carlos López',
-                'Cirugía',
-                'Hospital Veterinario',
-                4.8,
-                '12 años',
+              const SizedBox(width: AppSizes.spaceM),
+              VeterinarianCard(
+                veterinarian: {
+                  'id': '2',
+                  'name': 'Dr. Carlos Ruiz',
+                  'specialty': 'Cirugía',
+                  'clinic': 'Hospital Animal Plus',
+                  'rating': 4.8,
+                  'experience': '12 años',
+                  'distance': '2.1 km',
+                  'consultationFee': 200,
+                  'available': true,
+                  'profileImage': null,
+                },
+                isHorizontal: true,
               ),
-              const SizedBox(width: 16),
-              _buildFeaturedVetCard(
-                'Dra. Ana García',
-                'Dermatología',
-                'Centro Especializado',
-                4.7,
-                '6 años',
+              const SizedBox(width: AppSizes.spaceM),
+              VeterinarianCard(
+                veterinarian: {
+                  'id': '3',
+                  'name': 'Dra. Ana Pérez',
+                  'specialty': 'Cardiología',
+                  'clinic': 'Centro Veterinario Integral',
+                  'rating': 4.7,
+                  'experience': '6 años',
+                  'distance': '3.5 km',
+                  'consultationFee': 180,
+                  'available': false,
+                  'profileImage': null,
+                },
+                isHorizontal: true,
               ),
             ],
           ),
@@ -498,169 +584,42 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
     );
   }
 
-  Widget _buildFeaturedVetCard(
-    String name,
-    String specialty,
-    String clinic,
-    double rating,
-    String experience,
-  ) {
-    return GestureDetector(
-      onTap: () => _navigateToVeterinarianProfile(name),
-      child: Container(
-        width: 160,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: const Color(0xFF4CAF50).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: const Icon(
-                Icons.medical_services_rounded,
-                color: Color(0xFF4CAF50),
-                size: 24,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              name,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF212121),
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              specialty,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFF4CAF50),
-                fontWeight: FontWeight.w500,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              clinic,
-              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const Spacer(),
-            Row(
-              children: [
-                Icon(Icons.star_rounded, size: 12, color: Colors.amber[600]),
-                const SizedBox(width: 2),
-                Text(
-                  rating.toString(),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF212121),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Icon(
-                  Icons.timeline_outlined,
-                  size: 12,
-                  color: Colors.grey[600],
-                ),
-                const SizedBox(width: 2),
-                Flexible(
-                  child: Text(
-                    experience,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _applyQuickFilter(String filter) {
     setState(() {
       switch (filter) {
         case 'Medicina General':
-          _selectedSpecialty = 'Medicina General';
-          break;
         case 'Cirugía':
-          _selectedSpecialty = 'Cirugía';
-          break;
         case 'Emergencias':
-          _selectedSpecialty = 'Medicina de Emergencias';
-          break;
         case 'Vacunación':
-          _selectedSpecialty = 'Medicina General';
+          _selectedSpecialty = filter;
           break;
         case 'Cerca de mí':
+          _selectedLocation = filter;
           break;
         case 'Mejor valorados':
+          // Lógica para ordenar por rating
           break;
       }
     });
   }
 
-  Future<void> _performSearch() async {
-    setState(() {
-      _isLoading = true;
+  void _performSearch() {
+    setState(() => _isLoading = true);
+
+    final searchParams = {
+      'query': _searchController.text,
+      'specialty': _selectedSpecialty,
+      'location': _selectedLocation,
+    };
+
+    // Simular búsqueda
+    Future.delayed(const Duration(seconds: 2), () {
+      setState(() => _isLoading = false);
+      _navigateToVeterinariansList(searchParams);
     });
-
-    await Future.delayed(const Duration(seconds: 1));
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (mounted) {
-      _navigateToVeterinariansList();
-    }
   }
 
-  void _navigateToVeterinariansList() {
-    Navigator.pushNamed(
-      context,
-      '/veterinarians-list',
-      arguments: {
-        'query': _searchController.text,
-        'specialty': _selectedSpecialty,
-        'location': _selectedLocation,
-      },
-    );
-  }
-
-  void _navigateToVeterinarianProfile(String veterinarianName) {
-    Navigator.pushNamed(
-      context,
-      '/veterinarian-profile',
-      arguments: {'name': veterinarianName ?? ''},
-    );
+  void _navigateToVeterinariansList([Map<String, dynamic>? params]) {
+    Navigator.pushNamed(context, '/veterinarians-list', arguments: params);
   }
 }

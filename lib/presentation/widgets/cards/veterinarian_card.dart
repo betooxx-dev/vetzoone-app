@@ -1,225 +1,138 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_sizes.dart';
 
 class VeterinarianCard extends StatelessWidget {
-  final String veterinarianName;
-  final String specialty;
-  final String clinic;
-  final String experience;
-  final double rating;
-  final String? imagePath;
+  final Map<String, dynamic> veterinarian;
   final VoidCallback? onTap;
-  final bool showDistance;
-  final String? distance;
+  final bool isHorizontal;
 
   const VeterinarianCard({
     super.key,
-    required this.veterinarianName,
-    required this.specialty,
-    required this.clinic,
-    required this.experience,
-    required this.rating,
-    this.imagePath,
+    required this.veterinarian,
     this.onTap,
-    this.showDistance = false,
-    this.distance,
+    this.isHorizontal = true,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: onTap ?? () => _navigateToProfile(context),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
+        width: 260,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppSizes.radiusXL),
           boxShadow: [
             BoxShadow(
-              // ignore: deprecated_member_use
-              color: Colors.black.withOpacity(0.06),
+              color: AppColors.black.withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+              spreadRadius: 2,
+            ),
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.1),
               blurRadius: 15,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 5),
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Row(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.white,
+                  AppColors.primary.withValues(alpha: 0.02),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSizes.paddingL),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildVeterinarianAvatar(),
-                  const SizedBox(width: 16),
-                  _buildVeterinarianInfo(),
-                  _buildFavoriteButton(),
+                  _buildHeader(),
+                  const SizedBox(height: AppSizes.spaceM),
+                  _buildVetInfo(),
+                  const SizedBox(height: AppSizes.spaceM),
+                  _buildExperience(),
+                  const SizedBox(height: AppSizes.spaceL),
+                  _buildActionButton(),
                 ],
               ),
-              const SizedBox(height: 16),
-              _buildBottomSection(),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildVeterinarianAvatar() {
-    return Container(
-      width: 70,
-      height: 70,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF81D4FA), Color(0xFF4FC3F7)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            // ignore: deprecated_member_use
-            color: const Color(0xFF81D4FA).withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child:
-          imagePath != null
-              ? ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: Image.asset(
-                  imagePath!,
-                  fit: BoxFit.cover,
-                  errorBuilder:
-                      (context, error, stackTrace) => _buildDefaultIcon(),
-                ),
-              )
-              : _buildDefaultIcon(),
-    );
-  }
-
-  Widget _buildDefaultIcon() {
-    return const Icon(Icons.person_rounded, size: 32, color: Colors.white);
-  }
-
-  Widget _buildVeterinarianInfo() {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            veterinarianName,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF212121),
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              // ignore: deprecated_member_use
-              color: const Color(0xFF81D4FA).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              specialty,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF81D4FA),
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Icon(
-                Icons.local_hospital_outlined,
-                size: 16,
-                color: Colors.grey[600],
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  clinic,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFavoriteButton() {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: IconButton(
-        onPressed: () {
-          // Implementar favoritos
-        },
-        icon: Icon(
-          Icons.favorite_border_rounded,
-          color: Colors.grey[600],
-          size: 20,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomSection() {
-    return Row(
-      children: [
-        _buildRatingSection(),
-        const Spacer(),
-        _buildExperienceChip(),
-        if (showDistance && distance != null) ...[
-          const SizedBox(width: 8),
-          _buildDistanceChip(),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildRatingSection() {
+  Widget _buildHeader() {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          width: 60,
+          height: 60,
           decoration: BoxDecoration(
-            // ignore: deprecated_member_use
-            color: const Color(0xFF4CAF50).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.star_rounded,
-                size: 16,
-                color: Color(0xFF4CAF50),
+            gradient: AppColors.primaryGradient,
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
               ),
-              const SizedBox(width: 4),
+            ],
+          ),
+          child:
+              veterinarian['profileImage'] != null
+                  ? ClipRRect(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                    child: Image.network(
+                      veterinarian['profileImage'],
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                  : const Icon(Icons.person, color: AppColors.white, size: 30),
+        ),
+
+        const SizedBox(width: AppSizes.spaceM),
+
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                rating.toStringAsFixed(1),
+                veterinarian['name'] ?? 'Veterinario',
                 style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF4CAF50),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: AppSizes.spaceXS),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.paddingS,
+                  vertical: AppSizes.paddingXS,
+                ),
+                decoration: BoxDecoration(
+                  gradient: AppColors.purpleGradient,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                ),
+                child: Text(
+                  veterinarian['specialty'] ?? 'General',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -229,29 +142,52 @@ class VeterinarianCard extends StatelessWidget {
     );
   }
 
-  Widget _buildExperienceChip() {
+  Widget _buildVetInfo() {
+    return Row(
+      children: [
+        Icon(
+          Icons.local_hospital_rounded,
+          size: 16,
+          color: AppColors.secondary,
+        ),
+        const SizedBox(width: AppSizes.spaceXS),
+        Expanded(
+          child: Text(
+            veterinarian['clinic'] ?? 'Clínica Veterinaria',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExperience() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.paddingS,
+        vertical: AppSizes.paddingXS,
+      ),
       decoration: BoxDecoration(
-        // ignore: deprecated_member_use
-        color: const Color(0xFFFF7043).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppSizes.radiusS),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.timeline_outlined,
-            size: 14,
-            color: const Color(0xFFFF7043),
-          ),
+          Icon(Icons.timeline_rounded, size: 14, color: AppColors.primary),
           const SizedBox(width: 4),
           Text(
-            experience,
-            style: const TextStyle(
+            veterinarian['experience'] ?? '0 años',
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Color(0xFFFF7043),
+              color: AppColors.primary,
             ),
           ),
         ],
@@ -259,28 +195,40 @@ class VeterinarianCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDistanceChip() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.location_on_outlined, size: 14, color: Colors.grey[600]),
-          const SizedBox(width: 4),
-          Text(
-            distance!,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
-            ),
+  Widget _buildActionButton() {
+    final isAvailable = veterinarian['available'] ?? false;
+
+    return SizedBox(
+      width: double.infinity,
+      height: 44,
+      child: ElevatedButton.icon(
+        onPressed: isAvailable ? () => _scheduleAppointment() : null,
+        icon: const Icon(Icons.calendar_today_rounded, size: 16),
+        label: Text(isAvailable ? 'Agendar Cita' : 'No Disponible'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              isAvailable
+                  ? AppColors.primary
+                  : AppColors.textSecondary.withValues(alpha: 0.3),
+          foregroundColor: AppColors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
           ),
-        ],
+        ),
       ),
     );
+  }
+
+  void _navigateToProfile(BuildContext context) {
+    Navigator.pushNamed(
+      context,
+      '/veterinarian-profile',
+      arguments: veterinarian,
+    );
+  }
+
+  void _scheduleAppointment() {
+    print('Agendando cita con ${veterinarian['name']}');
   }
 }

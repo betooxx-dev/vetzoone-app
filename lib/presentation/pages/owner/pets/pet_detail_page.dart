@@ -4,6 +4,8 @@ import '../../../blocs/pet/pet_bloc.dart';
 import '../../../blocs/pet/pet_event.dart';
 import '../../../blocs/pet/pet_state.dart';
 import '../../../widgets/common/empty_state_widget.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
 import '../../../../domain/entities/pet.dart';
 import '../../../../domain/entities/appointment.dart';
 import '../../../../core/storage/shared_preferences_helper.dart';
@@ -44,38 +46,54 @@ class _PetDetailPageState extends State<PetDetailPage> {
         return true;
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8F9FA),
-        body: BlocBuilder<PetBloc, PetState>(
-          builder: (context, state) {
-            if (state is PetLoading) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            } else if (state is PetLoaded) {
-              return _buildPetDetail(state.pet, state.appointments);
-            } else if (state is PetError) {
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFBDE3FF), Color(0xFFE8F5E8), Color(0xFFE5F3FF)],
+              stops: [0.0, 0.5, 1.0],
+            ),
+          ),
+          child: BlocBuilder<PetBloc, PetState>(
+            builder: (context, state) {
+              if (state is PetLoading) {
+                return const Scaffold(
+                  backgroundColor: Colors.transparent,
+                  body: Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.secondary,
+                    ),
+                  ),
+                );
+              } else if (state is PetLoaded) {
+                return _buildPetDetail(state.pet, state.appointments);
+              } else if (state is PetError) {
+                return Scaffold(
+                  backgroundColor: Colors.transparent,
+                  body: EmptyStateWidget(
+                    icon: Icons.error_outline,
+                    title: 'Error al cargar mascota',
+                    message: state.message,
+                    iconColor: AppColors.error,
+                    buttonText: 'Reintentar',
+                    onButtonPressed: _loadPetDetail,
+                  ),
+                );
+              }
+
               return Scaffold(
+                backgroundColor: Colors.transparent,
                 body: EmptyStateWidget(
-                  icon: Icons.error_outline,
-                  title: 'Error al cargar mascota',
-                  message: state.message,
-                  iconColor: Colors.red,
-                  buttonText: 'Reintentar',
-                  onButtonPressed: _loadPetDetail,
+                  icon: Icons.pets_rounded,
+                  title: 'Mascota no encontrada',
+                  message: 'No se pudo cargar la información de la mascota.',
+                  buttonText: 'Volver',
+                  onButtonPressed: () => Navigator.pop(context),
                 ),
               );
-            }
-
-            return Scaffold(
-              body: EmptyStateWidget(
-                icon: Icons.pets_rounded,
-                title: 'Mascota no encontrada',
-                message: 'No se pudo cargar la información de la mascota.',
-                buttonText: 'Volver',
-                onButtonPressed: () => Navigator.pop(context),
-              ),
-            );
-          },
+            },
+          ),
         ),
       ),
     );
@@ -86,17 +104,17 @@ class _PetDetailPageState extends State<PetDetailPage> {
       slivers: [
         _buildSliverAppBar(pet),
         SliverPadding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSizes.paddingL),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
               _buildInfoCard(pet),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spaceL),
               _buildHealthCard(pet),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spaceL),
               _buildActionsCard(pet),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spaceL),
               _buildMedicalRecordsCard(pet),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spaceL),
               _buildAppointmentsCard(appointments),
             ]),
           ),
@@ -109,32 +127,32 @@ class _PetDetailPageState extends State<PetDetailPage> {
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
-      backgroundColor: const Color(0xFF4CAF50),
+      backgroundColor: AppColors.primary,
       leading: Container(
-        margin: const EdgeInsets.all(8),
+        margin: const EdgeInsets.all(AppSizes.spaceS),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.white.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
         ),
         child: IconButton(
           onPressed: () async {
             await _reloadPetsOnPop();
             Navigator.pop(context);
           },
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.white),
         ),
       ),
       actions: [
         Container(
-          margin: const EdgeInsets.all(8),
+          margin: const EdgeInsets.all(AppSizes.spaceS),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
+            color: AppColors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
           ),
           child: IconButton(
             onPressed:
                 () => Navigator.pushNamed(context, '/edit-pet', arguments: pet),
-            icon: const Icon(Icons.edit, color: Colors.white),
+            icon: const Icon(Icons.edit, color: AppColors.white),
           ),
         ),
       ],
@@ -142,7 +160,7 @@ class _PetDetailPageState extends State<PetDetailPage> {
         title: Text(
           pet.name,
           style: const TextStyle(
-            color: Colors.white,
+            color: AppColors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -164,7 +182,10 @@ class _PetDetailPageState extends State<PetDetailPage> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+                  colors: [
+                    Colors.transparent,
+                    AppColors.black.withOpacity(0.7),
+                  ],
                 ),
               ),
             ),
@@ -176,26 +197,26 @@ class _PetDetailPageState extends State<PetDetailPage> {
 
   Widget _buildDefaultBackground(PetType type) {
     return Container(
-      color: const Color(0xFF4CAF50),
+      color: AppColors.secondary,
       child: Icon(
         _getPetIcon(type),
         size: 100,
-        color: Colors.white.withOpacity(0.3),
+        color: AppColors.white.withOpacity(0.3),
       ),
     );
   }
 
   Widget _buildInfoCard(Pet pet) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: AppColors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -205,64 +226,67 @@ class _PetDetailPageState extends State<PetDetailPage> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(AppSizes.spaceS),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4CAF50).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.secondary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
                 ),
                 child: Icon(
                   Icons.info_outline,
-                  color: const Color(0xFF4CAF50),
+                  color: AppColors.secondary,
                   size: 20,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSizes.spaceM),
               const Text(
                 'Información General',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1A1A),
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSizes.spaceL),
           _buildInfoRow('Tipo', _getPetTypeText(pet.type), Icons.category),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSizes.spaceM),
           _buildInfoRow('Raza', pet.breed, Icons.pets),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSizes.spaceM),
           _buildInfoRow(
             'Género',
             _getGenderText(pet.gender),
             _getGenderIcon(pet.gender),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSizes.spaceM),
           _buildInfoRow(
             'Fecha de nacimiento',
             '${pet.birthDate.day}/${pet.birthDate.month}/${pet.birthDate.year}',
             Icons.cake,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSizes.spaceM),
           _buildInfoRow(
             'Edad',
             _calculateAge(pet.birthDate),
             Icons.access_time,
           ),
           if (pet.description != null && pet.description!.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSizes.spaceL),
             const Text(
               'Descripción',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF1A1A1A),
+                color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSizes.spaceS),
             Text(
               pet.description!,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF666666)),
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ],
