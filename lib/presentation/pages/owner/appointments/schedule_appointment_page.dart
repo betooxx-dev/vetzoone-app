@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/confirmation_modal.dart';
 import '../../../../core/widgets/date_time_selector.dart';
 
@@ -93,11 +95,9 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
   @override
   void initState() {
     super.initState();
-    // Set defaults immediately
     selectedVeterinarian = _defaultVeterinarian;
     selectedPet = _pets.first;
 
-    // Then check for arguments and override if they exist
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final arguments = ModalRoute.of(context)?.settings.arguments;
       if (arguments != null && arguments is Map<String, dynamic>) {
@@ -126,58 +126,100 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      appBar: _buildAppBar(),
-      body: _buildBody(),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFBDE3FF), Color(0xFFE8F5E8), Color(0xFFE5F3FF)],
+            stops: [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: Stack(
+          children: [
+            _buildDecorativeShapes(),
+            SafeArea(
+              child: Column(
+                children: [_buildAppBar(), Expanded(child: _buildBody())],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      title: const Text(
-        'Agendar Cita',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF212121),
-        ),
-      ),
-      backgroundColor: Colors.white,
-      elevation: 0,
-      leading: IconButton(
-        onPressed: () => Navigator.pop(context),
-        icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF212121)),
+  Widget _buildAppBar() {
+    return Padding(
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      child: Row(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: AppColors.textPrimary,
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          const SizedBox(width: AppSizes.spaceM),
+          const Expanded(
+            child: Text(
+              'Agendar Cita',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildBody() {
     if (selectedVeterinarian == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.secondary),
+      );
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildVeterinarianSelection(),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSizes.spaceL),
             _buildPetSelection(),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSizes.spaceL),
             _buildAppointmentTypeSelection(),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSizes.spaceL),
             _buildDateSelection(),
             if (selectedDate != null) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSizes.spaceL),
               _buildTimeSlotSelection(),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSizes.spaceL),
             _buildNotesSection(),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSizes.spaceXL),
             _buildScheduleButton(),
+            const SizedBox(height: AppSizes.spaceL),
           ],
         ),
       ),
@@ -185,278 +227,271 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
   }
 
   Widget _buildVeterinarianSelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Veterinario',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF212121),
+    return _buildFormSection(
+      title: 'Veterinario',
+      child: GestureDetector(
+        onTap: _selectVeterinarian,
+        child: Container(
+          padding: const EdgeInsets.all(AppSizes.paddingM),
+          decoration: BoxDecoration(
+            color: AppColors.white.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
+            border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 16),
-        GestureDetector(
-          onTap: _selectVeterinarian,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE0E0E0)),
-            ),
-            child:
-                selectedVeterinarian != null
-                    ? Row(
-                      children: [
-                        Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4CAF50).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                          child: const Icon(
-                            Icons.person_rounded,
-                            size: 25,
-                            color: Color(0xFF4CAF50),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                selectedVeterinarian!['name'] ?? 'Veterinario',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF212121),
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                selectedVeterinarian!['specialty'] ??
-                                    'Especialidad',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF757575),
-                                ),
-                              ),
-                              Text(
-                                selectedVeterinarian!['clinic'] ?? 'Clínica',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF757575),
-                                ),
-                              ),
+          child:
+              selectedVeterinarian != null
+                  ? Row(
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.secondary,
+                              AppColors.secondary.withOpacity(0.8),
                             ],
                           ),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
                         ),
-                        const Icon(
-                          Icons.arrow_forward_ios,
-                          color: Color(0xFF757575),
-                          size: 16,
-                        ),
-                      ],
-                    )
-                    : Row(
-                      children: [
-                        const Icon(
+                        child: const Icon(
                           Icons.person_rounded,
-                          color: Color(0xFF4CAF50),
+                          size: AppSizes.iconM,
+                          color: AppColors.white,
                         ),
-                        const SizedBox(width: 16),
-                        const Expanded(
-                          child: Text(
-                            'Selecciona un veterinario',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Color(0xFF757575),
+                      ),
+                      const SizedBox(width: AppSizes.spaceM),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              selectedVeterinarian!['name'] ?? 'Veterinario',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
+                            const SizedBox(height: 2),
+                            Text(
+                              selectedVeterinarian!['specialty'] ??
+                                  'Especialidad',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            Text(
+                              selectedVeterinarian!['clinic'] ?? 'Clínica',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        color: AppColors.textSecondary,
+                        size: AppSizes.iconS,
+                      ),
+                    ],
+                  )
+                  : Row(
+                    children: [
+                      Icon(
+                        Icons.person_rounded,
+                        color: AppColors.secondary,
+                        size: AppSizes.iconM,
+                      ),
+                      const SizedBox(width: AppSizes.spaceM),
+                      const Expanded(
+                        child: Text(
+                          'Selecciona un veterinario',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppColors.textSecondary,
                           ),
                         ),
-                        const Icon(
-                          Icons.arrow_forward_ios,
-                          color: Color(0xFF757575),
-                          size: 16,
-                        ),
-                      ],
-                    ),
-          ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        color: AppColors.textSecondary,
+                        size: AppSizes.iconS,
+                      ),
+                    ],
+                  ),
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildPetSelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Mascota',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF212121),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE0E0E0)),
-          ),
-          child: DropdownButtonFormField<Map<String, dynamic>>(
-            value: selectedPet,
-            isExpanded: true,
-            decoration: const InputDecoration(
-              hintText: 'Selecciona tu mascota',
-              prefixIcon: Icon(Icons.pets_rounded, color: Color(0xFF4CAF50)),
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
+    return _buildFormSection(
+      title: 'Mascota',
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            items:
-                _pets.map((pet) {
-                  return DropdownMenuItem<Map<String, dynamic>>(
-                    value: pet,
-                    child: Text('${pet['name']} - ${pet['species']}'),
-                  );
-                }).toList(),
-            onChanged: (value) {
-              setState(() {
-                selectedPet = value;
-              });
-            },
-            validator: (value) {
-              if (value == null) {
-                return 'Por favor selecciona una mascota';
-              }
-              return null;
-            },
-          ),
+          ],
         ),
-      ],
+        child: DropdownButtonFormField<Map<String, dynamic>>(
+          value: selectedPet,
+          isExpanded: true,
+          decoration: InputDecoration(
+            hintText: 'Selecciona tu mascota',
+            prefixIcon: Icon(
+              Icons.pets_rounded,
+              color: AppColors.secondary,
+              size: AppSizes.iconM,
+            ),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.paddingM,
+              vertical: AppSizes.paddingM,
+            ),
+          ),
+          items:
+              _pets.map((pet) {
+                return DropdownMenuItem<Map<String, dynamic>>(
+                  value: pet,
+                  child: Text('${pet['name']} - ${pet['species']}'),
+                );
+              }).toList(),
+          onChanged: (value) {
+            setState(() {
+              selectedPet = value;
+            });
+          },
+          validator: (value) {
+            if (value == null) {
+              return 'Por favor selecciona una mascota';
+            }
+            return null;
+          },
+        ),
+      ),
     );
   }
 
   Widget _buildAppointmentTypeSelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Tipo de consulta',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF212121),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE0E0E0)),
-          ),
-          child: DropdownButtonFormField<String>(
-            value: selectedAppointmentType,
-            isExpanded: true,
-            decoration: const InputDecoration(
-              hintText: 'Selecciona el tipo de consulta',
-              prefixIcon: Icon(
-                Icons.medical_services_outlined,
-                color: Color(0xFF4CAF50),
-              ),
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
+    return _buildFormSection(
+      title: 'Tipo de consulta',
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            items:
-                _appointmentTypes.map((type) {
-                  return DropdownMenuItem<String>(
-                    value: type,
-                    child: Text(type),
-                  );
-                }).toList(),
-            onChanged: (value) {
-              setState(() {
-                selectedAppointmentType = value;
-              });
-            },
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Por favor selecciona el tipo de consulta';
-              }
-              return null;
-            },
-          ),
+          ],
         ),
-      ],
+        child: DropdownButtonFormField<String>(
+          value: selectedAppointmentType,
+          isExpanded: true,
+          decoration: InputDecoration(
+            hintText: 'Selecciona el tipo de consulta',
+            prefixIcon: Icon(
+              Icons.medical_services_outlined,
+              color: AppColors.secondary,
+              size: AppSizes.iconM,
+            ),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.paddingM,
+              vertical: AppSizes.paddingM,
+            ),
+          ),
+          items:
+              _appointmentTypes.map((type) {
+                return DropdownMenuItem<String>(value: type, child: Text(type));
+              }).toList(),
+          onChanged: (value) {
+            setState(() {
+              selectedAppointmentType = value;
+            });
+          },
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Por favor selecciona el tipo de consulta';
+            }
+            return null;
+          },
+        ),
+      ),
     );
   }
 
   Widget _buildDateSelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Fecha',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF212121),
+    return _buildFormSection(
+      title: 'Fecha',
+      child: GestureDetector(
+        onTap: _selectDate,
+        child: Container(
+          padding: const EdgeInsets.all(AppSizes.paddingM),
+          decoration: BoxDecoration(
+            color: AppColors.white.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
+            border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 16),
-        GestureDetector(
-          onTap: _selectDate,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE0E0E0)),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.calendar_today_outlined,
-                  color: Color(0xFF4CAF50),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    selectedDate != null
-                        ? _formatDate(selectedDate!)
-                        : 'Selecciona una fecha',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color:
-                          selectedDate != null
-                              ? const Color(0xFF212121)
-                              : const Color(0xFF757575),
-                    ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.calendar_today_outlined,
+                color: AppColors.secondary,
+                size: AppSizes.iconM,
+              ),
+              const SizedBox(width: AppSizes.spaceM),
+              Expanded(
+                child: Text(
+                  selectedDate != null
+                      ? _formatDate(selectedDate!)
+                      : 'Selecciona una fecha',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color:
+                        selectedDate != null
+                            ? AppColors.textPrimary
+                            : AppColors.textSecondary,
                   ),
                 ),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  color: Color(0xFF757575),
-                  size: 16,
-                ),
-              ],
-            ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: AppColors.textSecondary,
+                size: AppSizes.iconS,
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -464,152 +499,140 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
     final availableSlots = _getAvailableTimeSlotsForDate(selectedDate!);
 
     if (availableSlots.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Horarios disponibles',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF212121),
-            ),
+      return _buildFormSection(
+        title: 'Horarios disponibles',
+        child: Container(
+          padding: const EdgeInsets.all(AppSizes.paddingL),
+          decoration: BoxDecoration(
+            color: AppColors.warning.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
+            border: Border.all(color: AppColors.warning.withOpacity(0.3)),
           ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.orange.withOpacity(0.3)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.orange),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'No hay horarios disponibles para este día',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.orange,
-                      fontWeight: FontWeight.w500,
-                    ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: AppColors.warning,
+                size: AppSizes.iconM,
+              ),
+              const SizedBox(width: AppSizes.spaceM),
+              const Expanded(
+                child: Text(
+                  'No hay horarios disponibles para este día',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.warning,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Horarios disponibles',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF212121),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children:
-                availableSlots.map((timeSlot) {
-                  final isSelected = selectedTimeSlot == timeSlot;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        selectedTimeSlot = timeSlot;
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
+        ),
+      );
+    }
+
+    return _buildFormSection(
+      title: 'Horarios disponibles',
+      child: Container(
+        padding: const EdgeInsets.all(AppSizes.paddingM),
+        decoration: BoxDecoration(
+          color: AppColors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Wrap(
+          spacing: AppSizes.spaceM,
+          runSpacing: AppSizes.spaceM,
+          children:
+              availableSlots.map((timeSlot) {
+                final isSelected = selectedTimeSlot == timeSlot;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      selectedTimeSlot = timeSlot;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.paddingM,
+                      vertical: AppSizes.paddingS,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient:
+                          isSelected
+                              ? LinearGradient(
+                                colors: [
+                                  AppColors.primary,
+                                  AppColors.primary.withOpacity(0.8),
+                                ],
+                              )
+                              : null,
+                      color: isSelected ? null : Colors.transparent,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                      border: Border.all(
                         color:
                             isSelected
-                                ? const Color(0xFF4CAF50)
-                                : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color:
-                              isSelected
-                                  ? const Color(0xFF4CAF50)
-                                  : const Color(0xFFE0E0E0),
-                        ),
-                      ),
-                      child: Text(
-                        timeSlot,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color:
-                              isSelected
-                                  ? Colors.white
-                                  : const Color(0xFF212121),
-                        ),
+                                ? AppColors.primary
+                                : AppColors.primary.withOpacity(0.3),
                       ),
                     ),
-                  );
-                }).toList(),
-          ),
+                    child: Text(
+                      timeSlot,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color:
+                            isSelected
+                                ? AppColors.white
+                                : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildNotesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Notas adicionales (opcional)',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF212121),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE0E0E0)),
-          ),
-          child: TextFormField(
-            controller: _notesController,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              hintText: 'Describe síntomas o información relevante...',
-              prefixIcon: Icon(Icons.note_outlined, color: Color(0xFF4CAF50)),
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.all(16),
+    return _buildFormSection(
+      title: 'Notas adicionales (opcional)',
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
+          ],
+        ),
+        child: TextFormField(
+          controller: _notesController,
+          maxLines: 4,
+          decoration: InputDecoration(
+            hintText: 'Describe síntomas o información relevante...',
+            prefixIcon: Icon(
+              Icons.note_outlined,
+              color: AppColors.secondary,
+              size: AppSizes.iconM,
+            ),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.all(AppSizes.paddingM),
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -622,28 +645,42 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
 
     return Container(
       width: double.infinity,
-      height: 56,
+      height: AppSizes.buttonHeightL,
       decoration: BoxDecoration(
         gradient:
             canSchedule
-                ? const LinearGradient(
-                  colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
+                ? LinearGradient(
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withOpacity(0.8),
+                  ],
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 )
                 : null,
-        color: canSchedule ? null : const Color(0xFFE0E0E0),
-        borderRadius: BorderRadius.circular(16),
+        color: canSchedule ? null : AppColors.textSecondary.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        boxShadow:
+            canSchedule
+                ? [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+                : null,
       ),
       child: ElevatedButton(
         onPressed: canSchedule ? _scheduleAppointment : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
-          foregroundColor: canSchedule ? Colors.white : const Color(0xFF757575),
+          foregroundColor:
+              canSchedule ? AppColors.white : AppColors.textSecondary,
           elevation: 0,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
           ),
         ),
         child:
@@ -652,7 +689,7 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
                   width: 24,
                   height: 24,
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation(AppColors.white),
                     strokeWidth: 2.5,
                   ),
                 )
@@ -661,6 +698,55 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
       ),
+    );
+  }
+
+  Widget _buildFormSection({required String title, required Widget child}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: AppSizes.spaceM),
+        child,
+      ],
+    );
+  }
+
+  Widget _buildDecorativeShapes() {
+    return Stack(
+      children: [
+        Positioned(
+          top: -100,
+          right: -50,
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(100),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 150,
+          left: -80,
+          child: Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(75),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -673,10 +759,10 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF4CAF50),
-              onPrimary: Colors.white,
-              onSurface: Color(0xFF212121),
+            colorScheme: ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: AppColors.white,
+              onSurface: AppColors.textPrimary,
             ),
           ),
           child: child!,
@@ -687,7 +773,7 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
     if (picked != null && picked != selectedDate) {
       setState(() {
         selectedDate = picked;
-        selectedTimeSlot = null; // Reset time slot when date changes
+        selectedTimeSlot = null;
       });
     }
   }
@@ -706,7 +792,7 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
           'Hora: $selectedTimeSlot',
       confirmText: 'Agendar',
       icon: Icons.calendar_today_rounded,
-      iconColor: const Color(0xFF4CAF50),
+      iconColor: AppColors.secondary,
     );
 
     if (confirmed != true) return;
@@ -726,10 +812,10 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Cita agendada exitosamente'),
-          backgroundColor: const Color(0xFF4CAF50),
+          backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
           ),
         ),
       );

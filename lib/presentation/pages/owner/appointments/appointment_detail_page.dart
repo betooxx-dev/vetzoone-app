@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/confirmation_modal.dart';
 
 enum AppointmentStatus {
@@ -65,58 +67,110 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _getStatusColors(status);
+    final statusColor = _getStatusColor(status);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(colors),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildAppointmentInfo(),
-                  const SizedBox(height: 24),
-                  _buildPetInfo(),
-                  const SizedBox(height: 24),
-                  _buildVeterinarianInfo(),
-                  const SizedBox(height: 24),
-                  _buildLocationInfo(),
-                  const SizedBox(height: 24),
-                  _buildCostInfo(),
-                  if (_canCancelAppointment()) ...[
-                    const SizedBox(height: 32),
-                    _buildCancelButton(),
-                  ],
-                  const SizedBox(height: 100),
-                ],
-              ),
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFBDE3FF), Color(0xFFE8F5E8), Color(0xFFE5F3FF)],
+            stops: [0.0, 0.5, 1.0],
           ),
-        ],
+        ),
+        child: Stack(
+          children: [
+            _buildDecorativeShapes(),
+            CustomScrollView(
+              slivers: [
+                _buildSliverAppBar(statusColor),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSizes.paddingL),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildAppointmentInfo(),
+                        const SizedBox(height: AppSizes.spaceL),
+                        _buildPetInfo(),
+                        const SizedBox(height: AppSizes.spaceL),
+                        _buildVeterinarianInfo(),
+                        const SizedBox(height: AppSizes.spaceL),
+                        _buildLocationInfo(),
+                        const SizedBox(height: AppSizes.spaceL),
+                        _buildCostInfo(),
+                        if (_canCancelAppointment()) ...[
+                          const SizedBox(height: AppSizes.spaceXXL),
+                          _buildCancelButton(),
+                        ],
+                        const SizedBox(height: 100),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSliverAppBar(Map<String, Color> colors) {
+  Widget _buildDecorativeShapes() {
+    return Stack(
+      children: [
+        Positioned(
+          top: -100,
+          right: -50,
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(100),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 150,
+          left: -80,
+          child: Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(75),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSliverAppBar(Color statusColor) {
     return SliverAppBar(
       expandedHeight: 280,
       pinned: true,
-      backgroundColor: colors['primary'],
+      backgroundColor: statusColor,
       leading: Container(
-        margin: const EdgeInsets.all(8),
+        margin: const EdgeInsets.all(AppSizes.paddingS),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(
             Icons.arrow_back_ios_new,
-            color: Color(0xFF212121),
+            color: AppColors.textPrimary,
             size: 20,
           ),
         ),
@@ -125,7 +179,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
         background: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [colors['primary']!, colors['secondary']!],
+              colors: [statusColor, statusColor.withOpacity(0.8)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -138,11 +192,11 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: AppColors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(40),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: AppColors.black.withOpacity(0.1),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
                     ),
@@ -151,30 +205,30 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                 child: Icon(
                   _getStatusIcon(status),
                   size: 40,
-                  color: Colors.white,
+                  color: AppColors.white,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spaceM),
               Text(
                 appointment['appointmentType'] ?? 'Consulta',
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: AppColors.white,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSizes.spaceS),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                  horizontal: AppSizes.paddingM,
+                  vertical: AppSizes.paddingS,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
+                  color: AppColors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusXL),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
+                    color: AppColors.white.withOpacity(0.3),
                     width: 1,
                   ),
                 ),
@@ -183,7 +237,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: AppColors.white,
                   ),
                 ),
               ),
@@ -195,42 +249,48 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
   }
 
   Widget _buildAppointmentInfo() {
-    return _buildInfoCard(
+    return _buildModernInfoCard(
       title: 'Información de la Cita',
       icon: Icons.calendar_today_outlined,
+      iconColor: AppColors.primary,
       children: [
-        _buildInfoRow(
+        _buildModernInfoRow(
           'Fecha',
           appointment['date'] ?? 'No especificada',
           Icons.today_outlined,
         ),
-        _buildInfoRow(
+        _buildModernInfoRow(
           'Hora',
           appointment['time'] ?? 'No especificada',
           Icons.access_time_outlined,
         ),
-        _buildInfoRow(
+        _buildModernInfoRow(
           'Duración',
           appointment['duration'] ?? 'No especificada',
           Icons.timer_outlined,
         ),
         if (appointment['notes'] != null && appointment['notes'].isNotEmpty)
-          _buildInfoRow('Notas', appointment['notes'], Icons.note_outlined),
+          _buildModernInfoRow(
+            'Notas',
+            appointment['notes'],
+            Icons.note_outlined,
+          ),
       ],
     );
   }
 
   Widget _buildPetInfo() {
-    return _buildInfoCard(
-      title: 'Información de la Mascota',
+    return _buildModernInfoCard(
+      title: 'Info. de la Mascota',
       icon: Icons.pets_outlined,
+      iconColor: AppColors.secondary,
       children: [
-        _buildInfoRow(
+        _buildModernInfoRow(
           'Nombre',
           appointment['petName'] ?? 'No especificado',
           Icons.pets_rounded,
         ),
-        _buildInfoRow(
+        _buildModernInfoRow(
           'Especie',
           appointment['petSpecies'] ?? 'No especificado',
           Icons.category_outlined,
@@ -240,32 +300,33 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
   }
 
   Widget _buildVeterinarianInfo() {
-    return _buildInfoCard(
+    return _buildModernInfoCard(
       title: 'Veterinario',
       icon: Icons.person_outline,
+      iconColor: AppColors.accent,
       children: [
-        _buildInfoRow(
+        _buildModernInfoRow(
           'Nombre',
           appointment['veterinarianName'] ?? 'No asignado',
           Icons.person_rounded,
         ),
-        _buildInfoRow(
+        _buildModernInfoRow(
           'Especialidad',
           appointment['veterinarianSpecialty'] ?? 'No especificada',
           Icons.medical_services_outlined,
         ),
-        _buildInfoRow(
+        _buildModernInfoRow(
           'Clínica',
           appointment['clinic'] ?? 'No especificada',
           Icons.local_hospital_outlined,
         ),
-        _buildInfoRow(
+        _buildModernInfoRow(
           'Teléfono',
           appointment['phone'] ?? 'No disponible',
           Icons.phone_outlined,
           isClickable: true,
         ),
-        _buildInfoRow(
+        _buildModernInfoRow(
           'Email',
           appointment['email'] ?? 'No disponible',
           Icons.email_outlined,
@@ -276,11 +337,12 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
   }
 
   Widget _buildLocationInfo() {
-    return _buildInfoCard(
+    return _buildModernInfoCard(
       title: 'Ubicación',
       icon: Icons.location_on_outlined,
+      iconColor: AppColors.success,
       children: [
-        _buildInfoRow(
+        _buildModernInfoRow(
           'Dirección',
           appointment['address'] ?? 'No especificada',
           Icons.location_on_outlined,
@@ -291,11 +353,12 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
   }
 
   Widget _buildCostInfo() {
-    return _buildInfoCard(
+    return _buildModernInfoCard(
       title: 'Costo',
       icon: Icons.attach_money_outlined,
+      iconColor: AppColors.warning,
       children: [
-        _buildInfoRow(
+        _buildModernInfoRow(
           'Consulta',
           appointment['cost'] ?? 'No especificado',
           Icons.monetization_on_outlined,
@@ -304,70 +367,106 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
     );
   }
 
-  Widget _buildInfoCard({
+  Widget _buildModernInfoCard({
     required String title,
     required IconData icon,
+    required Color iconColor,
     required List<Widget> children,
   }) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+            color: iconColor.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: 0,
           ),
         ],
+        border: Border.all(color: iconColor.withOpacity(0.2), width: 1),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        child: Stack(
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(icon, size: 20, color: const Color(0xFF4CAF50)),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF212121),
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [iconColor, iconColor.withOpacity(0.6)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                   ),
                 ),
-              ],
+              ),
             ),
-            const SizedBox(height: 16),
-            ...children,
+            Padding(
+              padding: const EdgeInsets.all(AppSizes.paddingL),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSizes.paddingS),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [iconColor, iconColor.withOpacity(0.8)],
+                          ),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                        ),
+                        child: Icon(icon, size: 20, color: AppColors.white),
+                      ),
+                      const SizedBox(width: AppSizes.spaceM),
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSizes.spaceM),
+                  ...children,
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(
+  Widget _buildModernInfoRow(
     String label,
     String value,
     IconData icon, {
     bool isClickable = false,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.spaceS),
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundLight,
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+      ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Colors.grey[600]),
-          const SizedBox(width: 12),
+          Icon(icon, size: 18, color: AppColors.primary),
+          const SizedBox(width: AppSizes.spaceM),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,9 +474,9 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -392,8 +491,8 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                       fontSize: 16,
                       color:
                           isClickable
-                              ? const Color(0xFF2196F3)
-                              : const Color(0xFF212121),
+                              ? AppColors.primary
+                              : AppColors.textPrimary,
                       fontWeight: FontWeight.w600,
                       decoration: isClickable ? TextDecoration.underline : null,
                     ),
@@ -402,6 +501,8 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
               ],
             ),
           ),
+          if (isClickable)
+            Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.primary),
         ],
       ),
     );
@@ -410,54 +511,56 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
   Widget _buildCancelButton() {
     return Container(
       width: double.infinity,
+      height: AppSizes.buttonHeightL,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.error, AppColors.error.withOpacity(0.8)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.error.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: ElevatedButton.icon(
         onPressed: _cancelAppointment,
         icon: const Icon(Icons.cancel_outlined),
-        label: const Text('Cancelar Cita'),
+        label: const Text(
+          'Cancelar Cita',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFFF7043),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          backgroundColor: Colors.transparent,
+          foregroundColor: AppColors.white,
+          elevation: 0,
+          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
           ),
         ),
       ),
     );
   }
 
-  Map<String, Color> _getStatusColors(AppointmentStatus status) {
+  Color _getStatusColor(AppointmentStatus status) {
     switch (status) {
       case AppointmentStatus.scheduled:
-        return {
-          'primary': const Color(0xFF2196F3),
-          'secondary': const Color(0xFF64B5F6),
-        };
+        return AppColors.primary;
       case AppointmentStatus.confirmed:
-        return {
-          'primary': const Color(0xFF4CAF50),
-          'secondary': const Color(0xFF81C784),
-        };
+        return AppColors.success;
       case AppointmentStatus.inProgress:
-        return {
-          'primary': const Color(0xFFFF9800),
-          'secondary': const Color(0xFFFFB74D),
-        };
+        return AppColors.warning;
       case AppointmentStatus.completed:
-        return {
-          'primary': const Color(0xFF4CAF50),
-          'secondary': const Color(0xFF81C784),
-        };
+        return AppColors.success;
       case AppointmentStatus.cancelled:
-        return {
-          'primary': const Color(0xFFFF7043),
-          'secondary': const Color(0xFFFF8A65),
-        };
+        return AppColors.error;
       case AppointmentStatus.rescheduled:
-        return {
-          'primary': const Color(0xFF9C27B0),
-          'secondary': const Color(0xFFBA68C8),
-        };
+        return AppColors.secondary;
     }
   }
 
@@ -514,9 +617,11 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Llamando a $phone...'),
-        backgroundColor: const Color(0xFF4CAF50),
+        backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        ),
       ),
     );
   }
@@ -525,9 +630,11 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Abriendo email para $email...'),
-        backgroundColor: const Color(0xFF2196F3),
+        backgroundColor: AppColors.primary,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        ),
       ),
     );
   }
@@ -536,9 +643,11 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Abriendo mapa para: $address'),
-        backgroundColor: const Color(0xFF4CAF50),
+        backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        ),
       ),
     );
   }
@@ -552,8 +661,8 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
       confirmText: 'Cancelar cita',
       cancelText: 'No cancelar',
       icon: Icons.cancel_outlined,
-      iconColor: const Color(0xFFFF7043),
-      confirmButtonColor: const Color(0xFFFF7043),
+      iconColor: AppColors.error,
+      confirmButtonColor: AppColors.error,
     );
 
     if (confirmed == true) {
@@ -567,10 +676,10 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Cita cancelada exitosamente'),
-            backgroundColor: const Color(0xFFFF7043),
+            backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
             ),
           ),
         );

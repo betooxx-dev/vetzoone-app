@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/confirmation_modal.dart';
-// import '../../../widgets/cards/appointment_card.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/appointment/appointment_bloc.dart';
 import '../../../blocs/appointment/appointment_event.dart';
@@ -48,21 +49,47 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
       final now = DateTime.now();
       final fifteenDaysLater = now.add(const Duration(days: 15));
       final oneMonthAgo = now.subtract(const Duration(days: 30));
-      final yesterday = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 1));
-      final yesterdayEnd = DateTime(yesterday.year, yesterday.month, yesterday.day, 23, 59, 59, 999);
-      // Lanzar las tres peticiones en paralelo y trackear en consola
+      final yesterday = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(const Duration(days: 1));
+      final yesterdayEnd = DateTime(
+        yesterday.year,
+        yesterday.month,
+        yesterday.day,
+        23,
+        59,
+        59,
+        999,
+      );
+
       Future.wait([
         Future(() {
           print('🔵 Lanzando petición de próximas citas...');
-          context.read<AppointmentBloc>().add(LoadUpcomingAppointmentsEvent(userId: _userId!, dateFrom: now, dateTo: fifteenDaysLater));
+          context.read<AppointmentBloc>().add(
+            LoadUpcomingAppointmentsEvent(
+              userId: _userId!,
+              dateFrom: now,
+              dateTo: fifteenDaysLater,
+            ),
+          );
         }),
         Future(() {
           print('🟠 Lanzando petición de citas pasadas...');
-          context.read<AppointmentBloc>().add(LoadPastAppointmentsEvent(userId: _userId!, dateFrom: oneMonthAgo, dateTo: yesterdayEnd));
+          context.read<AppointmentBloc>().add(
+            LoadPastAppointmentsEvent(
+              userId: _userId!,
+              dateFrom: oneMonthAgo,
+              dateTo: yesterdayEnd,
+            ),
+          );
         }),
         Future(() {
           print('🟢 Lanzando petición de todas las citas...');
-          context.read<AppointmentBloc>().add(LoadAllAppointmentsEvent(userId: _userId!));
+          context.read<AppointmentBloc>().add(
+            LoadAllAppointmentsEvent(userId: _userId!),
+          );
         }),
       ]);
     }
@@ -78,17 +105,31 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: Column(
-            children: [
-              _buildAppBar(),
-              _buildTabBar(),
-              Expanded(child: _buildTabBarView()),
-            ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFBDE3FF), Color(0xFFE8F5E8), Color(0xFFE5F3FF)],
+            stops: [0.0, 0.5, 1.0],
           ),
+        ),
+        child: Stack(
+          children: [
+            _buildDecorativeShapes(),
+            SafeArea(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: Column(
+                  children: [
+                    _buildAppBar(),
+                    _buildTabBar(),
+                    Expanded(child: _buildTabBarView()),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       floatingActionButton: _buildFloatingActionButton(),
@@ -97,41 +138,39 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
 
   Widget _buildAppBar() {
     return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
+      margin: const EdgeInsets.all(AppSizes.paddingL),
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         boxShadow: [
           BoxShadow(
-            color: Color(0x10000000),
-            blurRadius: 10,
-            offset: Offset(0, 2),
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
             decoration: BoxDecoration(
-              // ignore: deprecated_member_use
-              color: const Color(0xFF4CAF50).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
             ),
             child: IconButton(
-              onPressed: () => Navigator.pop(context),
               icon: const Icon(
                 Icons.arrow_back_ios_new,
-                color: Color(0xFF4CAF50),
-                size: 20,
+                color: AppColors.white,
               ),
+              onPressed: () => Navigator.pop(context),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSizes.spaceM),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,19 +178,18 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
                 Text(
                   'Mis Citas',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF212121),
+                    color: AppColors.white,
                   ),
                 ),
                 Text(
                   'Gestiona tus consultas veterinarias',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF757575)),
+                  style: TextStyle(fontSize: 14, color: AppColors.white),
                 ),
               ],
             ),
           ),
-          // Botón de filtro eliminado
         ],
       ),
     );
@@ -159,28 +197,37 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
 
   Widget _buildTabBar() {
     return Container(
-      margin: const EdgeInsets.all(24),
+      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: AppColors.black.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: TabBar(
         controller: _tabController,
         indicator: BoxDecoration(
-          color: const Color(0xFF4CAF50),
-          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [AppColors.secondary, AppColors.secondary.withOpacity(0.8)],
+          ),
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.secondary.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         indicatorPadding: const EdgeInsets.all(6),
-        labelColor: Colors.white,
-        unselectedLabelColor: const Color(0xFF757575),
+        labelColor: AppColors.white,
+        unselectedLabelColor: AppColors.textSecondary,
         labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         unselectedLabelStyle: const TextStyle(
           fontSize: 14,
@@ -216,7 +263,10 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
             return _buildAppointmentsList(state.upcoming);
           }
         }
-        return _buildEmptyState('Sin datos', 'No se pudo cargar la información.');
+        return _buildEmptyState(
+          'Sin datos',
+          'No se pudo cargar la información.',
+        );
       },
     );
   }
@@ -228,12 +278,18 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
           if (state.errorPast != null) {
             return _buildEmptyState('Error', state.errorPast!);
           } else if (state.past.isEmpty) {
-            return _buildEmptyState('Sin citas', 'No hay citas en el último mes.');
+            return _buildEmptyState(
+              'Sin citas',
+              'No hay citas en el último mes.',
+            );
           } else {
             return _buildAppointmentsList(state.past);
           }
         }
-        return _buildEmptyState('Sin datos', 'No se pudo cargar la información.');
+        return _buildEmptyState(
+          'Sin datos',
+          'No se pudo cargar la información.',
+        );
       },
     );
   }
@@ -248,17 +304,28 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
             return _buildAppointmentsList(state.all);
           }
         }
-        return _buildEmptyState('Sin datos', 'No se pudo cargar la información.');
+        return _buildEmptyState(
+          'Sin datos',
+          'No se pudo cargar la información.',
+        );
       },
     );
   }
 
   Widget _buildAppointmentsList(List<domain.Appointment> appointments) {
     if (appointments.isEmpty) {
-      return _buildEmptyState('No hay citas', 'No se encontraron citas para este filtro.');
+      return _buildEmptyState(
+        'No hay citas',
+        'No se encontraron citas para este filtro.',
+      );
     }
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.paddingL,
+        AppSizes.spaceL,
+        AppSizes.paddingL,
+        100,
+      ),
       itemCount: appointments.length,
       itemBuilder: (context, index) {
         final appointment = appointments[index];
@@ -266,12 +333,15 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
           animation: _animationController,
           builder: (context, child) {
             final delay = index * 0.1;
-            final animationValue = (_animationController.value - delay).clamp(0.0, 1.0);
+            final animationValue = (_animationController.value - delay).clamp(
+              0.0,
+              1.0,
+            );
             return Opacity(
               opacity: animationValue,
               child: Transform.translate(
                 offset: Offset(0, 30 * (1 - animationValue)),
-                child: _buildAppointmentCard(appointment),
+                child: _buildModernAppointmentCard(appointment),
               ),
             );
           },
@@ -280,19 +350,337 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
     );
   }
 
-  Widget _buildAppointmentCard(domain.Appointment appointment) {
-    final formattedDate = DateFormat('dd/MM/yyyy').format(appointment.appointmentDate);
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: ListTile(
-        leading: const Icon(Icons.calendar_today, color: Color(0xFF4CAF50)),
-        title: Text('Fecha: $formattedDate', style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(appointment.notes ?? 'Sin notas'),
-        trailing: Text(_mapAppointmentStatusToString(appointment.status)),
-        onTap: () => _navigateToAppointmentDetail(appointment),
+  Widget _buildModernAppointmentCard(domain.Appointment appointment) {
+    final formattedDate = DateFormat(
+      'dd/MM/yyyy',
+    ).format(appointment.appointmentDate);
+    final formattedTime = DateFormat(
+      'HH:mm',
+    ).format(appointment.appointmentDate);
+    final statusColor = _getStatusColor(appointment.status);
+    final statusText = _mapAppointmentStatusToString(appointment.status);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.spaceL),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: 0,
+          ),
+        ],
+        border: Border.all(color: statusColor.withOpacity(0.2), width: 1),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [statusColor, statusColor.withOpacity(0.6)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _navigateToAppointmentDetail(appointment),
+                borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.paddingL),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(AppSizes.paddingS),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  statusColor,
+                                  statusColor.withOpacity(0.8),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusM,
+                              ),
+                            ),
+                            child: Icon(
+                              _getStatusIcon(appointment.status),
+                              color: AppColors.white,
+                              size: AppSizes.iconS,
+                            ),
+                          ),
+                          const SizedBox(width: AppSizes.spaceM),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  statusText,
+                                  style: TextStyle(
+                                    color: statusColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  '$formattedDate • $formattedTime',
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            color: AppColors.textSecondary,
+                            size: AppSizes.iconS,
+                          ),
+                        ],
+                      ),
+                      if (appointment.notes != null &&
+                          appointment.notes!.isNotEmpty) ...[
+                        const SizedBox(height: AppSizes.spaceM),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(AppSizes.paddingM),
+                          decoration: BoxDecoration(
+                            color: AppColors.backgroundLight,
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusM,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.note_outlined,
+                                    color: AppColors.primary,
+                                    size: AppSizes.iconS,
+                                  ),
+                                  const SizedBox(width: AppSizes.spaceS),
+                                  const Text(
+                                    'Notas',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: AppSizes.spaceS),
+                              Text(
+                                appointment.notes!,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: AppSizes.spaceM),
+                      Container(
+                        padding: const EdgeInsets.all(AppSizes.paddingM),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                          border: Border.all(
+                            color: AppColors.primary.withOpacity(0.1),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: AppColors.secondary.withOpacity(
+                                0.1,
+                              ),
+                              radius: 20,
+                              child: Icon(
+                                Icons.local_hospital,
+                                color: AppColors.secondary,
+                                size: AppSizes.iconS,
+                              ),
+                            ),
+                            const SizedBox(width: AppSizes.spaceM),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Dr. Veterinario',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Clínica Veterinaria',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  Widget _buildEmptyState(String title, String subtitle) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.paddingXXL),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.secondary.withOpacity(0.1),
+                    AppColors.secondary.withOpacity(0.05),
+                  ],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.event_busy,
+                size: 50,
+                color: AppColors.secondary,
+              ),
+            ),
+            const SizedBox(height: AppSizes.spaceL),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSizes.spaceS),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFloatingActionButton() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: FloatingActionButton.extended(
+        onPressed: _navigateToScheduleAppointment,
+        backgroundColor: Colors.transparent,
+        foregroundColor: AppColors.white,
+        elevation: 0,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text(
+          'Nueva Cita',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(domain.AppointmentStatus status) {
+    switch (status) {
+      case domain.AppointmentStatus.pending:
+        return AppColors.warning;
+      case domain.AppointmentStatus.confirmed:
+        return AppColors.success;
+      case domain.AppointmentStatus.inProgress:
+        return AppColors.accent;
+      case domain.AppointmentStatus.completed:
+        return AppColors.primary;
+      case domain.AppointmentStatus.cancelled:
+        return AppColors.error;
+      case domain.AppointmentStatus.rescheduled:
+        return AppColors.secondary;
+    }
+  }
+
+  IconData _getStatusIcon(domain.AppointmentStatus status) {
+    switch (status) {
+      case domain.AppointmentStatus.pending:
+        return Icons.schedule;
+      case domain.AppointmentStatus.confirmed:
+        return Icons.check_circle;
+      case domain.AppointmentStatus.inProgress:
+        return Icons.play_circle;
+      case domain.AppointmentStatus.completed:
+        return Icons.task_alt;
+      case domain.AppointmentStatus.cancelled:
+        return Icons.cancel;
+      case domain.AppointmentStatus.rescheduled:
+        return Icons.update;
+    }
   }
 
   String _mapAppointmentStatusToString(domain.AppointmentStatus status) {
@@ -310,38 +698,36 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
       case domain.AppointmentStatus.rescheduled:
         return 'Reprogramada';
     }
-    return '';
   }
 
-  Widget _buildEmptyState(String title, String subtitle) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.event_busy, size: 48, color: Color(0xFFBDBDBD)),
-            const SizedBox(height: 16),
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(subtitle, style: const TextStyle(fontSize: 14, color: Color(0xFF757575)), textAlign: TextAlign.center),
-          ],
+  Widget _buildDecorativeShapes() {
+    return Stack(
+      children: [
+        Positioned(
+          top: -100,
+          right: -50,
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(100),
+            ),
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildFloatingActionButton() {
-    return FloatingActionButton.extended(
-      onPressed: _navigateToScheduleAppointment,
-      backgroundColor: const Color(0xFF4CAF50),
-      foregroundColor: Colors.white,
-      icon: const Icon(Icons.add_rounded),
-      label: const Text(
-        'Nueva Cita',
-        style: TextStyle(fontWeight: FontWeight.w600),
-      ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        Positioned(
+          top: 150,
+          left: -80,
+          child: Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(75),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
 
 class VeterinarianProfilePage extends StatefulWidget {
-  final Map<String, dynamic>? veterinarianData;
-
-  const VeterinarianProfilePage({super.key, this.veterinarianData});
+  const VeterinarianProfilePage({super.key});
 
   @override
   State<VeterinarianProfilePage> createState() =>
@@ -14,95 +14,53 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
   late Map<String, dynamic> veterinarian;
 
   @override
-  void initState() {
-    super.initState();
-    _initializeVeterinarianData();
-  }
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
 
-  void _initializeVeterinarianData() {
-    final defaultVeterinarian = {
-      'id': '1',
-      'name': 'Dr. María González',
-      'specialty': 'Medicina General Veterinaria',
-      'clinic': 'Veterinaria Central',
-      'experience': '8 años',
-      'distance': '2.3 km',
-      'location': 'Av. Central #123, Tuxtla Gutiérrez',
-      'phone': '+52 961 123 4567',
-      'email': 'maria.gonzalez@vetcentral.com',
-      'schedule': {
-        'Lunes': '8:00 AM - 6:00 PM',
-        'Martes': '8:00 AM - 6:00 PM',
-        'Miércoles': '8:00 AM - 6:00 PM',
-        'Jueves': '8:00 AM - 6:00 PM',
-        'Viernes': '8:00 AM - 6:00 PM',
-        'Sábado': '9:00 AM - 2:00 PM',
-        'Domingo': 'Cerrado',
-      },
-      'services': [
-        'Consultas generales',
-        'Vacunación',
-        'Cirugías menores',
-        'Emergencias',
-        'Control de peso',
-        'Análisis clínicos',
-      ],
-      'nextAppointment': 'Hoy 3:00 PM',
-      'consultationPrice': 450,
-      'description':
-          'Veterinaria especializada en medicina general con amplia experiencia en el cuidado integral de mascotas. Enfoque preventivo y trato personalizado.',
-    };
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final arguments = ModalRoute.of(context)?.settings.arguments;
-      if (arguments != null && arguments is Map<String, dynamic>) {
-        setState(() {
-          veterinarian = Map<String, dynamic>.from(arguments);
-          // Ensure schedule exists with default values
-          if (veterinarian['schedule'] == null) {
-            veterinarian['schedule'] = {
-              'Lunes': '8:00 AM - 6:00 PM',
-              'Martes': '8:00 AM - 6:00 PM',
-              'Miércoles': '8:00 AM - 6:00 PM',
-              'Jueves': '8:00 AM - 6:00 PM',
-              'Viernes': '8:00 AM - 6:00 PM',
-              'Sábado': '9:00 AM - 2:00 PM',
-              'Domingo': 'Cerrado',
+    veterinarian =
+        args is Map<String, dynamic>
+            ? args
+            : {
+              'id': 'default',
+              'name': 'Veterinario',
+              'specialty': 'Medicina General',
+              'clinic': 'Clínica Veterinaria',
+              'experience': '5 años',
+              'consultationFee': 50,
+              'rating': 4.5,
+              'description': 'Profesional dedicado al cuidado de mascotas',
+              'phone': '+52 961 123 4567',
+              'email': 'vet@example.com',
+              'location': 'Tuxtla Gutiérrez, Chiapas',
             };
-          }
-          // Ensure services exists
-          if (veterinarian['services'] == null) {
-            veterinarian['services'] = [
-              'Consultas generales',
-              'Vacunación',
-              'Cirugías menores',
-              'Emergencias',
-            ];
-          }
-        });
-      }
-    });
-
-    veterinarian = widget.veterinarianData ?? defaultVeterinarian;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          SliverToBoxAdapter(
-            child: Column(
-              children: [
-                _buildVeterinarianInfo(),
-                _buildContactInfo(),
-                _buildScheduleInfo(),
-                _buildServicesInfo(),
-                const SizedBox(height: 100),
-              ],
-            ),
+      backgroundColor: AppColors.backgroundLight,
+      body: Stack(
+        children: [
+          // Fondo decorativo
+          _buildDecorativeBackground(),
+
+          // Contenido principal
+          CustomScrollView(
+            slivers: [
+              _buildSliverAppBar(),
+              SliverToBoxAdapter(
+                child: Column(
+                  children: [
+                    _buildVeterinarianInfo(),
+                    _buildContactInfo(),
+                    _buildScheduleInfo(),
+                    _buildServicesInfo(),
+                    const SizedBox(height: 100),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -110,35 +68,86 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
     );
   }
 
+  Widget _buildDecorativeBackground() {
+    return Stack(
+      children: [
+        // Fondo base
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.backgroundLight, AppColors.white],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
+
+        // Formas decorativas
+        Positioned(
+          top: -50,
+          right: -30,
+          child: Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(75),
+            ),
+          ),
+        ),
+
+        Positioned(
+          top: 100,
+          left: -40,
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(50),
+            ),
+          ),
+        ),
+
+        Positioned(
+          bottom: 200,
+          right: -20,
+          child: Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(40),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSliverAppBar() {
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
-      backgroundColor: const Color(0xFF4CAF50),
+      backgroundColor: AppColors.primary,
       leading: Container(
-        margin: const EdgeInsets.all(8),
+        margin: const EdgeInsets.all(AppSizes.paddingS),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.white.withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
         ),
         child: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(
             Icons.arrow_back_ios_new,
-            color: Color(0xFF212121),
+            color: AppColors.primary,
             size: 20,
           ),
         ),
       ),
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+          decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -149,11 +158,11 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: AppColors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(50),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: AppColors.black.withValues(alpha: 0.1),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -162,25 +171,25 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
                   child: const Icon(
                     Icons.person_rounded,
                     size: 50,
-                    color: Colors.white,
+                    color: AppColors.white,
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spaceL),
               Text(
                 veterinarian['name'] ?? 'Veterinario',
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: AppColors.white,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSizes.spaceXS),
               Text(
                 veterinarian['specialty'] ?? 'Especialidad',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.white.withOpacity(0.9),
+                  color: AppColors.white.withValues(alpha: 0.9),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -193,14 +202,14 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
 
   Widget _buildVeterinarianInfo() {
     return Container(
-      margin: const EdgeInsets.all(24),
-      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.all(AppSizes.paddingL),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: AppColors.black.withValues(alpha: 0.06),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -214,28 +223,22 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
                 'Experiencia',
                 veterinarian['experience'] ?? '0 años',
                 Icons.timeline_outlined,
-                const Color(0xFFFF7043),
-              ),
-              _buildStatItem(
-                'Distancia',
-                veterinarian['distance'] ?? '0 km',
-                Icons.location_on_outlined,
-                const Color(0xFF2196F3),
+                AppColors.secondary,
               ),
               _buildStatItem(
                 'Consulta',
-                '\$${veterinarian['consultationPrice'] ?? 0}',
+                '\$${veterinarian['consultationFee'] ?? 0}',
                 Icons.attach_money_outlined,
-                const Color(0xFF4CAF50),
+                AppColors.accent,
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSizes.paddingL),
           Text(
             veterinarian['description'] ?? 'Sin descripción disponible',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: Color(0xFF757575),
+              color: AppColors.textSecondary,
               height: 1.5,
             ),
             textAlign: TextAlign.center,
@@ -258,23 +261,23 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(25),
             ),
             child: Icon(icon, color: color, size: 24),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSizes.spaceS),
           Text(
             value,
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF212121),
+              color: AppColors.textPrimary,
             ),
           ),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF757575)),
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -283,14 +286,14 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
 
   Widget _buildContactInfo() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -304,10 +307,10 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF212121),
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSizes.spaceL),
           _buildContactItem(
             Icons.business_outlined,
             'Clínica',
@@ -322,59 +325,51 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
             Icons.phone_outlined,
             'Teléfono',
             veterinarian['phone'] ?? 'No especificado',
-            isClickable: true,
           ),
           _buildContactItem(
             Icons.email_outlined,
             'Email',
             veterinarian['email'] ?? 'No especificado',
-            isClickable: true,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildContactItem(
-    IconData icon,
-    String label,
-    String value, {
-    bool isClickable = false,
-  }) {
+  Widget _buildContactItem(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(bottom: AppSizes.spaceM),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: const Color(0xFF4CAF50)),
-          const SizedBox(width: 12),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            child: Icon(icon, color: AppColors.primary, size: 20),
+          ),
+          const SizedBox(width: AppSizes.spaceM),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF757575),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 2),
-                GestureDetector(
-                  onTap:
-                      isClickable
-                          ? () => _handleContactAction(label, value)
-                          : null,
-                  child: Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color:
-                          isClickable
-                              ? const Color(0xFF2196F3)
-                              : const Color(0xFF212121),
-                      decoration: isClickable ? TextDecoration.underline : null,
-                    ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -386,15 +381,30 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
   }
 
   Widget _buildScheduleInfo() {
+    final scheduleData = [
+      {'day': 'Lunes', 'hours': '9:00 AM - 6:00 PM'},
+      {'day': 'Martes', 'hours': '9:00 AM - 6:00 PM'},
+      {'day': 'Miércoles', 'hours': '9:00 AM - 6:00 PM'},
+      {'day': 'Jueves', 'hours': '9:00 AM - 6:00 PM'},
+      {'day': 'Viernes', 'hours': '9:00 AM - 6:00 PM'},
+      {'day': 'Sábado', 'hours': '9:00 AM - 2:00 PM'},
+      {'day': 'Domingo', 'hours': 'Cerrado'},
+    ];
+
     return Container(
-      margin: const EdgeInsets.all(24),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.fromLTRB(
+        AppSizes.paddingL,
+        AppSizes.paddingL,
+        AppSizes.paddingL,
+        0,
+      ),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -403,46 +413,56 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Horarios de Atención',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF212121),
-            ),
+          Row(
+            children: [
+              Icon(
+                Icons.schedule_outlined,
+                color: AppColors.secondary,
+                size: 24,
+              ),
+              const SizedBox(width: AppSizes.spaceS),
+              const Text(
+                'Horarios de Atención',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          ...veterinarian['schedule'].entries.map<Widget>((entry) {
-            return _buildScheduleItem(entry.key, entry.value);
-          }).toList(),
+          const SizedBox(height: AppSizes.spaceL),
+          ...scheduleData.map(
+            (schedule) =>
+                _buildScheduleItem(schedule['day']!, schedule['hours']!),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildScheduleItem(String day, String hours) {
-    final isToday = _isToday(day);
+    final isClosed = hours == 'Cerrado';
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.only(bottom: AppSizes.spaceS),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             day,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-              color:
-                  isToday ? const Color(0xFF4CAF50) : const Color(0xFF212121),
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w500,
             ),
           ),
           Text(
             hours,
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: isToday ? FontWeight.w600 : FontWeight.normal,
-              color:
-                  isToday ? const Color(0xFF4CAF50) : const Color(0xFF757575),
+              fontSize: 14,
+              color: isClosed ? AppColors.error : AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -451,15 +471,29 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
   }
 
   Widget _buildServicesInfo() {
+    final services = [
+      'Consulta General',
+      'Vacunación',
+      'Cirugía',
+      'Desparasitación',
+      'Odontología Veterinaria',
+      'Emergencias',
+    ];
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.fromLTRB(
+        AppSizes.paddingL,
+        AppSizes.paddingL,
+        AppSizes.paddingL,
+        0,
+      ),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -468,42 +502,51 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Servicios Disponibles',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF212121),
-            ),
+          Row(
+            children: [
+              Icon(
+                Icons.medical_services_outlined,
+                color: AppColors.accent,
+                size: 24,
+              ),
+              const SizedBox(width: AppSizes.spaceS),
+              const Text(
+                'Servicios Disponibles',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSizes.spaceL),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppSizes.spaceS,
+            runSpacing: AppSizes.spaceS,
             children:
-                veterinarian['services'].map<Widget>((service) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF4CAF50).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFF4CAF50).withOpacity(0.3),
+                services
+                    .map(
+                      (service) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSizes.paddingM,
+                          vertical: AppSizes.paddingS,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: AppColors.primaryGradient,
+                          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                        ),
+                        child: Text(
+                          service,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      service,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF4CAF50),
-                      ),
-                    ),
-                  );
-                }).toList(),
+                    )
+                    .toList(),
           ),
         ],
       ),
@@ -511,48 +554,31 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
   }
 
   Widget _buildFloatingActionButton() {
-    return FloatingActionButton.extended(
-      onPressed: _scheduleAppointment,
-      backgroundColor: const Color(0xFF4CAF50),
-      foregroundColor: Colors.white,
-      icon: const Icon(Icons.calendar_today_rounded),
-      label: const Text(
-        'Agendar Cita',
-        style: TextStyle(fontWeight: FontWeight.w600),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    );
-  }
-
-  bool _isToday(String day) {
-    final today = DateTime.now();
-    final dayNames = [
-      'Lunes',
-      'Martes',
-      'Miércoles',
-      'Jueves',
-      'Viernes',
-      'Sábado',
-      'Domingo',
-    ];
-    final todayName = dayNames[today.weekday - 1];
-    return day == todayName;
-  }
-
-  void _handleContactAction(String type, String value) {
-    String message = '';
-    if (type == 'Teléfono') {
-      message = 'Llamando a $value...';
-    } else if (type == 'Email') {
-      message = 'Abriendo email para $value...';
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: const Color(0xFF4CAF50),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: FloatingActionButton.extended(
+        onPressed: () => _scheduleAppointment(),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        icon: const Icon(Icons.calendar_today_rounded, color: AppColors.white),
+        label: const Text(
+          'Agendar Cita',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.white,
+          ),
+        ),
       ),
     );
   }
@@ -561,7 +587,7 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
     Navigator.pushNamed(
       context,
       '/schedule-appointment',
-      arguments: {'selectedVeterinarian': veterinarian},
+      arguments: veterinarian,
     );
   }
 }

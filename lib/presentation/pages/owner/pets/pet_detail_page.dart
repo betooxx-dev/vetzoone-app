@@ -38,6 +38,118 @@ class _PetDetailPageState extends State<PetDetailPage> {
     }
   }
 
+  Widget _buildDecorativeShapes() {
+    return Stack(
+      children: [
+        Positioned(
+          top: -100,
+          right: -50,
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(100),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 150,
+          left: -80,
+          child: Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(75),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showDeleteDialog(Pet pet) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_rounded, color: AppColors.error, size: 24),
+              SizedBox(width: 8),
+              Text(
+                'Eliminar Mascota',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.error,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '¿Estás seguro que deseas eliminar a ${pet.name}?',
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Esta acción es irreversible y se eliminarán:',
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '• Información de la mascota\n• Historial médico\n• Citas programadas\n• Fotografías',
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                _deletePet(pet.id);
+              },
+              child: const Text(
+                'Eliminar',
+                style: TextStyle(
+                  color: AppColors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _deletePet(String petId) {
+    context.read<PetBloc>().add(DeletePetEvent(petId: petId));
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -55,44 +167,69 @@ class _PetDetailPageState extends State<PetDetailPage> {
               stops: [0.0, 0.5, 1.0],
             ),
           ),
-          child: BlocBuilder<PetBloc, PetState>(
-            builder: (context, state) {
-              if (state is PetLoading) {
-                return const Scaffold(
-                  backgroundColor: Colors.transparent,
-                  body: Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.secondary,
-                    ),
-                  ),
-                );
-              } else if (state is PetLoaded) {
-                return _buildPetDetail(state.pet, state.appointments);
-              } else if (state is PetError) {
-                return Scaffold(
-                  backgroundColor: Colors.transparent,
-                  body: EmptyStateWidget(
-                    icon: Icons.error_outline,
-                    title: 'Error al cargar mascota',
-                    message: state.message,
-                    iconColor: AppColors.error,
-                    buttonText: 'Reintentar',
-                    onButtonPressed: _loadPetDetail,
-                  ),
-                );
-              }
+          child: Stack(
+            children: [
+              _buildDecorativeShapes(),
+              BlocConsumer<PetBloc, PetState>(
+                listener: (context, state) {
+                  if (state is PetOperationSuccess) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: AppColors.success,
+                      ),
+                    );
+                    Navigator.pop(context);
+                  } else if (state is PetError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                  }
+                },
+                builder: (context, state) {
+                  if (state is PetLoading) {
+                    return const Scaffold(
+                      backgroundColor: Colors.transparent,
+                      body: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.secondary,
+                        ),
+                      ),
+                    );
+                  } else if (state is PetLoaded) {
+                    return _buildPetDetail(state.pet, state.appointments);
+                  } else if (state is PetError) {
+                    return Scaffold(
+                      backgroundColor: Colors.transparent,
+                      body: EmptyStateWidget(
+                        icon: Icons.error_outline,
+                        title: 'Error al cargar mascota',
+                        message: state.message,
+                        iconColor: AppColors.error,
+                        buttonText: 'Reintentar',
+                        onButtonPressed: _loadPetDetail,
+                      ),
+                    );
+                  }
 
-              return Scaffold(
-                backgroundColor: Colors.transparent,
-                body: EmptyStateWidget(
-                  icon: Icons.pets_rounded,
-                  title: 'Mascota no encontrada',
-                  message: 'No se pudo cargar la información de la mascota.',
-                  buttonText: 'Volver',
-                  onButtonPressed: () => Navigator.pop(context),
-                ),
-              );
-            },
+                  return Scaffold(
+                    backgroundColor: Colors.transparent,
+                    body: EmptyStateWidget(
+                      icon: Icons.pets_rounded,
+                      title: 'Mascota no encontrada',
+                      message:
+                          'No se pudo cargar la información de la mascota.',
+                      iconColor: AppColors.secondary,
+                      buttonText: 'Volver',
+                      onButtonPressed: () => Navigator.pop(context),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
       ),
@@ -103,20 +240,21 @@ class _PetDetailPageState extends State<PetDetailPage> {
     return CustomScrollView(
       slivers: [
         _buildSliverAppBar(pet),
-        SliverPadding(
-          padding: const EdgeInsets.all(AppSizes.paddingL),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              _buildInfoCard(pet),
-              const SizedBox(height: AppSizes.spaceL),
-              _buildHealthCard(pet),
-              const SizedBox(height: AppSizes.spaceL),
-              _buildActionsCard(pet),
-              const SizedBox(height: AppSizes.spaceL),
-              _buildMedicalRecordsCard(pet),
-              const SizedBox(height: AppSizes.spaceL),
-              _buildAppointmentsCard(appointments),
-            ]),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSizes.paddingL),
+            child: Column(
+              children: [
+                _buildInfoCard(pet),
+                const SizedBox(height: AppSizes.spaceL),
+                _buildHealthCard(pet),
+                const SizedBox(height: AppSizes.spaceL),
+                _buildAppointmentsCard(appointments),
+                const SizedBox(height: AppSizes.spaceL),
+                _buildActionButtons(pet),
+                const SizedBox(height: AppSizes.spaceXL),
+              ],
+            ),
           ),
         ),
       ],
@@ -125,34 +263,39 @@ class _PetDetailPageState extends State<PetDetailPage> {
 
   Widget _buildSliverAppBar(Pet pet) {
     return SliverAppBar(
-      expandedHeight: 300,
+      expandedHeight: 250,
+      floating: false,
       pinned: true,
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.secondary,
       leading: Container(
-        margin: const EdgeInsets.all(AppSizes.spaceS),
+        margin: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppColors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          color: AppColors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: IconButton(
-          onPressed: () async {
-            await _reloadPetsOnPop();
-            Navigator.pop(context);
-          },
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.white),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       actions: [
         Container(
-          margin: const EdgeInsets.all(AppSizes.spaceS),
+          margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            color: AppColors.white.withOpacity(0.9),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: IconButton(
-            onPressed:
-                () => Navigator.pushNamed(context, '/edit-pet', arguments: pet),
-            icon: const Icon(Icons.edit, color: AppColors.white),
+            icon: const Icon(Icons.edit, color: AppColors.textPrimary),
+            onPressed: () {
+              Navigator.pushNamed(context, '/edit-pet', arguments: pet).then((
+                result,
+              ) {
+                if (result == true) {
+                  _loadPetDetail();
+                }
+              });
+            },
           ),
         ),
       ],
@@ -316,14 +459,10 @@ class _PetDetailPageState extends State<PetDetailPage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4CAF50).withOpacity(0.1),
+                  color: AppColors.accent.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  Icons.health_and_safety,
-                  color: const Color(0xFF4CAF50),
-                  size: 20,
-                ),
+                child: Icon(Icons.favorite, color: AppColors.accent, size: 20),
               ),
               const SizedBox(width: 12),
               const Text(
@@ -331,155 +470,13 @@ class _PetDetailPageState extends State<PetDetailPage> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1A1A),
+                  color: AppColors.textPrimary,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              _buildStatusChip(pet.status),
-              const Spacer(),
-              Text(
-                'Última actualización',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionsCard(Pet pet) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4CAF50).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.widgets,
-                  color: const Color(0xFF4CAF50),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Acciones Rápidas',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1A1A),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _buildActionButton(
-                  'Cita',
-                  Icons.calendar_today,
-                  () => Navigator.pushNamed(context, '/schedule-appointment'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildActionButton(
-                  'Historial',
-                  Icons.history,
-                  () => Navigator.pushNamed(
-                    context,
-                    '/medical-record',
-                    arguments: {'petId': pet.id, 'petName': pet.name},
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMedicalRecordsCard(Pet pet) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2196F3).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.medical_information,
-                  color: Color(0xFF2196F3),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Historial Médico',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1A1A),
-                ),
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed:
-                    () => Navigator.pushNamed(
-                      context,
-                      '/medical-record',
-                      arguments: {'petId': pet.id, 'petName': pet.name},
-                    ),
-                child: const Text('Ver todo'),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'No hay registros médicos recientes',
-            style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
-          ),
+          _buildHealthStatus(pet.status ?? PetStatus.HEALTHY),
         ],
       ),
     );
@@ -507,22 +504,22 @@ class _PetDetailPageState extends State<PetDetailPage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF9800).withOpacity(0.1),
+                  color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
-                  Icons.event,
-                  color: Color(0xFFFF9800),
+                child: Icon(
+                  Icons.calendar_today,
+                  color: AppColors.primary,
                   size: 20,
                 ),
               ),
               const SizedBox(width: 12),
               const Text(
-                'Historial de Citas',
+                'Próximas Citas',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1A1A),
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
@@ -530,123 +527,197 @@ class _PetDetailPageState extends State<PetDetailPage> {
           const SizedBox(height: 16),
           if (appointments.isEmpty)
             const Text(
-              'No han habido citas para esta mascota.',
-              style: TextStyle(fontSize: 14, color: Color(0xFF666666)),
+              'No hay citas programadas',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
             )
           else
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: appointments.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final appointment = appointments[index];
-                final formattedDate = DateFormat(
-                  'dd/MM/yyyy',
-                ).format(appointment.appointmentDate);
-                return ListTile(
-                  leading: const Icon(
-                    Icons.calendar_today,
-                    color: Color(0xFF4CAF50),
-                  ),
-                  title: Text(
-                    'Fecha: $formattedDate',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(appointment.notes ?? 'Sin notas'),
-                  trailing: Text(
-                    _mapAppointmentStatusToString(appointment.status),
-                  ),
-                );
-              },
-            ),
+            ...appointments
+                .take(3)
+                .map((appointment) => _buildAppointmentItem(appointment))
+                .toList(),
         ],
       ),
     );
   }
 
-  String _mapAppointmentStatusToString(AppointmentStatus status) {
-    switch (status) {
-      case AppointmentStatus.pending:
-        return 'Pendiente';
-      case AppointmentStatus.confirmed:
-        return 'Confirmada';
-      case AppointmentStatus.inProgress:
-        return 'En progreso';
-      case AppointmentStatus.completed:
-        return 'Completada';
-      case AppointmentStatus.cancelled:
-        return 'Cancelada';
-      case AppointmentStatus.rescheduled:
-        return 'Reprogramada';
-    }
+  Widget _buildActionButtons(Pet pet) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSizes.spaceS),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                ),
+                child: Icon(
+                  Icons.settings,
+                  color: AppColors.secondary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: AppSizes.spaceM),
+              const Text(
+                'Acciones',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.spaceL),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/schedule-appointment',
+                      arguments: pet,
+                    );
+                  },
+                  icon: const Icon(Icons.calendar_today),
+                  label: const Text('Agendar Cita'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSizes.spaceM),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/medical-record',
+                      arguments: {'petId': pet.id, 'petName': pet.name},
+                    );
+                  },
+                  icon: const Icon(Icons.medical_services),
+                  label: const Text('Ver Historial'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: AppColors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.spaceM),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _showDeleteDialog(pet),
+              icon: const Icon(Icons.delete_forever),
+              label: const Text('Eliminar Mascota'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: AppColors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildInfoRow(String label, String value, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: const Color(0xFF4CAF50)),
-        const SizedBox(width: 12),
+        Icon(icon, size: 18, color: AppColors.textSecondary),
+        const SizedBox(width: AppSizes.spaceS),
         Text(
-          '$label:',
+          label,
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF1A1A1A),
+            color: AppColors.textSecondary,
           ),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 14, color: Color(0xFF666666)),
+        const Spacer(),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textPrimary,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStatusChip(PetStatus? status) {
-    if (status == null) return const SizedBox();
+  Widget _buildHealthStatus(PetStatus status) {
+    Color statusColor;
+    String statusText;
+    IconData statusIcon;
 
-    Color color;
-    String text;
     switch (status) {
       case PetStatus.HEALTHY:
-        color = Colors.green;
-        text = 'Saludable';
+        statusColor = AppColors.success;
+        statusText = 'Saludable';
+        statusIcon = Icons.check_circle;
         break;
       case PetStatus.TREATMENT:
-        color = Colors.blue;
-        text = 'En tratamiento';
+        statusColor = AppColors.warning;
+        statusText = 'En tratamiento';
+        statusIcon = Icons.medical_services;
         break;
       case PetStatus.ATTENTION:
-        color = Colors.orange;
-        text = 'Necesita atención';
+        statusColor = AppColors.error;
+        statusText = 'Requiere atención';
+        statusIcon = Icons.warning;
         break;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        color: statusColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: statusColor.withOpacity(0.3)),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
+          Icon(statusIcon, color: statusColor, size: 20),
           const SizedBox(width: 8),
           Text(
-            text,
+            statusText,
             style: TextStyle(
-              fontSize: 12,
-              color: color,
-              fontWeight: FontWeight.w500,
+              color: statusColor,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
             ),
           ),
         ],
@@ -654,14 +725,50 @@ class _PetDetailPageState extends State<PetDetailPage> {
     );
   }
 
-  String _getGenderText(PetGender gender) {
-    switch (gender) {
-      case PetGender.MALE:
-        return 'Macho';
-      case PetGender.FEMALE:
-        return 'Hembra';
-      case PetGender.UNKNOWN:
-        return 'Desconocido';
+  Widget _buildAppointmentItem(Appointment appointment) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundLight,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.schedule, color: AppColors.primary, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${DateFormat('dd/MM/yyyy').format(appointment.appointmentDate)} - Dr. Veterinario',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getPetIcon(PetType type) {
+    switch (type) {
+      case PetType.DOG:
+        return Icons.pets;
+      case PetType.CAT:
+        return Icons.pets;
+      case PetType.BIRD:
+        return Icons.flutter_dash;
+      case PetType.FISH:
+        return Icons.set_meal;
+      case PetType.RABBIT:
+        return Icons.pets;
+      case PetType.HAMSTER:
+        return Icons.pets;
+      case PetType.REPTILE:
+        return Icons.pets;
+      case PetType.OTHER:
+        return Icons.pets;
     }
   }
 
@@ -676,43 +783,6 @@ class _PetDetailPageState extends State<PetDetailPage> {
     }
   }
 
-  Widget _buildActionButton(
-    String text,
-    IconData icon,
-    VoidCallback onPressed,
-  ) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF4CAF50),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 0,
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 20),
-          const SizedBox(height: 4),
-          Text(text, style: const TextStyle(fontSize: 12)),
-        ],
-      ),
-    );
-  }
-
-  IconData _getPetIcon(PetType type) {
-    switch (type) {
-      case PetType.DOG:
-        return Icons.pets;
-      case PetType.CAT:
-        return Icons.pets;
-      case PetType.BIRD:
-        return Icons.flutter_dash;
-      default:
-        return Icons.pets;
-    }
-  }
-
   String _getPetTypeText(PetType type) {
     switch (type) {
       case PetType.DOG:
@@ -721,16 +791,27 @@ class _PetDetailPageState extends State<PetDetailPage> {
         return 'Gato';
       case PetType.BIRD:
         return 'Ave';
+      case PetType.FISH:
+        return 'Pez';
       case PetType.RABBIT:
         return 'Conejo';
       case PetType.HAMSTER:
         return 'Hámster';
-      case PetType.FISH:
-        return 'Pez';
       case PetType.REPTILE:
         return 'Reptil';
       case PetType.OTHER:
         return 'Otro';
+    }
+  }
+
+  String _getGenderText(PetGender gender) {
+    switch (gender) {
+      case PetGender.MALE:
+        return 'Macho';
+      case PetGender.FEMALE:
+        return 'Hembra';
+      case PetGender.UNKNOWN:
+        return 'Desconocido';
     }
   }
 

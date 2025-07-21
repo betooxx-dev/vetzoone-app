@@ -29,9 +29,6 @@ import 'presentation/pages/owner/appointments/schedule_appointment_page.dart';
 import 'presentation/pages/owner/appointments/my_appointments_page.dart';
 import 'presentation/pages/owner/appointments/appointment_detail_page.dart';
 import 'presentation/pages/owner/medical_records/medical_record_page.dart';
-import 'presentation/pages/owner/medical_records/consultation_detail_page.dart';
-import 'presentation/pages/owner/medical_records/vaccination_history_page.dart';
-import 'presentation/pages/owner/medical_records/active_treatments_page.dart';
 import 'presentation/pages/common/notifications/notifications_page.dart';
 import 'presentation/pages/owner/profile/owner_profile_page.dart';
 
@@ -130,9 +127,6 @@ class MyApp extends StatelessWidget {
               petName: args['petName'],
             );
           },
-          '/consultation-detail': (context) => const ConsultationDetailPage(),
-          '/vaccination-history': (context) => const VaccinationHistoryPage(),
-          '/active-treatments': (context) => const ActiveTreatmentsPage(),
 
           '/my-schedule': (context) => const MySchedulePage(),
           '/appointment-detail-vet':

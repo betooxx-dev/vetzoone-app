@@ -73,118 +73,139 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Fondo decorativo moderno
-          _buildDecorativeBackground(),
-
-          // Contenido principal
-          SafeArea(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: Column(
-                children: [
-                  _buildModernAppBar(),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: SlideTransition(
-                        position: _slideAnimation,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: AppSizes.spaceL),
-                            _buildSearchField(),
-                            const SizedBox(height: AppSizes.spaceL),
-                            _buildFilters(),
-                            const SizedBox(height: AppSizes.spaceXL),
-                            _buildSearchButton(),
-                            const SizedBox(height: AppSizes.spaceXL),
-                            _buildFeaturedVeterinarians(),
-                            const SizedBox(height: AppSizes.spaceXL),
-                          ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFBDE3FF), Color(0xFFE8F5E8), Color(0xFFE5F3FF)],
+            stops: [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: Stack(
+          children: [
+            _buildDecorativeShapes(),
+            SafeArea(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: Column(
+                  children: [
+                    _buildModernAppBar(),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: SlideTransition(
+                          position: _slideAnimation,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: AppSizes.spaceL),
+                              _buildSearchField(),
+                              const SizedBox(height: AppSizes.spaceL),
+                              _buildFilters(),
+                              const SizedBox(height: AppSizes.spaceXL),
+                              _buildSearchButton(),
+                              const SizedBox(height: AppSizes.spaceXL),
+                              _buildFeaturedVeterinarians(),
+                              const SizedBox(height: AppSizes.spaceXL),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildDecorativeBackground() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.backgroundLight, Color(0xFFF0F4F8)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+  Widget _buildDecorativeShapes() {
+    return Stack(
+      children: [
+        Positioned(
+          top: -100,
+          right: -50,
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(100),
+            ),
+          ),
         ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -100,
-            right: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                color: AppColors.secondary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(100),
-              ),
+        Positioned(
+          top: 150,
+          left: -80,
+          child: Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(75),
             ),
           ),
-          Positioned(
-            top: 150,
-            left: -80,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(75),
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildModernAppBar() {
     return Container(
       margin: const EdgeInsets.all(AppSizes.paddingL),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.paddingL,
-        vertical: AppSizes.paddingM,
-      ),
+      padding: const EdgeInsets.all(AppSizes.paddingM),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withOpacity(0.1),
+            color: AppColors.primary.withOpacity(0.3),
             blurRadius: 20,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Row(
         children: [
-          const SizedBox(width: AppSizes.spaceM),
-          Expanded(
-            child: Text(
-              'Buscar Veterinarios',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: AppColors.white,
               ),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          const SizedBox(width: AppSizes.spaceM),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Buscar Veterinarios',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.white,
+                  ),
+                ),
+                Text(
+                  'Encuentra el especialista ideal',
+                  style: TextStyle(fontSize: 14, color: AppColors.white),
+                ),
+              ],
             ),
           ),
         ],
@@ -196,7 +217,7 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(AppSizes.radiusL),
         boxShadow: [
           BoxShadow(
@@ -238,7 +259,7 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
       margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
       padding: const EdgeInsets.all(AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(AppSizes.radiusL),
         boxShadow: [
           BoxShadow(
@@ -309,7 +330,7 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
           decoration: BoxDecoration(
             color: AppColors.backgroundLight,
             borderRadius: BorderRadius.circular(AppSizes.radiusM),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+            border: Border.all(color: AppColors.primary.withOpacity(0.2)),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
@@ -395,7 +416,7 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
           borderRadius: BorderRadius.circular(AppSizes.radiusL),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.3),
+              color: AppColors.primary.withOpacity(0.3),
               blurRadius: 10,
               offset: const Offset(0, 5),
             ),
@@ -438,8 +459,8 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
                 ? AppColors.primaryGradient
                 : LinearGradient(
                   colors: [
-                    AppColors.textSecondary.withValues(alpha: 0.3),
-                    AppColors.textSecondary.withValues(alpha: 0.3),
+                    AppColors.textSecondary.withOpacity(0.3),
+                    AppColors.textSecondary.withOpacity(0.3),
                   ],
                 ),
         borderRadius: BorderRadius.circular(AppSizes.radiusL),
@@ -447,7 +468,7 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
             canSearch
                 ? [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.4),
+                    color: AppColors.primary.withOpacity(0.4),
                     blurRadius: 15,
                     offset: const Offset(0, 8),
                   ),

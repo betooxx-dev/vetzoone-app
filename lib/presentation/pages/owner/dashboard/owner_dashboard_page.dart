@@ -16,20 +16,39 @@ class OwnerDashboardPage extends StatefulWidget {
   State<OwnerDashboardPage> createState() => _OwnerDashboardPageState();
 }
 
-class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
+class _OwnerDashboardPageState extends State<OwnerDashboardPage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   String _userGreeting = 'Hola';
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
-    _loadPets();
+    _loadData();
   }
 
   @override
   void didUpdateWidget(OwnerDashboardPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _loadPets();
+    _loadData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Forzar recarga cada vez que la página vuelve a ser visible
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadData();
+      }
+    });
+  }
+
+  Future<void> _loadData() async {
+    await _loadUserData();
+    await _loadPets();
   }
 
   Future<void> _loadPets() async {
@@ -51,13 +70,25 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
       greeting = 'Buenas noches';
     }
 
-    setState(() {
-      _userGreeting = greeting;
-    });
+    if (mounted) {
+      setState(() {
+        _userGreeting = greeting;
+      });
+    }
+  }
+
+  void _navigateToPetDetail(String petId) async {
+    await Navigator.pushNamed(context, '/pet-detail', arguments: petId);
+
+    if (mounted) {
+      _loadData();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -72,20 +103,25 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
           children: [
             _buildDecorativeShapes(),
             SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSizes.paddingL),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: AppSizes.spaceXL),
-                    _buildQuickActions(),
-                    const SizedBox(height: AppSizes.spaceXL),
-                    _buildMyPetsSection(),
-                    const SizedBox(height: AppSizes.spaceXL),
-                    _buildUpcomingAppointments(),
-                    const SizedBox(height: 100),
-                  ],
+              child: RefreshIndicator(
+                onRefresh: _loadData,
+                color: AppColors.secondary,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(AppSizes.paddingL),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(),
+                      const SizedBox(height: AppSizes.spaceXL),
+                      _buildQuickActions(),
+                      const SizedBox(height: AppSizes.spaceXL),
+                      _buildMyPetsSection(),
+                      const SizedBox(height: AppSizes.spaceXL),
+                      _buildUpcomingAppointments(),
+                      const SizedBox(height: 100),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -94,7 +130,14 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: "dashboard_fab",
-        onPressed: () => Navigator.pushNamed(context, '/add-pet'),
+        onPressed: () async {
+          await Navigator.pushNamed(context, '/add-pet');
+          if (mounted) {
+            // Esperar un poco para que la operación se complete
+            await Future.delayed(const Duration(milliseconds: 500));
+            _loadData();
+          }
+        },
         backgroundColor: AppColors.secondary,
         child: const Icon(Icons.add, color: AppColors.white),
       ),
@@ -162,25 +205,27 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
                 ),
                 const SizedBox(height: AppSizes.spaceS),
                 const Text(
-                  'Cuida mejor a tus mascotas',
-                  style: TextStyle(fontSize: 14, color: AppColors.textOnDark),
+                  'Cuida la salud de tus mascotas',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.textOnDark,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
               ],
             ),
           ),
           Container(
-            width: 48,
-            height: 48,
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
               color: AppColors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              borderRadius: BorderRadius.circular(40),
             ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.notifications_outlined,
-                color: AppColors.white,
-              ),
-              onPressed: () => Navigator.pushNamed(context, '/notifications'),
+            child: const Icon(
+              Icons.pets_rounded,
+              color: AppColors.white,
+              size: 40,
             ),
           ),
         ],
@@ -193,7 +238,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Acciones rápidas',
+          'Acciones Rápidas',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -205,19 +250,19 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
           children: [
             Expanded(
               child: _buildActionCard(
-                icon: Icons.add,
-                title: 'Agregar\nMascota',
-                color: AppColors.secondary,
-                onTap: () => Navigator.pushNamed(context, '/add-pet'),
+                'Buscar Veterinario',
+                Icons.search,
+                AppColors.accent,
+                () => Navigator.pushNamed(context, '/search-veterinarians'),
               ),
             ),
             const SizedBox(width: AppSizes.spaceM),
             Expanded(
               child: _buildActionCard(
-                icon: Icons.search,
-                title: 'Buscar\nVeterinario',
-                color: AppColors.accent,
-                onTap: () => Navigator.pushNamed(context, '/search-veterinarians'),
+                'Agendar Cita',
+                Icons.calendar_today,
+                AppColors.primary,
+                () => Navigator.pushNamed(context, '/schedule-appointment'),
               ),
             ),
           ],
@@ -226,19 +271,20 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
     );
   }
 
-  Widget _buildActionCard({
-    required IconData icon,
-    required String title,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
+  Widget _buildActionCard(
+    String title,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSizes.radiusM),
       child: Container(
-        padding: const EdgeInsets.all(AppSizes.paddingL),
+        padding: const EdgeInsets.all(AppSizes.paddingM),
         decoration: BoxDecoration(
           color: AppColors.white,
-          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
           boxShadow: [
             BoxShadow(
               color: color.withOpacity(0.2),
@@ -307,13 +353,19 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
           ],
         ),
         const SizedBox(height: AppSizes.spaceM),
-        BlocBuilder<PetBloc, PetState>(
+        BlocConsumer<PetBloc, PetState>(
+          listener: (context, state) {
+            if (state is PetOperationSuccess) {
+              // Recargar datos cuando se complete una operación exitosa
+              _loadData();
+            }
+          },
           builder: (context, state) {
             if (state is PetLoading) {
               return const Center(
                 child: Padding(
                   padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator(),
+                  child: CircularProgressIndicator(color: AppColors.secondary),
                 ),
               );
             } else if (state is PetsLoaded) {
@@ -341,12 +393,16 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
         itemCount: displayPets.length,
         itemBuilder: (context, index) {
           final pet = displayPets[index];
-          return PetCard(
-            pet: pet,
-            onTap: () => Navigator.pushNamed(
-              context,
-              '/pet-detail',
-              arguments: pet.id,
+          return Padding(
+            padding: EdgeInsets.only(
+              right: index < displayPets.length - 1 ? AppSizes.spaceM : 0,
+            ),
+            child: SizedBox(
+              width: 160,
+              child: PetCard(
+                pet: pet,
+                onTap: () => _navigateToPetDetail(pet.id),
+              ),
             ),
           );
         },
@@ -402,27 +458,27 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
           ),
           const SizedBox(height: AppSizes.spaceS),
           const Text(
-            'Agrega tu primera mascota para comenzar a cuidar mejor de ella',
+            'Agrega tu primera mascota para comenzar',
             style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-            textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSizes.spaceL),
-          ElevatedButton(
-            onPressed: () => Navigator.pushNamed(context, '/add-pet'),
+          ElevatedButton.icon(
+            onPressed: () async {
+              await Navigator.pushNamed(context, '/add-pet');
+              if (mounted) {
+                _loadData();
+              }
+            },
+            icon: const Icon(Icons.add, color: AppColors.white),
+            label: const Text(
+              'Agregar Mascota',
+              style: TextStyle(color: AppColors.white),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.secondary,
-              foregroundColor: AppColors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusM),
               ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.paddingL,
-                vertical: AppSizes.paddingM,
-              ),
-            ),
-            child: const Text(
-              'Agregar Mascota',
-              style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -430,7 +486,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
     );
   }
 
-  Widget _buildErrorCard(String error) {
+  Widget _buildErrorCard(String message) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSizes.paddingL),
@@ -447,13 +503,13 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
             'Error al cargar mascotas',
             style: TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: AppSizes.spaceS),
           Text(
-            error,
+            message,
             style: const TextStyle(
               fontSize: 14,
               color: AppColors.textSecondary,
@@ -461,10 +517,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSizes.spaceM),
-          TextButton(
-            onPressed: () => _loadPets(),
-            child: const Text('Reintentar'),
-          ),
+          TextButton(onPressed: _loadData, child: const Text('Reintentar')),
         ],
       ),
     );
@@ -478,7 +531,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'Próximas citas',
+              'Próximas Citas',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -498,50 +551,77 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
           ],
         ),
         const SizedBox(height: AppSizes.spaceM),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppSizes.paddingL),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(AppSizes.radiusL),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Icon(
-                Icons.calendar_today_outlined,
-                color: AppColors.textSecondary,
-                size: 48,
-              ),
-              const SizedBox(height: AppSizes.spaceM),
-              const Text(
-                'No tienes citas programadas',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: AppSizes.spaceS),
-              const Text(
-                'Agenda una cita con un veterinario',
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: AppSizes.spaceM),
-              TextButton(
-                onPressed: () => Navigator.pushNamed(context, '/search-veterinarians'),
-                child: const Text('Buscar veterinario'),
-              ),
-            ],
-          ),
-        ),
+        _buildAppointmentsCard(),
       ],
+    );
+  }
+
+  Widget _buildAppointmentsCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.primary, AppColors.primary.withOpacity(0.7)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(40),
+            ),
+            child: const Icon(
+              Icons.calendar_today_outlined,
+              color: AppColors.white,
+              size: 40,
+            ),
+          ),
+          const SizedBox(height: AppSizes.spaceL),
+          const Text(
+            'No tienes citas programadas',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppSizes.spaceS),
+          const Text(
+            'Agenda una cita con un veterinario',
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: AppSizes.spaceL),
+          ElevatedButton.icon(
+            onPressed:
+                () => Navigator.pushNamed(context, '/schedule-appointment'),
+            icon: const Icon(Icons.add, color: AppColors.white),
+            label: const Text(
+              'Agendar Cita',
+              style: TextStyle(color: AppColors.white),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

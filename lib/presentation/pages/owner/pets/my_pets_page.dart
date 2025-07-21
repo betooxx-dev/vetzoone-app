@@ -16,7 +16,11 @@ class MyPetsPage extends StatefulWidget {
   State<MyPetsPage> createState() => _MyPetsPageState();
 }
 
-class _MyPetsPageState extends State<MyPetsPage> {
+class _MyPetsPageState extends State<MyPetsPage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   void initState() {
     super.initState();
@@ -29,6 +33,13 @@ class _MyPetsPageState extends State<MyPetsPage> {
     _loadPets();
   }
 
+  // Este método se ejecuta cuando la página vuelve a ser visible
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadPets();
+  }
+
   Future<void> _loadPets() async {
     final userId = await SharedPreferencesHelper.getUserId();
     if (userId != null && mounted) {
@@ -36,8 +47,20 @@ class _MyPetsPageState extends State<MyPetsPage> {
     }
   }
 
+  void _navigateToPetDetail(String petId) async {
+    // Navegar y esperar el resultado
+    await Navigator.pushNamed(context, '/pet-detail', arguments: petId);
+
+    // Recargar mascotas cuando regrese de la navegación
+    if (mounted) {
+      _loadPets();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Necesario para AutomaticKeepAliveClientMixin
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -68,14 +91,6 @@ class _MyPetsPageState extends State<MyPetsPage> {
                               backgroundColor: AppColors.error,
                             ),
                           );
-                        } else if (state is PetOperationSuccess) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(state.message),
-                              backgroundColor: AppColors.success,
-                            ),
-                          );
-                          _loadPets();
                         }
                       },
                       builder: (context, state) {
@@ -86,14 +101,21 @@ class _MyPetsPageState extends State<MyPetsPage> {
                             ),
                           );
                         } else if (state is PetsLoaded) {
-                          if (state.pets.isEmpty) {
+                          final pets = state.pets;
+                          if (pets.isEmpty) {
                             return _buildEmptyState();
                           }
-                          return _buildPetsList(state.pets);
+                          return _buildPetsList(pets);
                         } else if (state is PetError) {
                           return _buildErrorState(state.message);
+                        } else {
+                          // Estado inicial - cargar mascotas
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.secondary,
+                            ),
+                          );
                         }
-                        return _buildEmptyState();
                       },
                     ),
                   ),
@@ -103,15 +125,25 @@ class _MyPetsPageState extends State<MyPetsPage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: "add_pet_fab",
-        onPressed: () => Navigator.pushNamed(context, '/add-pet'),
-        backgroundColor: AppColors.secondary,
-        icon: const Icon(Icons.add, color: AppColors.white),
-        label: const Text(
-          'Agregar Mascota',
-          style: TextStyle(color: AppColors.white, fontWeight: FontWeight.w600),
-        ),
+      floatingActionButton: _buildFloatingActionButton(),
+    );
+  }
+
+  Widget _buildFloatingActionButton() {
+    return FloatingActionButton.extended(
+      heroTag: "add_pet_fab",
+      onPressed: () async {
+        await Navigator.pushNamed(context, '/add-pet');
+        // Recargar mascotas cuando regrese de agregar mascota
+        if (mounted) {
+          _loadPets();
+        }
+      },
+      backgroundColor: AppColors.secondary,
+      icon: const Icon(Icons.add, color: AppColors.white),
+      label: const Text(
+        'Agregar Mascota',
+        style: TextStyle(color: AppColors.white, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -183,11 +215,8 @@ class _MyPetsPageState extends State<MyPetsPage> {
             pet: pet,
             isHorizontal: true,
             onTap:
-                () => Navigator.pushNamed(
-                  context,
-                  '/pet-detail',
-                  arguments: pet.id,
-                ),
+                () =>
+                    _navigateToPetDetail(pet.id), // Usar el método con callback
           );
         },
       ),
@@ -263,7 +292,12 @@ class _MyPetsPageState extends State<MyPetsPage> {
               ],
             ),
             child: ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, '/add-pet'),
+              onPressed: () async {
+                await Navigator.pushNamed(context, '/add-pet');
+                if (mounted) {
+                  _loadPets();
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
                 shadowColor: Colors.transparent,
@@ -271,12 +305,12 @@ class _MyPetsPageState extends State<MyPetsPage> {
                   borderRadius: BorderRadius.circular(AppSizes.radiusM),
                 ),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.add, color: AppColors.white, size: 24),
-                  const SizedBox(width: AppSizes.spaceS),
-                  const Text(
+                  Icon(Icons.add, color: AppColors.white, size: 24),
+                  SizedBox(width: AppSizes.spaceS),
+                  Text(
                     'Agregar Primera Mascota',
                     style: TextStyle(
                       fontSize: 16,
@@ -308,43 +342,36 @@ class _MyPetsPageState extends State<MyPetsPage> {
             ),
             child: Icon(Icons.error_outline, color: AppColors.error, size: 48),
           ),
-          const SizedBox(height: AppSizes.spaceXL),
-          const Text(
+          const SizedBox(height: AppSizes.spaceL),
+          Text(
             'Error al cargar mascotas',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSizes.spaceM),
           Text(
             error,
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: 16,
               color: AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSizes.spaceXL),
-          ElevatedButton.icon(
-            onPressed: () => _loadPets(),
+          ElevatedButton(
+            onPressed: _loadPets,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.secondary,
               foregroundColor: AppColors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusM),
               ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.paddingL,
-                vertical: AppSizes.paddingM,
-              ),
             ),
-            icon: const Icon(Icons.refresh),
-            label: const Text(
-              'Reintentar',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
+            child: const Text('Reintentar'),
           ),
         ],
       ),
