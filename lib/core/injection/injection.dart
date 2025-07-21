@@ -24,6 +24,12 @@ import '../../data/repositories/appointment_repository_impl.dart';
 import '../../domain/repositories/appointment_repository.dart';
 import '../../domain/usecases/appointment/get_upcoming_appointments_usecase.dart';
 import '../../presentation/blocs/appointment/appointment_bloc.dart';
+import '../../data/datasources/medical_records/medical_records_remote_datasource.dart';
+import '../../data/repositories/medical_records_repository_impl.dart';
+import '../../domain/repositories/medical_records_repository.dart';
+import '../../domain/usecases/medical_records/get_medical_records_usecase.dart';
+import '../../presentation/blocs/medical_records/medical_records_bloc.dart';
+import '../../domain/usecases/medical_records/get_vaccinations_usecase.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -40,9 +46,7 @@ Future<void> init() async {
 
   sl.registerLazySingleton<Dio>(() => gatewayDio);
 
-  sl.registerLazySingleton<ApiClient>(
-    () => ApiClient(dio: sl<Dio>()),
-  );
+  sl.registerLazySingleton<ApiClient>(() => ApiClient(dio: sl<Dio>()));
   sl.registerLazySingleton<UserService>(() => UserService());
 
   sl.registerLazySingleton<AuthRemoteDataSource>(
@@ -62,9 +66,11 @@ Future<void> init() async {
   );
 
   sl.registerLazySingleton<AppointmentRemoteDataSource>(
-    () => AppointmentRemoteDataSourceImpl(
-      apiClient: sl<ApiClient>(),
-    ),
+    () => AppointmentRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
+  );
+
+  sl.registerLazySingleton<MedicalRecordsRemoteDataSource>(
+    () => MedicalRecordsRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
   );
 
   sl.registerLazySingleton<AuthRepository>(
@@ -76,7 +82,15 @@ Future<void> init() async {
   );
 
   sl.registerLazySingleton<AppointmentRepository>(
-    () => AppointmentRepositoryImpl(remoteDataSource: sl<AppointmentRemoteDataSource>()),
+    () => AppointmentRepositoryImpl(
+      remoteDataSource: sl<AppointmentRemoteDataSource>(),
+    ),
+  );
+
+  sl.registerLazySingleton<MedicalRecordsRepository>(
+    () => MedicalRecordsRepositoryImpl(
+      remoteDataSource: sl<MedicalRecordsRemoteDataSource>(),
+    ),
   );
 
   sl.registerLazySingleton(
@@ -102,14 +116,41 @@ Future<void> init() async {
     () => DeletePetUseCase(repository: sl<PetRepository>()),
   );
 
-  sl.registerLazySingleton(() => GetUpcomingAppointmentsUseCase(sl<AppointmentRepository>()));
-  sl.registerLazySingleton(() => GetPastAppointmentsUseCase(sl<AppointmentRepository>()));
-  sl.registerLazySingleton(() => GetAllAppointmentsUseCase(sl<AppointmentRepository>()));
+  sl.registerLazySingleton(
+    () => GetUpcomingAppointmentsUseCase(sl<AppointmentRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => GetPastAppointmentsUseCase(sl<AppointmentRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => GetAllAppointmentsUseCase(sl<AppointmentRepository>()),
+  );
 
-  sl.registerFactory(() => PetBloc(petRepository: sl<PetRepository>(), appointmentRepository: sl<AppointmentRepository>()));
-  sl.registerFactory(() => AppointmentBloc(
-    getUpcomingAppointmentsUseCase: sl<GetUpcomingAppointmentsUseCase>(),
-    getPastAppointmentsUseCase: sl<GetPastAppointmentsUseCase>(),
-    getAllAppointmentsUseCase: sl<GetAllAppointmentsUseCase>(),
-  ));
+  sl.registerLazySingleton(
+    () => GetMedicalRecordsUseCase(sl<MedicalRecordsRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => GetVaccinationsUseCase(sl<MedicalRecordsRepository>()),
+  );
+
+  sl.registerFactory(
+    () => PetBloc(
+      petRepository: sl<PetRepository>(),
+      appointmentRepository: sl<AppointmentRepository>(),
+    ),
+  );
+  sl.registerFactory(
+    () => AppointmentBloc(
+      getUpcomingAppointmentsUseCase: sl<GetUpcomingAppointmentsUseCase>(),
+      getPastAppointmentsUseCase: sl<GetPastAppointmentsUseCase>(),
+      getAllAppointmentsUseCase: sl<GetAllAppointmentsUseCase>(),
+    ),
+  );
+
+  sl.registerFactory(
+    () => MedicalRecordsBloc(
+      getMedicalRecordsUseCase: sl<GetMedicalRecordsUseCase>(),
+      getVaccinationsUseCase: sl<GetVaccinationsUseCase>(),
+    ),
+  );
 }

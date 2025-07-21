@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/confirmation_modal.dart';
-import '../../../../core/widgets/date_time_selector.dart';
 
 class ScheduleAppointmentPage extends StatefulWidget {
   const ScheduleAppointmentPage({super.key});

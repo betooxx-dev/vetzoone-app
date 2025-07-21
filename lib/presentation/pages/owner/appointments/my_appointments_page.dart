@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/widgets/confirmation_modal.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/appointment/appointment_bloc.dart';
 import '../../../blocs/appointment/appointment_event.dart';
