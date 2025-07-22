@@ -36,6 +36,7 @@ import '../../domain/repositories/veterinarian_repository.dart';
 import '../../domain/usecases/veterinarian/search_veterinarians_usecase.dart';
 import '../../domain/usecases/veterinarian/get_veterinarian_profile_usecase.dart';
 import '../../presentation/blocs/veterinarian/veterinarian_bloc.dart';
+import '../../domain/usecases/appointment/get_appointment_by_id_usecase.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -139,6 +140,9 @@ Future<void> init() async {
   );
   sl.registerLazySingleton(
     () => GetAllAppointmentsUseCase(sl<AppointmentRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => GetAppointmentByIdUseCase(sl<AppointmentRepository>()),
   );
 
   sl.registerLazySingleton(

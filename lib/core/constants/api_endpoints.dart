@@ -14,6 +14,7 @@ class ApiEndpoints {
 
   static const String appointmentsByUser = '/appointments/user';
   static const String appointmentsByPet = '/appointments/pet';
+  static const String appointmentById = '/appointments';
 
   static const String medicalRecordsByPet = '/medical-record/pet';
   static const String vaccinationsByPet = '/vaccination/record';
@@ -36,6 +37,8 @@ class ApiEndpoints {
       '$gatewayBaseUrl$appointmentsByUser/$userId';
   static String getAppointmentsByPetUrl(String petId) =>
       '$gatewayBaseUrl$appointmentsByPet/$petId';
+  static String getAppointmentByIdUrl(String appointmentId) =>
+      '$gatewayBaseUrl$appointmentById/$appointmentId';
 
   static String getMedicalRecordsByPetUrl(String petId) =>
       '$gatewayBaseUrl$medicalRecordsByPet/$petId';

@@ -43,10 +43,6 @@ class GetAllAppointmentsUseCase {
   GetAllAppointmentsUseCase(this.repository);
 
   Future<List<Appointment>> call(String userId) async {
-    try {
-      return await repository.getAllAppointmentsByUserId(userId);
-    } catch (e) {
-      throw Exception('Error getting all appointments: $e');
-    }
+    return await repository.getAllAppointmentsByUserId(userId);
   }
 } 

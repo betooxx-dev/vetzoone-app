@@ -44,21 +44,36 @@ import 'presentation/pages/veterinarian/schedule/configure_schedule_page.dart';
 import 'presentation/pages/veterinarian/settings/vet_settings_page.dart';
 import 'presentation/pages/veterinarian/analytics/statistics_page.dart';
 import 'domain/entities/pet.dart';
+import 'dart:async';
+import 'package:intl/date_symbol_data_local.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await init();
+  // Mantenemos el manejador de errores por si acaso, es una buena práctica.
+  runZonedGuarded<Future<void>>(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    await ImagePickerService.cleanOldImages();
-    print('✅ Limpieza de archivos antiguos completada');
-  } catch (e) {
-    print('⚠️ Error durante la limpieza de archivos: $e');
-  }
+      await initializeDateFormatting('es', null);
 
-  runApp(const MyApp());
+      await init();
+
+      try {
+        await ImagePickerService.cleanOldImages();
+      } catch (e) {
+        print('⚠️ Error durante la limpieza de archivos: $e');
+      }
+
+      runApp(const MyApp());
+    },
+    (error, stack) {
+      print('==================== ERROR CAPTURADO ====================');
+      print('MENSAJE DE ERROR ORIGINAL: $error');
+      print('STACK TRACE DETALLADO: $stack');
+      print('=======================================================');
+    },
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -101,13 +116,18 @@ class MyApp extends StatelessWidget {
           '/my-pets': (context) => const MyPetsPage(),
           '/add-pet': (context) => const AddPetPage(),
           '/edit-pet': (context) {
-            final Pet pet = ModalRoute.of(context)!.settings.arguments as Pet;
-            return EditPetPage(pet: pet);
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is Pet) {
+              return EditPetPage(pet: args);
+            }
+            return _buildErrorScreen('Datos de mascota no válidos');
           },
           '/pet-detail': (context) {
-            final String petId =
-                ModalRoute.of(context)!.settings.arguments as String;
-            return PetDetailPage(petId: petId);
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is String) {
+              return PetDetailPage(petId: args);
+            }
+            return _buildErrorScreen('ID de mascota no válido');
           },
 
           '/search-veterinarians': (context) => const SearchVeterinariansPage(),
@@ -119,12 +139,15 @@ class MyApp extends StatelessWidget {
           '/appointment-detail': (context) => const AppointmentDetailPage(),
 
           '/medical-record': (context) {
-            final args =
-                ModalRoute.of(context)!.settings.arguments
-                    as Map<String, dynamic>;
-            return MedicalRecordPage(
-              petId: args['petId'],
-              petName: args['petName'],
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is Map<String, dynamic>) {
+              return MedicalRecordPage(
+                petId: args['petId'],
+                petName: args['petName'],
+              );
+            }
+            return _buildErrorScreen(
+              'Argumentos de historial médico no válidos',
             );
           },
 
@@ -139,10 +162,11 @@ class MyApp extends StatelessWidget {
 
           '/patients-list': (context) => const PatientsListPage(),
           '/patient-history': (context) {
-            final args =
-                ModalRoute.of(context)?.settings.arguments
-                    as Map<String, dynamic>?;
-            return PatientHistoryPage(patient: args);
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is Map<String, dynamic>) {
+              return PatientHistoryPage(patient: args);
+            }
+            return _buildErrorScreen('Datos de paciente no válidos');
           },
 
           '/notifications': (context) => const NotificationsPage(),
@@ -154,6 +178,22 @@ class MyApp extends StatelessWidget {
           '/vet-settings': (context) => const VetSettingsPage(),
           '/statistics': (context) => const StatisticsPage(),
         },
+      ),
+    );
+  }
+
+  Widget _buildErrorScreen(String message) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Error de Navegación')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.red, fontSize: 16),
+          ),
+        ),
       ),
     );
   }

@@ -11,6 +11,7 @@ abstract class AppointmentRemoteDataSource {
   );
   Future<List<AppointmentModel>> getAppointmentsByPetId(String petId);
   Future<List<AppointmentModel>> getAllAppointmentsByUserId(String userId);
+  Future<AppointmentModel> getAppointmentById(String appointmentId);
 }
 
 class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
@@ -133,6 +134,40 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
       }
       
       throw Exception('Error fetching all appointments: $e');
+    }
+  }
+
+  @override
+  Future<AppointmentModel> getAppointmentById(String appointmentId) async {
+    try {
+      final url = ApiEndpoints.getAppointmentByIdUrl(appointmentId);
+      
+      print('🗓️ PETICIÓN APPOINTMENT BY ID:');
+      print('URL: $url');
+      print('Appointment ID: $appointmentId');
+      
+      final response = await apiClient.get(url);
+      
+      print('✅ APPOINTMENT BY ID RESPONSE:');
+      print('Status: ${response.statusCode}');
+      print('Data: ${response.data}');
+      
+      if (response.statusCode == 200) {
+        final appointmentData = response.data['data'];
+        return AppointmentModel.fromJson(appointmentData);
+      } else {
+        throw Exception('Failed to load appointment - Status: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ ERROR FETCHING APPOINTMENT BY ID:');
+      print('Error: $e');
+      
+      if (e is DioException) {
+        print('Status code: ${e.response?.statusCode}');
+        print('Response data: ${e.response?.data}');
+      }
+      
+      throw Exception('Error fetching appointment: $e');
     }
   }
 }

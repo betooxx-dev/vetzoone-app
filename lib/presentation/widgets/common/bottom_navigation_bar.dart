@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
+import '../../../core/constants/app_colors.dart';
 
 class CustomBottomNavigationBar extends StatefulWidget {
   final int currentIndex;
@@ -17,34 +19,9 @@ class CustomBottomNavigationBar extends StatefulWidget {
       _CustomBottomNavigationBarState();
 }
 
-class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
-    with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
+class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar> {
   void _onItemTapped(int index) {
     if (index != widget.currentIndex) {
-      _animationController.forward().then((_) {
-        _animationController.reverse();
-      });
       widget.onTap(index);
     }
   }
@@ -53,27 +30,32 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
     _BottomNavItem(
       icon: Icons.home_rounded,
       label: 'Inicio',
-      activeColor: const Color(0xFF4CAF50),
+      activeColor: AppColors.secondary,
+      gradient: AppColors.orangeGradient,
     ),
     _BottomNavItem(
       icon: Icons.pets_rounded,
       label: 'Mascotas',
-      activeColor: const Color(0xFF4CAF50),
+      activeColor: AppColors.secondary,
+      gradient: AppColors.orangeGradient,
     ),
     _BottomNavItem(
       icon: Icons.search_rounded,
       label: 'Buscar',
-      activeColor: const Color(0xFF4CAF50),
+      activeColor: AppColors.secondary,
+      gradient: AppColors.orangeGradient,
     ),
     _BottomNavItem(
       icon: Icons.calendar_today_rounded,
       label: 'Citas',
-      activeColor: const Color(0xFF4CAF50),
+      activeColor: AppColors.secondary,
+      gradient: AppColors.orangeGradient,
     ),
     _BottomNavItem(
       icon: Icons.person_rounded,
       label: 'Perfil',
-      activeColor: const Color(0xFF4CAF50),
+      activeColor: AppColors.secondary,
+      gradient: AppColors.orangeGradient,
     ),
   ];
 
@@ -81,22 +63,26 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
     _BottomNavItem(
       icon: Icons.dashboard_rounded,
       label: 'Dashboard',
-      activeColor: const Color(0xFF81D4FA),
+      activeColor: AppColors.primary,
+      gradient: AppColors.primaryGradient,
     ),
     _BottomNavItem(
       icon: Icons.calendar_month_rounded,
       label: 'Agenda',
-      activeColor: const Color(0xFF81D4FA),
+      activeColor: AppColors.primary,
+      gradient: AppColors.primaryGradient,
     ),
     _BottomNavItem(
       icon: Icons.people_rounded,
       label: 'Pacientes',
-      activeColor: const Color(0xFF81D4FA),
+      activeColor: AppColors.primary,
+      gradient: AppColors.primaryGradient,
     ),
     _BottomNavItem(
       icon: Icons.settings_rounded,
       label: 'Configuración',
-      activeColor: const Color(0xFF81D4FA),
+      activeColor: AppColors.primary,
+      gradient: AppColors.primaryGradient,
     ),
   ];
 
@@ -106,23 +92,34 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AppColors.white, AppColors.backgroundLight],
+        ),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: AppColors.primary.withOpacity(0.08),
             blurRadius: 20,
             offset: const Offset(0, -5),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: AppColors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+            spreadRadius: 0,
           ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(
@@ -148,78 +145,96 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
       child: GestureDetector(
         onTap: () => _onItemTapped(index),
         behavior: HitTestBehavior.opaque,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedBuilder(
-                animation: _scaleAnimation,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale:
-                        isSelected && widget.currentIndex == index
-                            ? _scaleAnimation.value
-                            : 1.0,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color:
-                            isSelected
-                                ? item.activeColor.withOpacity(0.15)
-                                : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(end: isSelected ? 1.0 : 0.0),
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+          builder: (context, value, child) {
+            final iconColor = Color.lerp(
+              AppColors.textSecondary,
+              AppColors.white,
+              value,
+            );
+            final textColor = Color.lerp(
+              AppColors.textSecondary,
+              item.activeColor,
+              value,
+            );
+            final fontWeight = FontWeight.lerp(
+              FontWeight.w500,
+              FontWeight.w600,
+              value,
+            );
+
+            const transparentGradient = LinearGradient(
+              colors: [Colors.transparent, Colors.transparent],
+            );
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: Gradient.lerp(
+                        transparentGradient,
+                        item.gradient,
+                        value,
                       ),
-                      child: Stack(
-                        children: [
-                          Center(
-                            child: Icon(
-                              item.icon,
-                              size: 24,
-                              color:
-                                  isSelected
-                                      ? item.activeColor
-                                      : const Color(0xFF9E9E9E),
-                            ),
-                          ),
-                          if (item.label == 'Notificaciones')
-                            Positioned(
-                              right: 8,
-                              top: 8,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 1,
-                                  ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: item.activeColor.withOpacity(0.25 * value),
+                          blurRadius: 6.0,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: Icon(item.icon, size: 26, color: iconColor),
+                        ),
+                        if (item.label == 'Notificaciones')
+                          Positioned(
+                            right: 10,
+                            top: 10,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: AppColors.error,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.white,
+                                  width: 2,
                                 ),
                               ),
                             ),
-                        ],
-                      ),
+                          ),
+                      ],
                     ),
-                  );
-                },
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    item.label,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: fontWeight,
+                      color: textColor,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  color:
-                      isSelected ? item.activeColor : const Color(0xFF9E9E9E),
-                ),
-                child: Text(item.label),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -230,10 +245,12 @@ class _BottomNavItem {
   final IconData icon;
   final String label;
   final Color activeColor;
+  final Gradient gradient;
 
   _BottomNavItem({
     required this.icon,
     required this.label,
     required this.activeColor,
+    required this.gradient,
   });
 }

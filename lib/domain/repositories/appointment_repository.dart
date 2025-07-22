@@ -8,4 +8,5 @@ abstract class AppointmentRepository {
   );
   Future<List<Appointment>> getAppointmentsByPetId(String petId);
   Future<List<Appointment>> getAllAppointmentsByUserId(String userId);
+  Future<Appointment> getAppointmentById(String appointmentId);
 } 
