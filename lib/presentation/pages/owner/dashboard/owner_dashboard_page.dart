@@ -8,6 +8,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../widgets/cards/pet_card.dart';
 import '../../../../core/storage/shared_preferences_helper.dart';
+import '../../../../core/services/user_service.dart';
 
 class OwnerDashboardPage extends StatefulWidget {
   const OwnerDashboardPage({super.key});
@@ -22,6 +23,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
   bool get wantKeepAlive => true;
 
   String _userGreeting = 'Hola';
+  String? _userProfilePhoto;
 
   @override
   void initState() {
@@ -70,10 +72,25 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
       greeting = 'Buenas noches';
     }
 
-    if (mounted) {
-      setState(() {
-        _userGreeting = greeting;
-      });
+    // Cargar datos del usuario incluyendo la foto de perfil
+    try {
+      final userData = await UserService.getCurrentUser();
+      final profilePhoto = userData['profilePhoto'] as String?;
+
+      if (mounted) {
+        setState(() {
+          _userGreeting = greeting;
+          _userProfilePhoto = profilePhoto?.isNotEmpty == true ? profilePhoto : null;
+        });
+      }
+    } catch (e) {
+      print('Error cargando datos del usuario: $e');
+      if (mounted) {
+        setState(() {
+          _userGreeting = greeting;
+          _userProfilePhoto = null;
+        });
+      }
     }
   }
 
@@ -221,11 +238,65 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
             decoration: BoxDecoration(
               color: AppColors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(40),
+              border: Border.all(
+                color: AppColors.white.withOpacity(0.3),
+                width: 2,
+              ),
             ),
-            child: const Icon(
-              Icons.pets_rounded,
-              color: AppColors.white,
-              size: 40,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(38),
+              child: _userProfilePhoto != null && _userProfilePhoto!.isNotEmpty
+                  ? Image.network(
+                      _userProfilePhoto!,
+                      width: 76,
+                      height: 76,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 76,
+                          height: 76,
+                          decoration: BoxDecoration(
+                            color: AppColors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(38),
+                          ),
+                          child: const Icon(
+                            Icons.pets_rounded,
+                            color: AppColors.white,
+                            size: 40,
+                          ),
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          width: 76,
+                          height: 76,
+                          decoration: BoxDecoration(
+                            color: AppColors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(38),
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.white,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
+                      width: 76,
+                      height: 76,
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(38),
+                      ),
+                      child: const Icon(
+                        Icons.pets_rounded,
+                        color: AppColors.white,
+                        size: 40,
+                      ),
+                    ),
             ),
           ),
         ],
