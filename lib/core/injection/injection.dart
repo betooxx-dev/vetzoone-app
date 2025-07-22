@@ -30,6 +30,12 @@ import '../../domain/repositories/medical_records_repository.dart';
 import '../../domain/usecases/medical_records/get_medical_records_usecase.dart';
 import '../../presentation/blocs/medical_records/medical_records_bloc.dart';
 import '../../domain/usecases/medical_records/get_vaccinations_usecase.dart';
+import '../../data/datasources/veterinarian/veterinarian_remote_datasource.dart';
+import '../../data/repositories/veterinarian_repository_impl.dart';
+import '../../domain/repositories/veterinarian_repository.dart';
+import '../../domain/usecases/veterinarian/search_veterinarians_usecase.dart';
+import '../../domain/usecases/veterinarian/get_veterinarian_profile_usecase.dart';
+import '../../presentation/blocs/veterinarian/veterinarian_bloc.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -75,6 +81,15 @@ Future<void> init() async {
 
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(remoteDataSource: sl<AuthRemoteDataSource>()),
+  );
+
+  sl.registerLazySingleton<VeterinarianRemoteDataSource>(
+    () => VeterinarianRemoteDataSourceImpl(apiClient: sl<ApiClient>()),
+  );
+  sl.registerLazySingleton<VeterinarianRepository>(
+    () => VeterinarianRepositoryImpl(
+      remoteDataSource: sl<VeterinarianRemoteDataSource>(),
+    ),
   );
 
   sl.registerLazySingleton<PetRepository>(
@@ -133,6 +148,13 @@ Future<void> init() async {
     () => GetVaccinationsUseCase(sl<MedicalRecordsRepository>()),
   );
 
+  sl.registerLazySingleton(
+    () => SearchVeterinariansUseCase(sl<VeterinarianRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => GetVeterinarianProfileUseCase(sl<VeterinarianRepository>()),
+  );
+
   sl.registerFactory(
     () => PetBloc(
       petRepository: sl<PetRepository>(),
@@ -151,6 +173,13 @@ Future<void> init() async {
     () => MedicalRecordsBloc(
       getMedicalRecordsUseCase: sl<GetMedicalRecordsUseCase>(),
       getVaccinationsUseCase: sl<GetVaccinationsUseCase>(),
+    ),
+  );
+
+  sl.registerFactory(
+    () => VeterinarianBloc(
+      searchVeterinariansUseCase: sl<SearchVeterinariansUseCase>(),
+      getVeterinarianProfileUseCase: sl<GetVeterinarianProfileUseCase>(),
     ),
   );
 }

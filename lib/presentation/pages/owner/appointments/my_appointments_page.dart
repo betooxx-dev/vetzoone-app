@@ -45,52 +45,11 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
       _userId = user['id'];
     });
     if (_userId != null) {
-      final now = DateTime.now();
-      final fifteenDaysLater = now.add(const Duration(days: 15));
-      final oneMonthAgo = now.subtract(const Duration(days: 30));
-      final yesterday = DateTime(
-        now.year,
-        now.month,
-        now.day,
-      ).subtract(const Duration(days: 1));
-      final yesterdayEnd = DateTime(
-        yesterday.year,
-        yesterday.month,
-        yesterday.day,
-        23,
-        59,
-        59,
-        999,
+      // Simplificar: solo cargar todas las citas y filtrar en el frontend
+      print('🟢 Lanzando petición de todas las citas para usuario: $_userId');
+      context.read<AppointmentBloc>().add(
+        LoadAllAppointmentsEvent(userId: _userId!),
       );
-
-      Future.wait([
-        Future(() {
-          print('🔵 Lanzando petición de próximas citas...');
-          context.read<AppointmentBloc>().add(
-            LoadUpcomingAppointmentsEvent(
-              userId: _userId!,
-              dateFrom: now,
-              dateTo: fifteenDaysLater,
-            ),
-          );
-        }),
-        Future(() {
-          print('🟠 Lanzando petición de citas pasadas...');
-          context.read<AppointmentBloc>().add(
-            LoadPastAppointmentsEvent(
-              userId: _userId!,
-              dateFrom: oneMonthAgo,
-              dateTo: yesterdayEnd,
-            ),
-          );
-        }),
-        Future(() {
-          print('🟢 Lanzando petición de todas las citas...');
-          context.read<AppointmentBloc>().add(
-            LoadAllAppointmentsEvent(userId: _userId!),
-          );
-        }),
-      ]);
     }
   }
 
@@ -255,12 +214,44 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
   Widget _buildUpcomingAppointmentsTab() {
     return BlocBuilder<AppointmentBloc, AppointmentState>(
       builder: (context, state) {
+        print('🔵 Estado en pestaña próximas: $state');
         if (state is AppointmentsOverviewState) {
-          if (state.errorUpcoming != null) {
-            return _buildEmptyState('Error', state.errorUpcoming!);
-          } else {
-            return _buildAppointmentsList(state.upcoming);
+          if (state.loadingAll) {
+            return const Center(child: CircularProgressIndicator());
           }
+          if (state.errorAll != null) {
+            return _buildEmptyState('Error', state.errorAll!);
+          }
+
+          // Filtrar solo las citas que son realmente próximas (desde hoy en adelante)
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          final upcomingAppointments =
+              state.all.where((appointment) {
+                final appointmentDate = DateTime(
+                  appointment.appointmentDate.year,
+                  appointment.appointmentDate.month,
+                  appointment.appointmentDate.day,
+                );
+                final isUpcoming =
+                    appointmentDate.isAtSameMomentAs(today) ||
+                    appointmentDate.isAfter(today);
+                print(
+                  '🔵 Cita ${appointment.appointmentDate}: ${appointmentDate.toString()} >= ${today.toString()} = $isUpcoming',
+                );
+                return isUpcoming;
+              }).toList();
+
+          if (upcomingAppointments.isEmpty) {
+            return _buildEmptyState(
+              'Sin citas próximas',
+              'No tienes citas programadas desde hoy en adelante.',
+            );
+          }
+          print(
+            '🔵 Mostrando ${upcomingAppointments.length} citas próximas filtradas',
+          );
+          return _buildAppointmentsList(upcomingAppointments);
         }
         return _buildEmptyState(
           'Sin datos',
@@ -273,17 +264,42 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
   Widget _buildPastAppointmentsTab() {
     return BlocBuilder<AppointmentBloc, AppointmentState>(
       builder: (context, state) {
+        print('🟠 Estado en pestaña pasadas: $state');
         if (state is AppointmentsOverviewState) {
-          if (state.errorPast != null) {
-            return _buildEmptyState('Error', state.errorPast!);
-          } else if (state.past.isEmpty) {
-            return _buildEmptyState(
-              'Sin citas',
-              'No hay citas en el último mes.',
-            );
-          } else {
-            return _buildAppointmentsList(state.past);
+          if (state.loadingAll) {
+            return const Center(child: CircularProgressIndicator());
           }
+          if (state.errorAll != null) {
+            return _buildEmptyState('Error', state.errorAll!);
+          }
+
+          // Filtrar solo las citas que son realmente pasadas (antes de hoy)
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          final pastAppointments =
+              state.all.where((appointment) {
+                final appointmentDate = DateTime(
+                  appointment.appointmentDate.year,
+                  appointment.appointmentDate.month,
+                  appointment.appointmentDate.day,
+                );
+                final isPast = appointmentDate.isBefore(today);
+                print(
+                  '🟠 Cita ${appointment.appointmentDate}: ${appointmentDate.toString()} < ${today.toString()} = $isPast',
+                );
+                return isPast;
+              }).toList();
+
+          if (pastAppointments.isEmpty) {
+            return _buildEmptyState(
+              'Sin citas pasadas',
+              'No hay citas anteriores a hoy.',
+            );
+          }
+          print(
+            '🟠 Mostrando ${pastAppointments.length} citas pasadas filtradas',
+          );
+          return _buildAppointmentsList(pastAppointments);
         }
         return _buildEmptyState(
           'Sin datos',
@@ -296,12 +312,22 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
   Widget _buildAllAppointmentsTab() {
     return BlocBuilder<AppointmentBloc, AppointmentState>(
       builder: (context, state) {
+        print('🟢 Estado en pestaña todas: $state');
         if (state is AppointmentsOverviewState) {
+          if (state.loadingAll) {
+            return const Center(child: CircularProgressIndicator());
+          }
           if (state.errorAll != null) {
             return _buildEmptyState('Error', state.errorAll!);
-          } else {
-            return _buildAppointmentsList(state.all);
           }
+          if (state.all.isEmpty) {
+            return _buildEmptyState(
+              'Sin citas',
+              'No tienes ninguna cita registrada.',
+            );
+          }
+          print('🟢 Mostrando ${state.all.length} citas en total');
+          return _buildAppointmentsList(state.all);
         }
         return _buildEmptyState(
           'Sin datos',
@@ -312,12 +338,21 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
   }
 
   Widget _buildAppointmentsList(List<domain.Appointment> appointments) {
+    print('📋 Construyendo lista con ${appointments.length} citas');
+
     if (appointments.isEmpty) {
       return _buildEmptyState(
         'No hay citas',
         'No se encontraron citas para este filtro.',
       );
     }
+
+    // Ordenar las citas por fecha (más recientes primero para "todas", más próximas primero para "próximas")
+    final sortedAppointments = List<domain.Appointment>.from(appointments);
+    sortedAppointments.sort(
+      (a, b) => a.appointmentDate.compareTo(b.appointmentDate),
+    );
+
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(
         AppSizes.paddingL,
@@ -325,9 +360,12 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
         AppSizes.paddingL,
         100,
       ),
-      itemCount: appointments.length,
+      itemCount: sortedAppointments.length,
       itemBuilder: (context, index) {
-        final appointment = appointments[index];
+        final appointment = sortedAppointments[index];
+        print(
+          '📅 Cita ${index + 1}: ${appointment.appointmentDate} - ${appointment.status}',
+        );
         return AnimatedBuilder(
           animation: _animationController,
           builder: (context, child) {

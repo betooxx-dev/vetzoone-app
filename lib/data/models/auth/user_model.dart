@@ -17,22 +17,25 @@ class UserModel extends User {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'],
-      firstName: json['first_name'],
-      lastName: json['last_name'],
-      phone: json['phone'],
+      id: json['id']?.toString() ?? '',
+      firstName: json['first_name']?.toString() ?? '',
+      lastName: json['last_name']?.toString() ?? '',
+      phone: json['phone']?.toString() ?? '',
       profilePhoto: json['profile_photo'],
-      email: json['email'],
-      role: json['role'],
-      isActive: json['is_active'],
-      isVerified: json['is_verified'],
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: json['updated_at'] != null 
-          ? DateTime.parse(json['updated_at']) 
-          : null,
+      email: json['email']?.toString() ?? '',
+      role: json['role']?.toString() ?? '',
+      isActive: json['is_active'] ?? false,
+      isVerified: json['is_verified'] ?? false,
+      createdAt:
+          json['created_at'] != null
+              ? DateTime.parse(json['created_at'])
+              : DateTime.now(), // Fallback si no existe
+      updatedAt:
+          json['updated_at'] != null
+              ? DateTime.parse(json['updated_at'])
+              : null,
     );
   }
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,
