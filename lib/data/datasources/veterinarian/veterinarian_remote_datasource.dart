@@ -9,6 +9,7 @@ abstract class VeterinarianRemoteDataSource {
     String? location,
     String? specialty,
     int? limit,
+    bool? symptoms,
   });
   Future<VeterinarianModel> getVeterinarianById(String vetId);
 }
@@ -24,6 +25,7 @@ class VeterinarianRemoteDataSourceImpl implements VeterinarianRemoteDataSource {
     String? location,
     String? specialty,
     int? limit,
+    bool? symptoms,
   }) async {
     try {
       final queryParams = <String, dynamic>{};
@@ -33,6 +35,7 @@ class VeterinarianRemoteDataSourceImpl implements VeterinarianRemoteDataSource {
       if (specialty != null && specialty.isNotEmpty)
         queryParams['specialty'] = specialty;
       if (limit != null) queryParams['limit'] = limit;
+      if (symptoms == true) queryParams['symptoms'] = 'true';
 
       final response = await apiClient.get(
         ApiEndpoints.searchVeterinariansUrl,

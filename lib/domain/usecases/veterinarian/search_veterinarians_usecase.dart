@@ -11,12 +11,14 @@ class SearchVeterinariansUseCase {
     String? location,
     String? specialty,
     int? limit,
+    bool? symptoms,
   }) async {
     return await repository.searchVeterinarians(
       search: search,
       location: location,
       specialty: specialty,
       limit: limit,
+      symptoms: symptoms,
     );
   }
 }

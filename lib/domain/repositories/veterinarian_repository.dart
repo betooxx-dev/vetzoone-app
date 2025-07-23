@@ -6,6 +6,7 @@ abstract class VeterinarianRepository {
     String? location,
     String? specialty,
     int? limit,
+    bool? symptoms,
   });
   Future<Veterinarian> getVeterinarianById(String vetId);
 }

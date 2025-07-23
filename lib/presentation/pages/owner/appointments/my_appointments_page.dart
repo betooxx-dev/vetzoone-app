@@ -115,20 +115,24 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
       ),
       child: Row(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(AppSizes.radiusM),
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.arrow_back_ios_new,
-                color: AppColors.white,
+          // Mostrar botón de volver solo si se puede hacer pop (navegación desde dashboard)
+          if (Navigator.canPop(context))
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
               ),
-              onPressed: () => Navigator.pop(context),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: AppColors.white,
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
             ),
+          SizedBox(
+            width: Navigator.canPop(context) ? AppSizes.spaceM : AppSizes.spaceM,
           ),
-          const SizedBox(width: AppSizes.spaceM),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

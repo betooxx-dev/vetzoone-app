@@ -12,16 +12,18 @@ class SearchVeterinariansEvent extends VeterinarianEvent {
   final String? location;
   final String? specialty;
   final int? limit;
+  final bool? symptoms; // Nuevo parámetro para búsqueda por síntomas
 
   const SearchVeterinariansEvent({
     this.search,
     this.location,
     this.specialty,
     this.limit,
+    this.symptoms,
   });
 
   @override
-  List<Object?> get props => [search, location, specialty, limit];
+  List<Object?> get props => [search, location, specialty, limit, symptoms];
 }
 
 class GetVeterinarianProfileEvent extends VeterinarianEvent {

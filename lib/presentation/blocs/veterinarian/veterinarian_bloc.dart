@@ -29,6 +29,7 @@ class VeterinarianBloc extends Bloc<VeterinarianEvent, VeterinarianState> {
         location: event.location,
         specialty: event.specialty,
         limit: event.limit,
+        symptoms: event.symptoms,
       );
       emit(VeterinarianSearchSuccess(veterinarians));
     } catch (e) {

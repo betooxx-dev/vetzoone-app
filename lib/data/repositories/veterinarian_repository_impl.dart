@@ -13,12 +13,14 @@ class VeterinarianRepositoryImpl implements VeterinarianRepository {
     String? location,
     String? specialty,
     int? limit,
+    bool? symptoms,
   }) async {
     return await remoteDataSource.searchVeterinarians(
       search: search,
       location: location,
       specialty: specialty,
       limit: limit,
+      symptoms: symptoms,
     );
   }
 
