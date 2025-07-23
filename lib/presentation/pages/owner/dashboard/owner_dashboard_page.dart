@@ -9,6 +9,11 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../widgets/cards/pet_card.dart';
 import '../../../../core/storage/shared_preferences_helper.dart';
 import '../../../../core/services/user_service.dart';
+import '../../../blocs/appointment/appointment_bloc.dart';
+import '../../../blocs/appointment/appointment_event.dart';
+import '../../../blocs/appointment/appointment_state.dart';
+import '../../../../domain/entities/appointment.dart';
+import 'package:intl/intl.dart';
 
 class OwnerDashboardPage extends StatefulWidget {
   const OwnerDashboardPage({super.key});
@@ -24,6 +29,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
 
   String _userGreeting = 'Hola';
   String? _userProfilePhoto;
+  String _userFirstName = '';
 
   @override
   void initState() {
@@ -51,12 +57,20 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
   Future<void> _loadData() async {
     await _loadUserData();
     await _loadPets();
+    await _loadAppointments();
   }
 
   Future<void> _loadPets() async {
     final userId = await SharedPreferencesHelper.getUserId();
     if (userId != null && mounted) {
       context.read<PetBloc>().add(LoadPetsEvent(userId: userId));
+    }
+  }
+
+  Future<void> _loadAppointments() async {
+    final userId = await SharedPreferencesHelper.getUserId();
+    if (userId != null && mounted) {
+      context.read<AppointmentBloc>().add(LoadAllAppointmentsEvent(userId: userId));
     }
   }
 
@@ -76,11 +90,13 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
     try {
       final userData = await UserService.getCurrentUser();
       final profilePhoto = userData['profilePhoto'] as String?;
+      final firstName = userData['firstName'] as String?;
 
       if (mounted) {
         setState(() {
           _userGreeting = greeting;
           _userProfilePhoto = profilePhoto?.isNotEmpty == true ? profilePhoto : null;
+          _userFirstName = firstName?.isNotEmpty == true ? firstName! : 'Usuario';
         });
       }
     } catch (e) {
@@ -89,6 +105,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
         setState(() {
           _userGreeting = greeting;
           _userProfilePhoto = null;
+          _userFirstName = 'Usuario';
         });
       }
     }
@@ -212,12 +229,36 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _userGreeting,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textOnDark,
+                RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: _userGreeting,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textOnDark,
+                        ),
+                      ),
+                      if (_userFirstName.isNotEmpty) ...[
+                        const TextSpan(
+                          text: ', ',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textOnDark,
+                          ),
+                        ),
+                        TextSpan(
+                          text: _userFirstName,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.secondary, // Color naranja
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 const SizedBox(height: AppSizes.spaceS),
@@ -622,12 +663,104 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
           ],
         ),
         const SizedBox(height: AppSizes.spaceM),
-        _buildAppointmentsCard(),
+        BlocBuilder<AppointmentBloc, AppointmentState>(
+          builder: (context, state) {
+            if (state is AppointmentsOverviewState) {
+              if (state.loadingAll) {
+                return _buildLoadingAppointmentsCard();
+              }
+              if (state.errorAll != null) {
+                return _buildErrorAppointmentsCard();
+              }
+
+              // Filtrar solo las citas próximas (desde hoy en adelante)
+              final now = DateTime.now();
+              final today = DateTime(now.year, now.month, now.day);
+              final upcomingAppointments = state.all.where((appointment) {
+                final appointmentDate = DateTime(
+                  appointment.appointmentDate.year,
+                  appointment.appointmentDate.month,
+                  appointment.appointmentDate.day,
+                );
+                return appointmentDate.isAtSameMomentAs(today) ||
+                       appointmentDate.isAfter(today);
+              }).take(2).toList(); // Solo mostrar las 2 próximas
+
+              if (upcomingAppointments.isEmpty) {
+                return _buildNoAppointmentsCard();
+              }
+
+              return _buildUpcomingAppointmentsList(upcomingAppointments);
+            }
+            return _buildLoadingAppointmentsCard();
+          },
+        ),
       ],
     );
   }
 
-  Widget _buildAppointmentsCard() {
+  Widget _buildLoadingAppointmentsCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorAppointmentsCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.error_outline, color: AppColors.error, size: 48),
+          const SizedBox(height: AppSizes.spaceM),
+          const Text(
+            'Error al cargar citas',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppSizes.spaceS),
+          const Text(
+            'No se pudieron cargar las citas',
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoAppointmentsCard() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSizes.paddingL),
@@ -677,8 +810,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
           ),
           const SizedBox(height: AppSizes.spaceL),
           ElevatedButton.icon(
-            onPressed:
-                () => Navigator.pushNamed(context, '/schedule-appointment'),
+            onPressed: () => Navigator.pushNamed(context, '/schedule-appointment'),
             icon: const Icon(Icons.add, color: AppColors.white),
             label: const Text(
               'Agendar Cita',
@@ -694,5 +826,175 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
         ],
       ),
     );
+  }
+
+  Widget _buildUpcomingAppointmentsList(List<Appointment> appointments) {
+    return Column(
+      children: appointments.map((appointment) => 
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSizes.spaceM),
+          child: _buildCompactAppointmentCard(appointment),
+        )
+      ).toList(),
+    );
+  }
+
+  Widget _buildCompactAppointmentCard(Appointment appointment) {
+    final formattedDate = DateFormat('dd/MM/yyyy').format(appointment.appointmentDate);
+    final formattedTime = DateFormat('HH:mm').format(appointment.appointmentDate);
+    final statusColor = _getStatusColor(appointment.status);
+    final statusText = _mapAppointmentStatusToString(appointment.status);
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: statusColor.withOpacity(0.2), width: 1),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [statusColor, statusColor.withOpacity(0.6)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => Navigator.pushNamed(
+                  context, 
+                  '/appointment-detail', 
+                  arguments: {'appointmentId': appointment.id},
+                ),
+                borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.paddingM),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSizes.paddingS),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [statusColor, statusColor.withOpacity(0.8)],
+                          ),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                        ),
+                        child: Icon(
+                          _getStatusIcon(appointment.status),
+                          color: AppColors.white,
+                          size: AppSizes.iconS,
+                        ),
+                      ),
+                      const SizedBox(width: AppSizes.spaceM),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              statusText,
+                              style: TextStyle(
+                                color: statusColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            Text(
+                              '$formattedDate • $formattedTime',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        color: AppColors.textSecondary,
+                        size: AppSizes.iconS,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(AppointmentStatus status) {
+    switch (status) {
+      case AppointmentStatus.pending:
+        return AppColors.warning;
+      case AppointmentStatus.confirmed:
+        return AppColors.success;
+      case AppointmentStatus.inProgress:
+        return AppColors.accent;
+      case AppointmentStatus.completed:
+        return AppColors.primary;
+      case AppointmentStatus.cancelled:
+        return AppColors.error;
+      case AppointmentStatus.rescheduled:
+        return AppColors.secondary;
+    }
+  }
+
+  IconData _getStatusIcon(AppointmentStatus status) {
+    switch (status) {
+      case AppointmentStatus.pending:
+        return Icons.schedule;
+      case AppointmentStatus.confirmed:
+        return Icons.check_circle;
+      case AppointmentStatus.inProgress:
+        return Icons.play_circle;
+      case AppointmentStatus.completed:
+        return Icons.task_alt;
+      case AppointmentStatus.cancelled:
+        return Icons.cancel;
+      case AppointmentStatus.rescheduled:
+        return Icons.update;
+    }
+  }
+
+  String _mapAppointmentStatusToString(AppointmentStatus status) {
+    switch (status) {
+      case AppointmentStatus.pending:
+        return 'Pendiente';
+      case AppointmentStatus.confirmed:
+        return 'Confirmada';
+      case AppointmentStatus.inProgress:
+        return 'En progreso';
+      case AppointmentStatus.completed:
+        return 'Completada';
+      case AppointmentStatus.cancelled:
+        return 'Cancelada';
+      case AppointmentStatus.rescheduled:
+        return 'Reprogramada';
+    }
   }
 }
