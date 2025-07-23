@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+import 'veterinarian.dart';
+import 'pet.dart';
 
 enum AppointmentStatus {
   pending,
@@ -18,6 +20,8 @@ class Appointment extends Equatable {
   final String vetId;
   final String petId;
   final DateTime createdAt;
+  final Veterinarian? veterinarian;
+  final Pet? pet;
 
   const Appointment({
     required this.id,
@@ -28,6 +32,8 @@ class Appointment extends Equatable {
     required this.petId,
     required this.createdAt,
     this.notes,
+    this.veterinarian,
+    this.pet,
   });
 
   @override
@@ -40,6 +46,8 @@ class Appointment extends Equatable {
         vetId,
         petId,
         createdAt,
+        veterinarian,
+        pet,
       ];
 
   Appointment copyWith({
@@ -51,6 +59,8 @@ class Appointment extends Equatable {
     String? vetId,
     String? petId,
     DateTime? createdAt,
+    Veterinarian? veterinarian,
+    Pet? pet,
   }) {
     return Appointment(
       id: id ?? this.id,
@@ -61,6 +71,8 @@ class Appointment extends Equatable {
       vetId: vetId ?? this.vetId,
       petId: petId ?? this.petId,
       createdAt: createdAt ?? this.createdAt,
+      veterinarian: veterinarian ?? this.veterinarian,
+      pet: pet ?? this.pet,
     );
   }
 } 

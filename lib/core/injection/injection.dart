@@ -17,6 +17,7 @@ import '../../domain/usecases/pet/get_pets_usecase.dart';
 import '../../domain/usecases/pet/add_pet_usecase.dart';
 import '../../domain/usecases/pet/update_pet_usecase.dart';
 import '../../domain/usecases/pet/delete_pet_usecase.dart';
+import '../../domain/usecases/pet/get_pet_by_id_usecase.dart';
 import '../../presentation/blocs/pet/pet_bloc.dart';
 import '../../data/datasources/vet/vet_remote_datasource.dart';
 import '../../data/datasources/appointment/appointment_remote_datasource.dart';
@@ -131,6 +132,9 @@ Future<void> init() async {
   );
   sl.registerLazySingleton(
     () => DeletePetUseCase(repository: sl<PetRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => GetPetByIdUseCase(repository: sl<PetRepository>()),
   );
 
   sl.registerLazySingleton(

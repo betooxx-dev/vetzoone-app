@@ -1,4 +1,6 @@
 import '../../../domain/entities/appointment.dart';
+import '../veterinarian/veterinarian_model.dart';
+import '../pet/pet_model.dart';
 
 class AppointmentModel extends Appointment {
   const AppointmentModel({
@@ -10,6 +12,8 @@ class AppointmentModel extends Appointment {
     required super.petId,
     required super.createdAt,
     super.notes,
+    super.veterinarian,
+    super.pet,
   });
 
   factory AppointmentModel.fromJson(Map<String, dynamic> json) {
@@ -25,9 +29,14 @@ class AppointmentModel extends Appointment {
         vetId: json['vet_id']?.toString() ?? '',
         petId: json['pet_id']?.toString() ?? '',
         createdAt: _parseDateTime(json['created_at']),
+        veterinarian: json['vet'] != null ? VeterinarianModel.fromJson(json['vet']) : null,
+        pet: json['pet'] != null ? PetModel.fromJson(json['pet']) : null,
       );
       
       print('✅ Appointment parseado exitosamente: ${appointment.id}');
+      if (appointment.veterinarian != null) {
+        print('✅ Veterinario incluido: ${appointment.veterinarian!.fullName}');
+      }
       return appointment;
     } catch (e) {
       print('❌ Error parseando appointment: $e');
@@ -54,7 +63,7 @@ class AppointmentModel extends Appointment {
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    final Map<String, dynamic> json = {
       'id': id,
       'status': _getBackendStatus(status),
       'notes': notes,
@@ -64,6 +73,16 @@ class AppointmentModel extends Appointment {
       'pet_id': petId,
       'created_at': createdAt.toIso8601String(),
     };
+
+    if (veterinarian != null) {
+      json['vet'] = (veterinarian as VeterinarianModel).toJson();
+    }
+
+    if (pet != null) {
+      json['pet'] = (pet as PetModel).toJson();
+    }
+
+    return json;
   }
 
   static AppointmentStatus _parseAppointmentStatus(String status) {

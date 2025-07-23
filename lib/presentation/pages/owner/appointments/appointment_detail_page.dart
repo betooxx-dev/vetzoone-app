@@ -4,7 +4,12 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/confirmation_modal.dart';
 import '../../../../core/injection/injection.dart';
 import '../../../../domain/entities/appointment.dart' as domain;
+import '../../../../domain/entities/pet.dart';
 import '../../../../domain/usecases/appointment/get_appointment_by_id_usecase.dart';
+import '../../../../domain/usecases/pet/get_pet_by_id_usecase.dart';
+import '../../../widgets/common/veterinarian_avatar.dart';
+import '../../../widgets/common/pet_avatar.dart';
+import '../../../../data/datasources/pet/pet_remote_datasource.dart';
 import 'package:intl/intl.dart';
 
 
@@ -32,14 +37,20 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
   AppointmentStatus? status;
   bool isLoading = true;
   String? errorMessage;
+  
+  PetDetailDTO? petDetails;
+  bool isLoadingPet = false;
+  String? petErrorMessage;
 
   late GetAppointmentByIdUseCase getAppointmentByIdUseCase;
+  late GetPetByIdUseCase getPetByIdUseCase;
   bool _isInitialLoad = true;
 
   @override
   void initState() {
     super.initState();
     getAppointmentByIdUseCase = sl<GetAppointmentByIdUseCase>();
+    getPetByIdUseCase = sl<GetPetByIdUseCase>();
   }
 
   @override
@@ -99,6 +110,9 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
         isLoading = false;
         errorMessage = null;
       });
+
+      // Cargar información de la mascota en paralelo
+      _fetchPetDetails(fetchedAppointment.petId);
     } catch (e) {
       if (!mounted) return;
 
@@ -108,6 +122,37 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
         appointment = null;
         status = null;
       });
+    }
+  }
+
+  Future<void> _fetchPetDetails(String petId) async {
+    if (!mounted) return;
+
+    setState(() {
+      isLoadingPet = true;
+      petErrorMessage = null;
+    });
+
+    try {
+      final petDetail = await getPetByIdUseCase.call(petId);
+
+      if (!mounted) return;
+
+      setState(() {
+        petDetails = petDetail;
+        isLoadingPet = false;
+        petErrorMessage = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        petErrorMessage = 'Error al obtener información de la mascota: $e';
+        isLoadingPet = false;
+        petDetails = null;
+      });
+
+      print('❌ Error al cargar información de la mascota: $e');
     }
   }
 
@@ -428,48 +473,222 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
   }
 
   Widget _buildPetInfo() {
+    final pet = appointment?.pet ?? petDetails?.pet;
+    
     return _buildModernInfoCard(
-      title: 'Info. de la Mascota',
+      title: 'Información de la Mascota',
       icon: Icons.pets_outlined,
       iconColor: AppColors.secondary,
       children: [
-        _buildModernInfoRow(
-          'ID de Mascota',
-          appointment?.petId ?? 'No especificado',
-          Icons.pets_rounded,
-        ),
-        _buildModernInfoRow(
-          'Información',
-          'Datos disponibles en perfil de mascota',
-          Icons.info_outline,
-        ),
+        if (isLoadingPet) ...[
+          const Padding(
+            padding: EdgeInsets.all(AppSizes.paddingM),
+            child: Center(
+              child: CircularProgressIndicator(color: AppColors.secondary),
+            ),
+          ),
+        ] else if (petErrorMessage != null) ...[
+          Container(
+            padding: const EdgeInsets.all(AppSizes.paddingM),
+            decoration: BoxDecoration(
+              color: AppColors.error.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              border: Border.all(
+                color: AppColors.error.withOpacity(0.1),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: AppColors.error,
+                  size: 20,
+                ),
+                const SizedBox(width: AppSizes.spaceM),
+                Expanded(
+                  child: Text(
+                    petErrorMessage!,
+                    style: const TextStyle(
+                      color: AppColors.error,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ] else if (pet != null) ...[
+          // Información de la mascota con foto
+          Container(
+            padding: const EdgeInsets.all(AppSizes.paddingM),
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              border: Border.all(
+                color: AppColors.secondary.withOpacity(0.1),
+              ),
+            ),
+            child: Row(
+              children: [
+                PetAvatar(
+                  pet: pet,
+                  radius: 24,
+                  backgroundColor: AppColors.secondary.withOpacity(0.1),
+                  iconColor: AppColors.secondary,
+                ),
+                const SizedBox(width: AppSizes.spaceM),
+                Expanded(
+                  child: PetInfo(
+                    pet: pet,
+                    showAge: true,
+                    showGender: true,
+                    nameStyle: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: AppColors.textPrimary,
+                    ),
+                    breedStyle: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSizes.spaceM),
+          if (pet.description != null && pet.description!.isNotEmpty)
+            _buildModernInfoRow(
+              'Descripción',
+              pet.description!,
+              Icons.description_outlined,
+            ),
+          if (pet.status != null)
+            _buildModernInfoRow(
+              'Estado de salud',
+              _getPetStatusString(pet.status!),
+              Icons.health_and_safety_outlined,
+            ),
+        ] else ...[
+          _buildModernInfoRow(
+            'ID de Mascota',
+            appointment?.petId ?? 'No especificado',
+            Icons.pets_rounded,
+          ),
+          _buildModernInfoRow(
+            'Información',
+            'Datos de la mascota no disponibles',
+            Icons.info_outline,
+          ),
+        ],
       ],
     );
   }
 
+  String _getPetStatusString(PetStatus status) {
+    switch (status) {
+      case PetStatus.HEALTHY:
+        return '✅ Saludable';
+      case PetStatus.TREATMENT:
+        return '🩺 En tratamiento';
+      case PetStatus.ATTENTION:
+        return '⚠️ Necesita atención';
+    }
+  }
+
   Widget _buildVeterinarianInfo() {
+    final veterinarian = appointment?.veterinarian;
+    
     return _buildModernInfoCard(
       title: 'Veterinario',
       icon: Icons.person_outline,
       iconColor: AppColors.accent,
       children: [
-        _buildModernInfoRow(
-          'ID del Veterinario',
-          appointment?.vetId ?? 'No asignado',
-          Icons.person_rounded,
-        ),
-        _buildModernInfoRow(
-          'ID del Usuario',
-          appointment?.userId ?? 'No especificado',
-          Icons.account_circle_outlined,
-        ),
-        _buildModernInfoRow(
-          'Fecha de Creación',
-          appointment?.createdAt != null
-              ? _formatDate(appointment!.createdAt)
-              : 'No disponible',
-          Icons.schedule_outlined,
-        ),
+        if (veterinarian != null) ...[
+          // Información del veterinario con foto (clickeable)
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _navigateToVeterinarianProfile(veterinarian.id),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              child: Container(
+                padding: const EdgeInsets.all(AppSizes.paddingM),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  border: Border.all(
+                    color: AppColors.accent.withOpacity(0.1),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    VeterinarianAvatar(
+                      veterinarian: veterinarian,
+                      radius: 24,
+                      backgroundColor: AppColors.accent.withOpacity(0.1),
+                      iconColor: AppColors.accent,
+                    ),
+                    const SizedBox(width: AppSizes.spaceM),
+                    Expanded(
+                      child: VeterinarianInfo(
+                        veterinarian: veterinarian,
+                        showLocation: true,
+                        nameStyle: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: AppColors.textPrimary,
+                        ),
+                        specialtyStyle: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      color: AppColors.accent,
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSizes.spaceM),
+          _buildModernInfoRow(
+            'Cédula',
+            veterinarian.license.isNotEmpty ? veterinarian.license : 'No especificada',
+            Icons.badge_outlined,
+          ),
+          _buildModernInfoRow(
+            'Experiencia',
+            veterinarian.experienceText,
+            Icons.timeline_outlined,
+          ),
+          if (veterinarian.consultationFee != null)
+            _buildModernInfoRow(
+              'Tarifa de consulta',
+              '\$${veterinarian.consultationFee!.toInt()}',
+              Icons.attach_money_outlined,
+            ),
+          if (veterinarian.user.phone.isNotEmpty)
+            _buildModernInfoRow(
+              'Teléfono',
+              veterinarian.user.phone,
+              Icons.phone_outlined,
+            ),
+        ] else ...[
+          _buildModernInfoRow(
+            'ID del Veterinario',
+            appointment?.vetId ?? 'No asignado',
+            Icons.person_rounded,
+          ),
+          _buildModernInfoRow(
+            'Información',
+            'Datos del veterinario no disponibles',
+            Icons.info_outline,
+          ),
+        ],
       ],
     );
   }
@@ -800,5 +1019,13 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
         ),
       );
     }
+  }
+
+  void _navigateToVeterinarianProfile(String vetId) {
+    Navigator.pushNamed(
+      context,
+      '/veterinarian-profile',
+      arguments: {'vetId': vetId},
+    );
   }
 }

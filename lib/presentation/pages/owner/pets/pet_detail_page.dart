@@ -590,28 +590,6 @@ class _PetDetailPageState extends State<PetDetailPage> {
                   onPressed: () {
                     Navigator.pushNamed(
                       context,
-                      '/schedule-appointment',
-                      arguments: pet,
-                    );
-                  },
-                  icon: const Icon(Icons.calendar_today),
-                  label: const Text('Agendar Cita'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSizes.spaceM),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pushNamed(
-                      context,
                       '/medical-record',
                       arguments: {'petId': pet.id, 'petName': pet.name},
                     );
@@ -628,24 +606,23 @@ class _PetDetailPageState extends State<PetDetailPage> {
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.spaceM),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => _showDeleteDialog(pet),
-              icon: const Icon(Icons.delete_forever),
-              label: const Text('Eliminar Mascota'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+              const SizedBox(width: AppSizes.spaceM),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _showDeleteDialog(pet),
+                  icon: const Icon(Icons.delete_forever),
+                  label: const Text('Eliminar Mascota'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                    foregroundColor: AppColors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
         ],
       ),

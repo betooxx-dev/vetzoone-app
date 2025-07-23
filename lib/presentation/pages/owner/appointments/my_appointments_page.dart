@@ -7,6 +7,7 @@ import '../../../blocs/appointment/appointment_event.dart';
 import '../../../blocs/appointment/appointment_state.dart';
 import '../../../../core/services/user_service.dart';
 import '../../../../domain/entities/appointment.dart' as domain;
+import '../../../widgets/common/veterinarian_avatar.dart';
 import 'package:intl/intl.dart';
 
 class MyAppointmentsPage extends StatefulWidget {
@@ -559,38 +560,15 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
                         ),
                         child: Row(
                           children: [
-                            CircleAvatar(
-                              backgroundColor: AppColors.secondary.withOpacity(
-                                0.1,
-                              ),
+                            VeterinarianAvatar(
+                              veterinarian: appointment.veterinarian,
                               radius: 20,
-                              child: Icon(
-                                Icons.local_hospital,
-                                color: AppColors.secondary,
-                                size: AppSizes.iconS,
-                              ),
                             ),
                             const SizedBox(width: AppSizes.spaceM),
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Dr. Veterinario',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Clínica Veterinaria',
-                                    style: TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
+                            Expanded(
+                              child: VeterinarianInfo(
+                                veterinarian: appointment.veterinarian,
+                                showLocation: true,
                               ),
                             ),
                           ],
