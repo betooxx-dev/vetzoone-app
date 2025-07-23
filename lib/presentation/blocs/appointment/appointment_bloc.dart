@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/usecases/appointment/get_upcoming_appointments_usecase.dart';
 import '../../../domain/usecases/appointment/get_upcoming_appointments_usecase.dart' show GetPastAppointmentsUseCase, GetAllAppointmentsUseCase;
+import '../../../domain/usecases/appointment/create_appointment_usecase.dart';
 import 'appointment_event.dart';
 import 'appointment_state.dart';
 
@@ -8,15 +9,18 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
   final GetUpcomingAppointmentsUseCase getUpcomingAppointmentsUseCase;
   final GetPastAppointmentsUseCase getPastAppointmentsUseCase;
   final GetAllAppointmentsUseCase getAllAppointmentsUseCase;
+  final CreateAppointmentUseCase createAppointmentUseCase;
 
   AppointmentBloc({
     required this.getUpcomingAppointmentsUseCase,
     required this.getPastAppointmentsUseCase,
     required this.getAllAppointmentsUseCase,
+    required this.createAppointmentUseCase,
   }) : super(const AppointmentsOverviewState()) {
     on<LoadUpcomingAppointmentsEvent>(_onLoadUpcomingAppointments);
     on<LoadPastAppointmentsEvent>(_onLoadPastAppointments);
     on<LoadAllAppointmentsEvent>(_onLoadAllAppointments);
+    on<CreateAppointmentEvent>(_onCreateAppointment);
   }
 
   Future<void> _onLoadUpcomingAppointments(
@@ -72,6 +76,24 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
     } catch (error) {
       print('🔴 [Bloc] Error todas las citas: $error');
       emit(current.copyWith(loadingAll: false, errorAll: error.toString()));
+    }
+  }
+
+  Future<void> _onCreateAppointment(
+    CreateAppointmentEvent event,
+    Emitter<AppointmentState> emit,
+  ) async {
+    emit(AppointmentCreating());
+    
+    try {
+      print('📅 [Bloc] Creando cita con datos: ${event.appointmentData}');
+      final appointment = await createAppointmentUseCase(event.appointmentData);
+      
+      print('✅ [Bloc] Cita creada exitosamente: ${appointment.id}');
+      emit(AppointmentCreated(appointment));
+    } catch (error) {
+      print('❌ [Bloc] Error creando cita: $error');
+      emit(AppointmentCreateError(error.toString()));
     }
   }
 } 

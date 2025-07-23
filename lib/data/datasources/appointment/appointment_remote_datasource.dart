@@ -12,6 +12,7 @@ abstract class AppointmentRemoteDataSource {
   Future<List<AppointmentModel>> getAppointmentsByPetId(String petId);
   Future<List<AppointmentModel>> getAllAppointmentsByUserId(String userId);
   Future<AppointmentModel> getAppointmentById(String appointmentId);
+  Future<AppointmentModel> createAppointment(Map<String, dynamic> appointmentData);
 }
 
 class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
@@ -168,6 +169,40 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
       }
       
       throw Exception('Error fetching appointment: $e');
+    }
+  }
+
+  @override
+  Future<AppointmentModel> createAppointment(Map<String, dynamic> appointmentData) async {
+    try {
+      final url = ApiEndpoints.createAppointmentUrl;
+      
+      print('📅 CREANDO NUEVA CITA:');
+      print('URL: $url');
+      print('Data: $appointmentData');
+      
+      final response = await apiClient.post(url, data: appointmentData);
+      
+      print('✅ CITA CREADA EXITOSAMENTE:');
+      print('Status: ${response.statusCode}');
+      print('Data: ${response.data}');
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final appointmentData = response.data['data'];
+        return AppointmentModel.fromJson(appointmentData);
+      } else {
+        throw Exception('Failed to create appointment - Status: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ ERROR CREANDO CITA:');
+      print('Error: $e');
+      
+      if (e is DioException) {
+        print('Status code: ${e.response?.statusCode}');
+        print('Response data: ${e.response?.data}');
+      }
+      
+      throw Exception('Error creating appointment: $e');
     }
   }
 }

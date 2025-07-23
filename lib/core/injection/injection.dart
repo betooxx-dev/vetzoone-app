@@ -23,6 +23,7 @@ import '../../data/datasources/appointment/appointment_remote_datasource.dart';
 import '../../data/repositories/appointment_repository_impl.dart';
 import '../../domain/repositories/appointment_repository.dart';
 import '../../domain/usecases/appointment/get_upcoming_appointments_usecase.dart';
+import '../../domain/usecases/appointment/create_appointment_usecase.dart';
 import '../../presentation/blocs/appointment/appointment_bloc.dart';
 import '../../data/datasources/medical_records/medical_records_remote_datasource.dart';
 import '../../data/repositories/medical_records_repository_impl.dart';
@@ -144,6 +145,9 @@ Future<void> init() async {
   sl.registerLazySingleton(
     () => GetAppointmentByIdUseCase(sl<AppointmentRepository>()),
   );
+  sl.registerLazySingleton(
+    () => CreateAppointmentUseCase(repository: sl<AppointmentRepository>()),
+  );
 
   sl.registerLazySingleton(
     () => GetMedicalRecordsUseCase(sl<MedicalRecordsRepository>()),
@@ -170,6 +174,7 @@ Future<void> init() async {
       getUpcomingAppointmentsUseCase: sl<GetUpcomingAppointmentsUseCase>(),
       getPastAppointmentsUseCase: sl<GetPastAppointmentsUseCase>(),
       getAllAppointmentsUseCase: sl<GetAllAppointmentsUseCase>(),
+      createAppointmentUseCase: sl<CreateAppointmentUseCase>(),
     ),
   );
 

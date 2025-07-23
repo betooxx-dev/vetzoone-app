@@ -2,9 +2,24 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/confirmation_modal.dart';
+import '../../../../core/services/user_service.dart';
+import '../../../../core/injection/injection.dart';
+import '../../../../domain/entities/pet.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../blocs/pet/pet_bloc.dart';
+import '../../../blocs/pet/pet_event.dart';
+import '../../../blocs/pet/pet_state.dart';
+import '../../../blocs/appointment/appointment_bloc.dart';
+import '../../../blocs/appointment/appointment_event.dart';
+import '../../../blocs/appointment/appointment_state.dart';
 
 class ScheduleAppointmentPage extends StatefulWidget {
-  const ScheduleAppointmentPage({super.key});
+  final Map<String, dynamic>? selectedVeterinarian;
+  
+  const ScheduleAppointmentPage({
+    super.key,
+    this.selectedVeterinarian,
+  });
 
   @override
   State<ScheduleAppointmentPage> createState() =>
@@ -16,35 +31,13 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
   final _notesController = TextEditingController();
 
   Map<String, dynamic>? selectedVeterinarian;
-  Map<String, dynamic>? selectedPet;
+  Pet? selectedPet;
   DateTime? selectedDate;
   String? selectedTimeSlot;
-  String? selectedAppointmentType;
   bool _isLoading = false;
+  String? _userId;
 
-  final List<Map<String, dynamic>> _pets = [
-    {'id': '1', 'name': 'Max', 'species': 'Perro', 'breed': 'Labrador'},
-    {'id': '2', 'name': 'Luna', 'species': 'Gato', 'breed': 'Persa'},
-    {'id': '3', 'name': 'Rocky', 'species': 'Perro', 'breed': 'Bulldog'},
-  ];
 
-  final List<String> _appointmentTypes = [
-    'Consulta General',
-    'Vacunación',
-    'Desparasitación',
-    'Cirugía',
-    'Control',
-    'Emergencia',
-    'Examen de laboratorio',
-    'Radiografía',
-  ];
-
-  final Map<String, dynamic> _defaultVeterinarian = {
-    'name': 'Dr. María González',
-    'specialty': 'Medicina General',
-    'clinic': 'Veterinaria Central',
-    'image': null,
-  };
 
   void _selectVeterinarian() async {
     final result = await Navigator.pushNamed(context, '/search-veterinarians');
@@ -55,6 +48,27 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
         selectedDate = null;
         selectedTimeSlot = null;
       });
+    }
+  }
+
+  String _getPetTypeString(PetType type) {
+    switch (type) {
+      case PetType.DOG:
+        return 'Perro';
+      case PetType.CAT:
+        return 'Gato';
+      case PetType.BIRD:
+        return 'Ave';
+      case PetType.RABBIT:
+        return 'Conejo';
+      case PetType.HAMSTER:
+        return 'Hámster';
+      case PetType.FISH:
+        return 'Pez';
+      case PetType.REPTILE:
+        return 'Reptil';
+      case PetType.OTHER:
+        return 'Otro';
     }
   }
 
@@ -94,9 +108,12 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
   @override
   void initState() {
     super.initState();
-    selectedVeterinarian = _defaultVeterinarian;
-    selectedPet = _pets.first;
-
+    _loadUserAndPets();
+    
+    // Recibir veterinario seleccionado como parámetro
+    selectedVeterinarian = widget.selectedVeterinarian;
+    
+    // Si llega por navigation arguments, también tomarlo en cuenta
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final arguments = ModalRoute.of(context)?.settings.arguments;
       if (arguments != null && arguments is Map<String, dynamic>) {
@@ -104,16 +121,30 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
           if (arguments.containsKey('selectedVeterinarian')) {
             selectedVeterinarian = arguments['selectedVeterinarian'];
           }
-          if (arguments.containsKey('selectedPet')) {
-            final petData = arguments['selectedPet'];
-            selectedPet = _pets.firstWhere(
-              (pet) => pet['name'] == petData['name'],
-              orElse: () => _pets.first,
-            );
+          if (arguments.containsKey('vetId')) {
+            // Si llega un vetId, crear un veterinario mock
+            selectedVeterinarian = {
+              'id': arguments['vetId'],
+              'name': 'Veterinario Seleccionado',
+              'specialty': 'Medicina General',
+              'clinic': 'Clínica Veterinaria',
+            };
           }
         });
       }
     });
+  }
+
+  Future<void> _loadUserAndPets() async {
+    final user = await UserService.getCurrentUser();
+    setState(() {
+      _userId = user['id'];
+    });
+    
+    if (_userId != null) {
+      // Cargar mascotas del usuario
+      context.read<PetBloc>().add(LoadPetsEvent(userId: _userId!));
+    }
   }
 
   @override
@@ -124,25 +155,65 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFBDE3FF), Color(0xFFE8F5E8), Color(0xFFE5F3FF)],
-            stops: [0.0, 0.5, 1.0],
-          ),
-        ),
-        child: Stack(
-          children: [
-            _buildDecorativeShapes(),
-            SafeArea(
-              child: Column(
-                children: [_buildAppBar(), Expanded(child: _buildBody())],
+    return BlocListener<AppointmentBloc, AppointmentState>(
+      listener: (context, state) {
+        if (state is AppointmentCreated) {
+          setState(() {
+            _isLoading = false;
+          });
+          
+          Navigator.pop(context, true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Cita agendada exitosamente'),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
               ),
             ),
-          ],
+          );
+        } else if (state is AppointmentCreateError) {
+          setState(() {
+            _isLoading = false;
+          });
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al agendar la cita: ${state.message}'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+            ),
+          );
+        } else if (state is AppointmentCreating) {
+          setState(() {
+            _isLoading = true;
+          });
+        }
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFBDE3FF), Color(0xFFE8F5E8), Color(0xFFE5F3FF)],
+              stops: [0.0, 0.5, 1.0],
+            ),
+          ),
+          child: Stack(
+            children: [
+              _buildDecorativeShapes(),
+              SafeArea(
+                child: Column(
+                  children: [_buildAppBar(), Expanded(child: _buildBody())],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -190,12 +261,6 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
   }
 
   Widget _buildBody() {
-    if (selectedVeterinarian == null) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.secondary),
-      );
-    }
-
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
       child: Form(
@@ -206,8 +271,6 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
             _buildVeterinarianSelection(),
             const SizedBox(height: AppSizes.spaceL),
             _buildPetSelection(),
-            const SizedBox(height: AppSizes.spaceL),
-            _buildAppointmentTypeSelection(),
             const SizedBox(height: AppSizes.spaceL),
             _buildDateSelection(),
             if (selectedDate != null) ...[
@@ -337,109 +400,92 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
   Widget _buildPetSelection() {
     return _buildFormSection(
       title: 'Mascota',
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.white.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(AppSizes.radiusL),
-          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+      child: BlocBuilder<PetBloc, PetState>(
+        builder: (context, state) {
+          if (state is PetLoading) {
+            return Container(
+              decoration: BoxDecoration(
+                color: AppColors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+              ),
+              child: const Padding(
+                padding: EdgeInsets.all(AppSizes.paddingL),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            );
+          }
+          
+          if (state is PetsLoaded) {
+            final pets = state.pets;
+            
+            return Container(
+              decoration: BoxDecoration(
+                color: AppColors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: DropdownButtonFormField<Pet>(
+                value: selectedPet,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  hintText: 'Selecciona tu mascota',
+                  prefixIcon: Icon(
+                    Icons.pets_rounded,
+                    color: AppColors.secondary,
+                    size: AppSizes.iconM,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.paddingM,
+                    vertical: AppSizes.paddingM,
+                  ),
+                ),
+                items: pets.map((pet) {
+                  return DropdownMenuItem<Pet>(
+                    value: pet,
+                    child: Text('${pet.name} - ${_getPetTypeString(pet.type)}'),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedPet = value;
+                  });
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Por favor selecciona una mascota';
+                  }
+                  return null;
+                },
+              ),
+            );
+          }
+          
+          return Container(
+            decoration: BoxDecoration(
+              color: AppColors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
+              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
             ),
-          ],
-        ),
-        child: DropdownButtonFormField<Map<String, dynamic>>(
-          value: selectedPet,
-          isExpanded: true,
-          decoration: InputDecoration(
-            hintText: 'Selecciona tu mascota',
-            prefixIcon: Icon(
-              Icons.pets_rounded,
-              color: AppColors.secondary,
-              size: AppSizes.iconM,
+            child: const Padding(
+              padding: EdgeInsets.all(AppSizes.paddingL),
+              child: Text('No se pudieron cargar las mascotas'),
             ),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.paddingM,
-              vertical: AppSizes.paddingM,
-            ),
-          ),
-          items:
-              _pets.map((pet) {
-                return DropdownMenuItem<Map<String, dynamic>>(
-                  value: pet,
-                  child: Text('${pet['name']} - ${pet['species']}'),
-                );
-              }).toList(),
-          onChanged: (value) {
-            setState(() {
-              selectedPet = value;
-            });
-          },
-          validator: (value) {
-            if (value == null) {
-              return 'Por favor selecciona una mascota';
-            }
-            return null;
-          },
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildAppointmentTypeSelection() {
-    return _buildFormSection(
-      title: 'Tipo de consulta',
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.white.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(AppSizes.radiusL),
-          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: DropdownButtonFormField<String>(
-          value: selectedAppointmentType,
-          isExpanded: true,
-          decoration: InputDecoration(
-            hintText: 'Selecciona el tipo de consulta',
-            prefixIcon: Icon(
-              Icons.medical_services_outlined,
-              color: AppColors.secondary,
-              size: AppSizes.iconM,
-            ),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.paddingM,
-              vertical: AppSizes.paddingM,
-            ),
-          ),
-          items:
-              _appointmentTypes.map((type) {
-                return DropdownMenuItem<String>(value: type, child: Text(type));
-              }).toList(),
-          onChanged: (value) {
-            setState(() {
-              selectedAppointmentType = value;
-            });
-          },
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Por favor selecciona el tipo de consulta';
-            }
-            return null;
-          },
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildDateSelection() {
     return _buildFormSection(
@@ -638,7 +684,7 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
   Widget _buildScheduleButton() {
     final canSchedule =
         selectedPet != null &&
-        selectedAppointmentType != null &&
+        selectedVeterinarian != null &&
         selectedDate != null &&
         selectedTimeSlot != null;
 
@@ -777,16 +823,54 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
     }
   }
 
+  Map<String, dynamic> _buildAppointmentPayload() {
+    // Combinar fecha y hora seleccionadas
+    final timeSlot = selectedTimeSlot!;
+    final hourMinute = timeSlot.replaceAll(RegExp(r'[APMapm\s]'), '').split(':');
+    final hour = int.parse(hourMinute[0]);
+    final minute = int.parse(hourMinute[1]);
+    
+    // Ajustar para formato AM/PM
+    final isPM = timeSlot.toUpperCase().contains('PM');
+    final adjustedHour = isPM && hour != 12 ? hour + 12 : (hour == 12 && !isPM ? 0 : hour);
+    
+    final appointmentDateTime = DateTime(
+      selectedDate!.year,
+      selectedDate!.month,
+      selectedDate!.day,
+      adjustedHour,
+      minute,
+    );
+
+    return {
+      'appointment_date': appointmentDateTime.toUtc().toIso8601String(),
+      'notes': _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
+      'pet_id': selectedPet!.id,
+      'vet_id': selectedVeterinarian!['id'],
+      'user_id': _userId!,
+    };
+  }
+
   Future<void> _scheduleAppointment() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    if (_userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: No se pudo obtener la información del usuario'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
     final confirmed = await ConfirmationModal.show(
       context: context,
       title: 'Confirmar cita',
       message:
           '¿Estás seguro de que quieres agendar esta cita?\n\n'
-          'Mascota: ${selectedPet!['name']}\n'
-          'Tipo: $selectedAppointmentType\n'
+          'Veterinario: ${selectedVeterinarian!['name']}\n'
+          'Mascota: ${selectedPet!.name}\n'
           'Fecha: ${_formatDate(selectedDate!)}\n'
           'Hora: $selectedTimeSlot',
       confirmText: 'Agendar',
@@ -796,29 +880,16 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
 
     if (confirmed != true) return;
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    await Future.delayed(const Duration(seconds: 2));
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (mounted) {
-      Navigator.pop(context, true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Cita agendada exitosamente'),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSizes.radiusM),
-          ),
-        ),
-      );
-    }
+    final payload = _buildAppointmentPayload();
+    
+    // Debug: mostrar el payload
+    print('📋 Payload de la cita:');
+    print(payload);
+    
+    // Usar el Bloc para crear la cita
+    context.read<AppointmentBloc>().add(
+      CreateAppointmentEvent(appointmentData: payload),
+    );
   }
 
   String _formatDate(DateTime date) {
@@ -853,3 +924,4 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
     return '$weekday, ${date.day} de $month';
   }
 }
+

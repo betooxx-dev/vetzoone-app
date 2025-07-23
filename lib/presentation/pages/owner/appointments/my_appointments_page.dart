@@ -773,7 +773,13 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
   }
 
   void _navigateToScheduleAppointment() {
-    Navigator.pushNamed(context, '/schedule-appointment');
+    Navigator.pushNamed(
+      context, 
+      '/schedule-appointment',
+      arguments: {
+        'from_my_appointments': true,
+      },
+    );
   }
 
   void _navigateToAppointmentDetail(domain.Appointment appointment) {

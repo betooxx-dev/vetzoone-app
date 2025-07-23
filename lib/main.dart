@@ -134,7 +134,34 @@ class MyApp extends StatelessWidget {
           '/veterinarians-list': (context) => const VeterinariansListPage(),
           '/veterinarian-profile': (context) => const VeterinarianProfilePage(),
 
-          '/schedule-appointment': (context) => const ScheduleAppointmentPage(),
+          '/schedule-appointment': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          Map<String, dynamic>? selectedVeterinarian;
+          
+          if (args != null) {
+            if (args.containsKey('veterinarian')) {
+              final vet = args['veterinarian'];
+              selectedVeterinarian = {
+                'id': vet.id,
+                'name': vet.fullName,
+                'specialty': vet.specialties.isNotEmpty ? vet.specialties.first : 'Medicina General',
+                'clinic': 'Clínica ${vet.fullName}',
+              };
+            }
+          }
+          
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider<PetBloc>(
+                create: (context) => sl<PetBloc>(),
+              ),
+              BlocProvider<AppointmentBloc>(
+                create: (context) => sl<AppointmentBloc>(),
+              ),
+            ],
+            child: ScheduleAppointmentPage(selectedVeterinarian: selectedVeterinarian),
+          );
+        },
           '/my-appointments': (context) => const MyAppointmentsPage(),
           '/appointment-detail': (context) => const AppointmentDetailPage(),
 

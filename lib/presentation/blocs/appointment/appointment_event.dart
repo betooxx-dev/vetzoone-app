@@ -34,4 +34,11 @@ class LoadAllAppointmentsEvent extends AppointmentEvent {
   const LoadAllAppointmentsEvent({required this.userId});
   @override
   List<Object> get props => [userId];
+}
+
+class CreateAppointmentEvent extends AppointmentEvent {
+  final Map<String, dynamic> appointmentData;
+  const CreateAppointmentEvent({required this.appointmentData});
+  @override
+  List<Object> get props => [appointmentData];
 } 

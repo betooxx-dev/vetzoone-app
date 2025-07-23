@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../constants/app_colors.dart';
+import '../constants/app_sizes.dart';
 
 class ConfirmationModal extends StatelessWidget {
   final String title;
@@ -66,8 +68,8 @@ class ConfirmationModal extends StatelessWidget {
   Widget build(BuildContext context) {
     final defaultConfirmColor =
         isDestructive
-            ? Colors.red
-            : (confirmButtonColor ?? const Color(0xFF4CAF50));
+            ? AppColors.error
+            : (confirmButtonColor ?? AppColors.primary);
 
     final defaultIcon =
         isDestructive
@@ -75,20 +77,19 @@ class ConfirmationModal extends StatelessWidget {
             : (icon ?? Icons.help_outline_rounded);
 
     final defaultIconColor =
-        isDestructive ? Colors.red : (iconColor ?? const Color(0xFF4CAF50));
+        isDestructive ? AppColors.error : (iconColor ?? AppColors.primary);
 
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSizes.paddingXL),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppSizes.radiusXL),
           boxShadow: [
             BoxShadow(
-              // ignore: deprecated_member_use
-              color: Colors.black.withOpacity(0.1),
+              color: AppColors.black.withOpacity(0.1),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -119,11 +120,10 @@ class ConfirmationModal extends StatelessWidget {
       width: 64,
       height: 64,
       decoration: BoxDecoration(
-        // ignore: deprecated_member_use
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
       ),
-      child: Icon(iconData, size: 32, color: color),
+      child: Icon(iconData, size: AppSizes.iconL, color: color),
     );
   }
 
@@ -133,7 +133,7 @@ class ConfirmationModal extends StatelessWidget {
       style: const TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.bold,
-        color: Color(0xFF212121),
+        color: AppColors.textPrimary,
       ),
       textAlign: TextAlign.center,
     );
@@ -144,7 +144,7 @@ class ConfirmationModal extends StatelessWidget {
       message,
       style: const TextStyle(
         fontSize: 16,
-        color: Color(0xFF757575),
+        color: AppColors.textSecondary,
         height: 1.5,
       ),
       textAlign: TextAlign.center,
@@ -156,17 +156,17 @@ class ConfirmationModal extends StatelessWidget {
       children: [
         Expanded(
           child: Container(
-            height: 48,
+            height: AppSizes.buttonHeight,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE0E0E0)),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              border: Border.all(color: AppColors.textSecondary.withOpacity(0.3)),
             ),
             child: TextButton(
               onPressed: onCancel ?? () => Navigator.of(context).pop(false),
               style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF757575),
+                foregroundColor: AppColors.textSecondary,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
                 ),
               ),
               child: Text(
@@ -179,22 +179,20 @@ class ConfirmationModal extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSizes.spaceM),
         Expanded(
           child: Container(
-            height: 48,
+            height: AppSizes.buttonHeight,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
               gradient: LinearGradient(
                 colors:
                     isDestructive
-                        ? [Colors.red, Colors.red.shade700]
-                        // ignore: deprecated_member_use
+                        ? [AppColors.error, AppColors.error.withOpacity(0.8)]
                         : [confirmColor, confirmColor.withOpacity(0.8)],
               ),
               boxShadow: [
                 BoxShadow(
-                  // ignore: deprecated_member_use
                   color: confirmColor.withOpacity(0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
@@ -205,11 +203,11 @@ class ConfirmationModal extends StatelessWidget {
               onPressed: onConfirm ?? () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 elevation: 0,
                 shadowColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
                 ),
               ),
               child: Text(
@@ -246,8 +244,8 @@ extension ConfirmationTypeExtension on ConfirmationType {
           confirmText: 'Eliminar',
           cancelText: 'Cancelar',
           icon: Icons.delete_outline_rounded,
-          iconColor: Colors.red,
-          confirmButtonColor: Colors.red,
+          iconColor: AppColors.error,
+          confirmButtonColor: AppColors.error,
           isDestructive: true,
           onConfirm: onConfirm,
           onCancel: onCancel,
@@ -261,7 +259,7 @@ extension ConfirmationTypeExtension on ConfirmationType {
           confirmText: 'Guardar',
           cancelText: 'Cancelar',
           icon: Icons.save_outlined,
-          iconColor: const Color(0xFF4CAF50),
+          iconColor: AppColors.success,
           onConfirm: onConfirm,
           onCancel: onCancel,
           customContent: customContent,
@@ -274,8 +272,8 @@ extension ConfirmationTypeExtension on ConfirmationType {
           confirmText: 'Sí, cancelar',
           cancelText: 'No',
           icon: Icons.cancel_outlined,
-          iconColor: const Color(0xFFFF7043),
-          confirmButtonColor: const Color(0xFFFF7043),
+          iconColor: AppColors.warning,
+          confirmButtonColor: AppColors.warning,
           onConfirm: onConfirm,
           onCancel: onCancel,
           customContent: customContent,
@@ -288,8 +286,8 @@ extension ConfirmationTypeExtension on ConfirmationType {
           confirmText: 'Cerrar sesión',
           cancelText: 'Cancelar',
           icon: Icons.logout_rounded,
-          iconColor: const Color(0xFFFF7043),
-          confirmButtonColor: const Color(0xFFFF7043),
+          iconColor: AppColors.warning,
+          confirmButtonColor: AppColors.warning,
           onConfirm: onConfirm,
           onCancel: onCancel,
           customContent: customContent,

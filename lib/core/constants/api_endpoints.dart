@@ -12,6 +12,7 @@ class ApiEndpoints {
   static const String vetCreate = '/vet';
   static const String vetGetByUserId = '/vet/user';
 
+  static const String appointments = '/appointments';
   static const String appointmentsByUser = '/appointments/user';
   static const String appointmentsByPet = '/appointments/pet';
   static const String appointmentById = '/appointments';
@@ -33,6 +34,7 @@ class ApiEndpoints {
       '$gatewayBaseUrl$vetGetByUserId/$userId';
   static String get createVetUrl => '$gatewayBaseUrl$vetCreate';
 
+  static String get createAppointmentUrl => '$gatewayBaseUrl$appointments';
   static String getAppointmentsByUserUrl(String userId) =>
       '$gatewayBaseUrl$appointmentsByUser/$userId';
   static String getAppointmentsByPetUrl(String petId) =>

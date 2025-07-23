@@ -93,4 +93,20 @@ class AppointmentsOverviewState extends AppointmentState {
 
   @override
   List<Object> get props => [upcoming, past, all, loadingUpcoming, loadingPast, loadingAll, errorUpcoming ?? '', errorPast ?? '', errorAll ?? ''];
+}
+
+class AppointmentCreating extends AppointmentState {}
+
+class AppointmentCreated extends AppointmentState {
+  final Appointment appointment;
+  const AppointmentCreated(this.appointment);
+  @override
+  List<Object> get props => [appointment];
+}
+
+class AppointmentCreateError extends AppointmentState {
+  final String message;
+  const AppointmentCreateError(this.message);
+  @override
+  List<Object> get props => [message];
 } 

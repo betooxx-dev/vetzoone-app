@@ -46,4 +46,14 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
       throw Exception('Repository error: $e');
     }
   }
+
+  @override
+  Future<Appointment> createAppointment(Map<String, dynamic> appointmentData) async {
+    try {
+      final appointmentModel = await remoteDataSource.createAppointment(appointmentData);
+      return appointmentModel;
+    } catch (e) {
+      throw Exception('Repository error: $e');
+    }
+  }
 } 
