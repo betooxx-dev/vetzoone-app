@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
 
 class RegisterVaccinationPage extends StatefulWidget {
   const RegisterVaccinationPage({super.key});
@@ -20,13 +22,13 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
 
   Map<String, dynamic> patientInfo = {};
 
-  final _vaccineTypeController = TextEditingController();
   final _vaccineNameController = TextEditingController();
-  final _batchNumberController = TextEditingController();
   final _manufacturerController = TextEditingController();
+  final _batchNumberController = TextEditingController();
   final _notesController = TextEditingController();
 
-  DateTime vaccinationDate = DateTime.now();
+  DateTime administeredDate = DateTime.now();
+  DateTime nextDueDate = DateTime.now().add(const Duration(days: 365));
 
   @override
   void initState() {
@@ -46,7 +48,6 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
     );
 
     _loadPatientInfo();
-    _updateNextDueDate();
     _animationController.forward();
   }
 
@@ -60,25 +61,16 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
         'weight': '25 kg',
         'ownerName': 'Juan Pérez',
         'lastVaccination': '15 Oct 2023',
-        'vaccinationHistory': [
-          {'vaccine': 'Múltiple (DHPP)', 'date': '15 Oct 2023'},
-          {'vaccine': 'Antirrábica', 'date': '20 Sep 2023'},
-        ],
       };
     });
-  }
-
-  void _updateNextDueDate() {
-    // Método mantenido para compatibilidad
   }
 
   @override
   void dispose() {
     _animationController.dispose();
-    _vaccineTypeController.dispose();
     _vaccineNameController.dispose();
-    _batchNumberController.dispose();
     _manufacturerController.dispose();
+    _batchNumberController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -86,86 +78,165 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: const Text(
-          'Registrar Vacuna',
-          style: TextStyle(
-            color: Color(0xFF2C3E50),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF2C3E50)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save_outlined, color: Color(0xFF27AE60)),
-            onPressed: _saveVaccination,
-          ),
-        ],
-      ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: Column(
-            children: [
-              _buildPatientHeader(),
-
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildVaccineInfoSection(),
-
-                        const SizedBox(height: 24),
-
-                        _buildBatchInfoSection(),
-
-                        const SizedBox(height: 24),
-
-                        _buildNotesSection(),
-                      ],
-                    ),
-                  ),
+      backgroundColor: AppColors.backgroundLight,
+      body: Stack(
+        children: [
+          _buildBackgroundShapes(),
+          SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: Column(
+                  children: [
+                    _buildModernAppBar(),
+                    _buildPatientInfo(),
+                    Expanded(child: _buildFormContent()),
+                    _buildActionButtons(),
+                  ],
                 ),
               ),
-
-              _buildActionButtons(),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildPatientHeader() {
+  Widget _buildBackgroundShapes() {
+    return Stack(
+      children: [
+        Positioned(
+          top: -100,
+          right: -50,
+          child: Container(
+            width: AppSizes.decorativeShapeXL,
+            height: AppSizes.decorativeShapeXL,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(125),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 200,
+          left: -80,
+          child: Container(
+            width: AppSizes.decorativeShapeL,
+            height: AppSizes.decorativeShapeL,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(90),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: -100,
+          right: -60,
+          child: Container(
+            width: AppSizes.decorativeShapeM,
+            height: AppSizes.decorativeShapeM,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(60),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModernAppBar() {
     return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      margin: const EdgeInsets.all(AppSizes.paddingL),
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF27AE60).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
             ),
-            child: const Icon(
-              Icons.vaccines,
-              color: Color(0xFF27AE60),
-              size: 28,
+            child: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: AppColors.white,
+              ),
+              onPressed: () => Navigator.pop(context),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSizes.spaceM),
+          const Expanded(
+            child: Text(
+              'Registrar Vacuna',
+              style: TextStyle(
+                color: AppColors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.vaccines, color: AppColors.white),
+              onPressed: _saveVaccination,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPatientInfo() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.15),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(AppSizes.radiusRound),
+            ),
+            child: const Icon(Icons.vaccines, color: AppColors.white, size: 30),
+          ),
+          const SizedBox(width: AppSizes.spaceM),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,179 +244,41 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
                 Text(
                   patientInfo['petName'] ?? '',
                   style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2C3E50),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 Text(
-                  '${patientInfo['breed']} • ${patientInfo['age']} • ${patientInfo['weight']}',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                ),
-                if (patientInfo['lastVaccination'] != null)
-                  Text(
-                    'Última vacuna: ${patientInfo['lastVaccination']}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF3498DB),
-                    ),
+                  '${patientInfo['breed']} • ${patientInfo['age']}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
                   ),
+                ),
+                Text(
+                  'Dueño: ${patientInfo['ownerName']}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF27AE60).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              _formatDate(vaccinationDate),
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF27AE60),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVaccineInfoSection() {
-    return _buildSection(
-      'Información de la Vacuna',
-      Icons.medical_information,
-      child: Column(
-        children: [
-          TextFormField(
-            controller: _vaccineTypeController,
-            decoration: const InputDecoration(
-              labelText: 'Tipo de Vacuna',
-              hintText: 'Ej: Múltiple (DHPP), Antirrábica, Bordetella',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.vaccines),
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Este campo es obligatorio';
-              }
-              return null;
-            },
-          ),
-
-          const SizedBox(height: 16),
-
-          TextFormField(
-            controller: _vaccineNameController,
-            decoration: const InputDecoration(
-              labelText: 'Nombre Comercial de la Vacuna',
-              hintText: 'Ej: Nobivac, Vanguard, etc.',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.label),
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Este campo es obligatorio';
-              }
-              return null;
-            },
-          ),
-
-          const SizedBox(height: 16),
-
-          InkWell(
-            onTap: () => _selectVaccinationDate(),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[400]!),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.calendar_today, color: Color(0xFF27AE60)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Fecha de Aplicación',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          _formatDate(vaccinationDate),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF2C3E50),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: Color(0xFF27AE60),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBatchInfoSection() {
-    return _buildSection(
-      'Información del Lote',
-      Icons.qr_code,
-      child: Column(
-        children: [
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _batchNumberController,
-                  decoration: const InputDecoration(
-                    labelText: 'Número de Lote',
-                    hintText: 'Ej: VX2024-001',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.confirmation_number),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Este campo es obligatorio';
-                    }
-                    return null;
-                  },
-                ),
+              const Text(
+                'Aplicación',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: TextFormField(
-                  controller: _manufacturerController,
-                  decoration: const InputDecoration(
-                    labelText: 'Laboratorio',
-                    hintText: 'Ej: Merck, Zoetis, etc.',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.business),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Este campo es obligatorio';
-                    }
-                    return null;
-                  },
+              Text(
+                '${administeredDate.day}/${administeredDate.month}/${administeredDate.year}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
                 ),
               ),
             ],
@@ -355,159 +288,370 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
     );
   }
 
-  Widget _buildNotesSection() {
-    return _buildSection(
-      'Notas Adicionales',
-      Icons.note_add,
-      child: TextFormField(
-        controller: _notesController,
-        maxLines: 4,
-        decoration: const InputDecoration(
-          hintText:
-              'Observaciones generales, recomendaciones para el propietario, próximas vacunas pendientes...',
-          border: OutlineInputBorder(),
+  Widget _buildFormContent() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildFormSection(
+              'Información de la Vacuna',
+              Icons.vaccines,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _vaccineNameController,
+                    style: const TextStyle(color: AppColors.textPrimary),
+                    decoration: _buildInputDecoration(
+                      'Nombre de la vacuna',
+                      'Ej: Triple Viral Canina, Antirrábica, Parvovirus...',
+                      Icons.medical_information,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Este campo es obligatorio';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSizes.spaceM),
+                  TextFormField(
+                    controller: _manufacturerController,
+                    style: const TextStyle(color: AppColors.textPrimary),
+                    decoration: _buildInputDecoration(
+                      'Laboratorio/Fabricante',
+                      'Ej: Pfizer, Merck, Zoetis, Boehringer...',
+                      Icons.business,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Este campo es obligatorio';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSizes.spaceM),
+                  TextFormField(
+                    controller: _batchNumberController,
+                    style: const TextStyle(color: AppColors.textPrimary),
+                    decoration: _buildInputDecoration(
+                      'Número de Lote',
+                      'Ej: TV2024-001, VX2024-123...',
+                      Icons.confirmation_number,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Este campo es obligatorio';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSizes.spaceL),
+            _buildFormSection(
+              'Fechas de Aplicación',
+              Icons.calendar_today,
+              child: Column(
+                children: [
+                  InkWell(
+                    onTap: () => _selectAdministeredDate(),
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSizes.paddingM),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.event, color: AppColors.primary),
+                          const SizedBox(width: AppSizes.spaceM),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Fecha de Aplicación',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  '${administeredDate.day}/${administeredDate.month}/${administeredDate.year}',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: AppColors.primary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSizes.spaceM),
+                  InkWell(
+                    onTap: () => _selectNextDueDate(),
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSizes.paddingM),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.schedule, color: AppColors.primary),
+                          const SizedBox(width: AppSizes.spaceM),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Próxima Dosis (Vencimiento)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  '${nextDueDate.day}/${nextDueDate.month}/${nextDueDate.year}',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: AppColors.primary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSizes.spaceL),
+            _buildFormSection(
+              'Notas Adicionales',
+              Icons.note,
+              child: TextFormField(
+                controller: _notesController,
+                maxLines: 3,
+                style: const TextStyle(color: AppColors.textPrimary),
+                decoration: _buildInputDecoration(
+                  'Observaciones',
+                  'Aplicada en el muslo derecho, reacciones observadas, próximas vacunas...',
+                  null,
+                ),
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildFormSection(
+    String title,
+    IconData icon, {
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: AppColors.primary, size: 20),
+            const SizedBox(width: AppSizes.spaceS),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.spaceM),
+        child,
+      ],
+    );
+  }
+
+  InputDecoration _buildInputDecoration(
+    String label,
+    String hint,
+    IconData? icon,
+  ) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixIcon: icon != null ? Icon(icon, color: AppColors.primary) : null,
+      labelStyle: TextStyle(color: AppColors.textSecondary),
+      hintStyle: TextStyle(color: AppColors.textSecondary),
+      filled: true,
+      fillColor: AppColors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        borderSide: BorderSide(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        borderSide: BorderSide(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        borderSide: BorderSide(color: AppColors.primary),
       ),
     );
   }
 
   Widget _buildActionButtons() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.primary.withOpacity(0.1),
             blurRadius: 10,
-            offset: const Offset(0, -2),
+            offset: const Offset(0, -4),
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _clearForm,
-                  icon: const Icon(Icons.clear_all),
-                  label: const Text('Limpiar'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFF39C12),
-                    side: const BorderSide(color: Color(0xFFF39C12)),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+              child: OutlinedButton.icon(
+                onPressed: _clearForm,
+                icon: const Icon(Icons.clear_all),
+                label: const Text('Limpiar'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary,
+                  side: const BorderSide(color: Colors.transparent),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppSizes.paddingM,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 2,
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _saveVaccination,
-                  icon:
-                      _isLoading
-                          ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
+            ),
+          ),
+          const SizedBox(width: AppSizes.spaceM),
+          Expanded(
+            flex: 2,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: _isLoading ? null : _saveVaccination,
+                icon:
+                    _isLoading
+                        ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.white,
                             ),
-                          )
-                          : const Icon(Icons.save),
-                  label: Text(_isLoading ? 'Guardando...' : 'Registrar Vacuna'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF27AE60),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                          ),
+                        )
+                        : const Icon(Icons.vaccines),
+                label: Text(_isLoading ? 'Guardando...' : 'Registrar Vacuna'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: AppColors.white,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppSizes.paddingM,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
                   ),
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSection(String title, IconData icon, {required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: const Color(0xFF27AE60), size: 24),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2C3E50),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          child,
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    const months = [
-      'Ene',
-      'Feb',
-      'Mar',
-      'Abr',
-      'May',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dic',
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
-  }
-
-  void _selectVaccinationDate() async {
+  void _selectAdministeredDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: vaccinationDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 30)),
+      initialDate: administeredDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now(),
     );
 
-    if (picked != null && picked != vaccinationDate) {
+    if (picked != null && picked != administeredDate) {
       setState(() {
-        vaccinationDate = picked;
+        administeredDate = picked;
+        nextDueDate = picked.add(const Duration(days: 365));
       });
-      _updateNextDueDate();
+    }
+  }
+
+  void _selectNextDueDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: nextDueDate,
+      firstDate: administeredDate,
+      lastDate: administeredDate.add(const Duration(days: 1095)),
+    );
+
+    if (picked != null && picked != nextDueDate) {
+      setState(() {
+        nextDueDate = picked;
+      });
     }
   }
 
@@ -516,26 +660,27 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
       context: context,
       builder:
           (context) => AlertDialog(
+            backgroundColor: AppColors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
             ),
             title: const Text(
               'Limpiar Formulario',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2C3E50),
+                color: AppColors.textPrimary,
               ),
             ),
             content: const Text(
               '¿Estás seguro de que quieres limpiar todos los datos del formulario?',
-              style: TextStyle(color: Color(0xFF7F8C8D), height: 1.4),
+              style: TextStyle(color: AppColors.textSecondary, height: 1.4),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text(
                   'Cancelar',
-                  style: TextStyle(color: Color(0xFF7F8C8D)),
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
               ),
               ElevatedButton(
@@ -543,17 +688,21 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
                   Navigator.pop(context);
                   _resetForm();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Formulario limpiado'),
-                      backgroundColor: Color(0xFF3498DB),
+                    SnackBar(
+                      content: const Text('Formulario limpiado'),
+                      backgroundColor: AppColors.primary,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                      ),
                     ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF39C12),
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.warning,
+                  foregroundColor: AppColors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
                   ),
                 ),
                 child: const Text('Limpiar'),
@@ -565,24 +714,28 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
 
   void _resetForm() {
     setState(() {
-      vaccinationDate = DateTime.now();
+      administeredDate = DateTime.now();
+      nextDueDate = DateTime.now().add(const Duration(days: 365));
     });
 
-    _vaccineTypeController.clear();
     _vaccineNameController.clear();
-    _batchNumberController.clear();
     _manufacturerController.clear();
+    _batchNumberController.clear();
     _notesController.clear();
-
-    _updateNextDueDate();
   }
 
   void _saveVaccination() async {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor completa todos los campos obligatorios'),
-          backgroundColor: Color(0xFFE74C3C),
+        SnackBar(
+          content: const Text(
+            'Por favor completa todos los campos obligatorios',
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          ),
         ),
       );
       return;
@@ -590,25 +743,26 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
 
     setState(() => _isLoading = true);
 
-    try {
-      await Future.delayed(const Duration(seconds: 2));
+    final vaccinationData = {
+      'pet_id': '82756d69-b1ea-48c8-8cb8-bb1c01047f6f',
+      'vet_id': 'c608e323-3bc8-46dc-9847-a5e19bbfc0b4',
+      'vaccine_name': _vaccineNameController.text.trim(),
+      'manufacturer': _manufacturerController.text.trim(),
+      'batch_number': _batchNumberController.text.trim(),
+      'administered_date': administeredDate.toIso8601String().split('T')[0],
+      'next_due_date': nextDueDate.toIso8601String().split('T')[0],
+      'notes':
+          _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
+    };
 
-      if (mounted) {
-        _showSuccessDialog();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error al registrar la vacuna. Inténtalo de nuevo.'),
-            backgroundColor: Color(0xFFE74C3C),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    await Future.delayed(const Duration(seconds: 2));
+
+    setState(() => _isLoading = false);
+
+    if (mounted) {
+      _showSuccessDialog();
     }
   }
 
@@ -618,83 +772,110 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
       barrierDismissible: false,
       builder:
           (context) => AlertDialog(
+            backgroundColor: AppColors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF27AE60).withOpacity(0.1),
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.success,
+                        AppColors.success.withOpacity(0.8),
+                      ],
+                    ),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.check_circle,
-                    color: Color(0xFF27AE60),
-                    size: 48,
+                    color: AppColors.white,
+                    size: 50,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSizes.spaceL),
                 const Text(
-                  'Vacuna Registrada',
+                  '¡Vacuna Registrada!',
                   style: TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2C3E50),
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
+                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSizes.spaceS),
                 Text(
                   'La vacuna ha sido registrada exitosamente y estará disponible en el historial del paciente.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: AppColors.textSecondary,
                     height: 1.4,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSizes.spaceXL),
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          Navigator.pop(context);
-                        },
-                        icon: const Icon(Icons.check),
-                        label: const Text('Finalizar'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF27AE60),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.primary),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                        ),
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _resetForm();
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            side: const BorderSide(color: Colors.transparent),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusM,
+                              ),
+                            ),
                           ),
+                          child: const Text('Otra Vacuna'),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.spaceM),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.success,
+                              AppColors.success.withOpacity(0.8),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            foregroundColor: AppColors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusM,
+                              ),
+                            ),
+                          ),
+                          child: const Text('Finalizar'),
                         ),
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _resetForm();
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Registrar Otra Vacuna'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF27AE60),
-                      side: const BorderSide(color: Color(0xFF27AE60)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
                 ),
               ],
             ),

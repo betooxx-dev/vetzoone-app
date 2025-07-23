@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
 
 class PrescribeTreatmentPage extends StatefulWidget {
   const PrescribeTreatmentPage({super.key});
@@ -18,30 +20,40 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
   bool _isLoading = false;
 
   Map<String, dynamic> patientInfo = {};
-
   List<Map<String, dynamic>> prescribedMedications = [];
 
-  final _medicationController = TextEditingController();
-  final _typeController = TextEditingController();
+  final _medicationNameController = TextEditingController();
   final _dosageController = TextEditingController();
   final _frequencyController = TextEditingController();
-  final _routeController = TextEditingController();
-  final _sideEffectsController = TextEditingController();
-  final _notesController = TextEditingController();
+  final _instructionsController = TextEditingController();
 
-  String selectedDuration = '7 días';
+  String selectedStatus = 'ACTIVE';
+  int durationDays = 7;
   DateTime startDate = DateTime.now();
+  String? selectedMedicalRecordId;
 
-  final List<String> durations = [
-    '3 días',
-    '5 días',
-    '7 días',
-    '10 días',
-    '14 días',
-    '21 días',
-    '30 días',
-    'Hasta completar',
-    'Uso continuo',
+  final List<String> statusOptions = ['ACTIVE', 'COMPLETED', 'DISCONTINUED'];
+  final List<int> durationOptions = [1, 3, 5, 7, 10, 14, 21, 30, 60, 90];
+
+  final List<Map<String, dynamic>> medicalRecords = [
+    {
+      'id': '59e7514d-48ad-48cf-a1db-0aa1605f6b84',
+      'date': '22/07/2025',
+      'diagnosis': 'Infección respiratoria',
+      'chief_complaint': 'Tos persistente y fiebre',
+    },
+    {
+      'id': '86da60b5-3861-49fa-834c-653c39fcfcd6',
+      'date': '18/07/2025',
+      'diagnosis': 'Otitis crónica',
+      'chief_complaint': 'Rascado excesivo de orejas',
+    },
+    {
+      'id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      'date': '15/07/2025',
+      'diagnosis': 'Control de rutina',
+      'chief_complaint': 'Revisión general',
+    },
   ];
 
   @override
@@ -79,96 +91,198 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
     });
   }
 
+  DateTime get endDate => startDate.add(Duration(days: durationDays));
+
   @override
   void dispose() {
     _animationController.dispose();
-    _medicationController.dispose();
-    _typeController.dispose();
+    _medicationNameController.dispose();
     _dosageController.dispose();
     _frequencyController.dispose();
-    _routeController.dispose();
-    _sideEffectsController.dispose();
-    _notesController.dispose();
+    _instructionsController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: const Text(
-          'Prescribir Tratamiento',
-          style: TextStyle(
-            color: Color(0xFF2C3E50),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF2C3E50)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save_outlined, color: Color(0xFF3498DB)),
-            onPressed: _savePrescription,
-          ),
-        ],
-      ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: Column(
-            children: [
-              _buildPatientHeader(),
-
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildPrescriptionForm(),
-
-                      const SizedBox(height: 24),
-
-                      if (prescribedMedications.isNotEmpty) ...[
-                        _buildPrescribedMedicationsList(),
-                        const SizedBox(height: 24),
-                      ],
-
-                      _buildAdditionalNotesSection(),
-                    ],
-                  ),
+      backgroundColor: AppColors.backgroundLight,
+      body: Stack(
+        children: [
+          _buildBackgroundShapes(),
+          SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: Column(
+                  children: [
+                    _buildModernAppBar(),
+                    _buildPatientInfo(),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(AppSizes.paddingL),
+                        child: Column(
+                          children: [
+                            _buildPrescriptionForm(),
+                            const SizedBox(height: AppSizes.spaceL),
+                            if (prescribedMedications.isNotEmpty) ...[
+                              _buildPrescribedMedicationsList(),
+                              const SizedBox(height: AppSizes.spaceL),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    _buildActionButtons(),
+                  ],
                 ),
               ),
-
-              _buildActionButtons(),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildPatientHeader() {
+  Widget _buildBackgroundShapes() {
+    return Stack(
+      children: [
+        Positioned(
+          top: -100,
+          right: -50,
+          child: Container(
+            width: AppSizes.decorativeShapeXL,
+            height: AppSizes.decorativeShapeXL,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(125),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 200,
+          left: -80,
+          child: Container(
+            width: AppSizes.decorativeShapeL,
+            height: AppSizes.decorativeShapeL,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(90),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: -100,
+          right: -60,
+          child: Container(
+            width: AppSizes.decorativeShapeM,
+            height: AppSizes.decorativeShapeM,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(60),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModernAppBar() {
     return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      margin: const EdgeInsets.all(AppSizes.paddingL),
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF3498DB).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
             ),
-            child: const Icon(Icons.pets, color: Color(0xFF3498DB), size: 28),
+            child: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: AppColors.white,
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSizes.spaceM),
+          const Expanded(
+            child: Text(
+              'Prescribir Tratamiento',
+              style: TextStyle(
+                color: AppColors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.medication, color: AppColors.white),
+              onPressed: _savePrescription,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPatientInfo() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.15),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(AppSizes.radiusRound),
+            ),
+            child: const Icon(
+              Icons.medication,
+              color: AppColors.white,
+              size: 30,
+            ),
+          ),
+          const SizedBox(width: AppSizes.spaceM),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,21 +290,23 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
                 Text(
                   patientInfo['petName'] ?? '',
                   style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2C3E50),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 Text(
-                  '${patientInfo['breed']} • ${patientInfo['age']} • ${patientInfo['weight']}',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  '${patientInfo['breed']} • ${patientInfo['age']}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 Text(
                   'Diagnóstico: ${patientInfo['diagnosis']}',
                   style: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF27AE60),
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
@@ -199,7 +315,7 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF27AE60).withOpacity(0.1),
+              color: AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -208,7 +324,7 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
                 const Icon(
                   Icons.medication,
                   size: 16,
-                  color: Color(0xFF27AE60),
+                  color: AppColors.primary,
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -216,7 +332,7 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF27AE60),
+                    color: AppColors.primary,
                   ),
                 ),
               ],
@@ -229,182 +345,254 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
 
   Widget _buildPrescriptionForm() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.15),
+          width: 1,
+        ),
       ),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
-              children: [
-                Icon(Icons.add_circle, color: Color(0xFF27AE60), size: 24),
-                SizedBox(width: 8),
-                Text(
-                  'Agregar Medicamento',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2C3E50),
-                  ),
+            _buildStepHeader(
+              'Agregar Medicamento',
+              'Completa la información del medicamento',
+              Icons.add_circle,
+            ),
+            const SizedBox(height: AppSizes.spaceL),
+            _buildFormSection(
+              'Registro Médico Asociado',
+              Icons.assignment,
+              child: DropdownButtonFormField<String>(
+                value: selectedMedicalRecordId,
+                style: const TextStyle(color: AppColors.textPrimary),
+                isExpanded: true,
+                items:
+                    medicalRecords.map<DropdownMenuItem<String>>((record) {
+                      return DropdownMenuItem<String>(
+                        value: record['id'],
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  record['date'],
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  record['diagnosis'],
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedMedicalRecordId = value;
+                  });
+                },
+                decoration: _buildInputDecoration(
+                  'Selecciona un registro médico',
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            TextFormField(
-              controller: _medicationController,
-              decoration: const InputDecoration(
-                labelText: 'Nombre del Medicamento',
-                hintText: 'Ej: Amoxicilina',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.medication),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Debes seleccionar un registro médico';
+                  }
+                  return null;
+                },
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Este campo es obligatorio';
-                }
-                return null;
-              },
             ),
-
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _typeController,
-                    decoration: const InputDecoration(
-                      labelText: 'Tipo',
-                      hintText: 'Ej: Antibiótico',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.category),
+            const SizedBox(height: AppSizes.spaceM),
+            _buildFormSection(
+              'Nombre del Medicamento',
+              Icons.medication,
+              child: TextFormField(
+                controller: _medicationNameController,
+                style: const TextStyle(color: AppColors.textPrimary),
+                decoration: _buildInputDecoration(
+                  'Ej: Omeprazol, Amoxicilina, Meloxicam...',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Este campo es obligatorio';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+            _buildFormSection(
+              'Duración (días)',
+              Icons.timer,
+              child: DropdownButtonFormField<int>(
+                value: durationDays,
+                style: const TextStyle(color: AppColors.textPrimary),
+                items:
+                    durationOptions.map((days) {
+                      return DropdownMenuItem(
+                        value: days,
+                        child: Text('$days días'),
+                      );
+                    }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    durationDays = value!;
+                  });
+                },
+                decoration: _buildInputDecoration(null),
+              ),
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+            _buildFormSection(
+              'Frecuencia',
+              Icons.schedule,
+              child: TextFormField(
+                controller: _frequencyController,
+                style: const TextStyle(color: AppColors.textPrimary),
+                decoration: _buildInputDecoration(
+                  'Ej: Una vez al día, Cada 8 horas, Dos veces al día...',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Este campo es obligatorio';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+            _buildFormSection(
+              'Instrucciones',
+              Icons.info,
+              child: TextFormField(
+                controller: _instructionsController,
+                maxLines: 2,
+                style: const TextStyle(color: AppColors.textPrimary),
+                decoration: _buildInputDecoration(
+                  'Ej: Tomar 30 minutos antes del desayuno, Con alimento...',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Este campo es obligatorio';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+            _buildFormSection(
+              'Estado',
+              Icons.assignment_turned_in,
+              child: DropdownButtonFormField<String>(
+                value: selectedStatus,
+                style: const TextStyle(color: AppColors.textPrimary),
+                items:
+                    statusOptions.map((status) {
+                      return DropdownMenuItem(
+                        value: status,
+                        child: Text(_getStatusDisplayName(status)),
+                      );
+                    }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedStatus = value!;
+                  });
+                },
+                decoration: _buildInputDecoration(null),
+              ),
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+            _buildFormSection(
+              'Fecha de Inicio',
+              Icons.event,
+              child: InkWell(
+                onTap: () => _selectStartDate(),
+                child: Container(
+                  padding: const EdgeInsets.all(AppSizes.paddingM),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.2),
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Este campo es obligatorio';
-                      }
-                      return null;
-                    },
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.event, color: AppColors.primary, size: 20),
+                      const SizedBox(width: AppSizes.spaceS),
+                      Text(
+                        '${startDate.day}/${startDate.month}/${startDate.year}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _dosageController,
-                    decoration: const InputDecoration(
-                      labelText: 'Dosificación',
-                      hintText: 'Ej: 250mg',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.straighten),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Este campo es obligatorio';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            TextFormField(
-              controller: _frequencyController,
-              decoration: const InputDecoration(
-                labelText: 'Frecuencia',
-                hintText: 'Ej: Cada 8 horas',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.schedule),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Este campo es obligatorio';
-                }
-                return null;
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            DropdownButtonFormField<String>(
-              value: selectedDuration,
-              decoration: const InputDecoration(
-                labelText: 'Duración',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.timer),
-              ),
-              items:
-                  durations.map((duration) {
-                    return DropdownMenuItem(
-                      value: duration,
-                      child: Text(duration),
-                    );
-                  }).toList(),
-              onChanged: (value) {
-                setState(() => selectedDuration = value!);
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            TextFormField(
-              controller: _routeController,
-              decoration: const InputDecoration(
-                labelText: 'Vía de Administración',
-                hintText: 'Ej: Oral',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.local_hospital),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Este campo es obligatorio';
-                }
-                return null;
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            TextFormField(
-              controller: _sideEffectsController,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Efectos Secundarios Posibles',
-                hintText: 'Ej: Somnolencia, pérdida de apetito...',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.warning),
               ),
             ),
-
-            const SizedBox(height: 20),
-
-            SizedBox(
+            const SizedBox(height: AppSizes.spaceL),
+            Container(
               width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
               child: ElevatedButton.icon(
                 onPressed: _addMedication,
                 icon: const Icon(Icons.add),
                 label: const Text('Agregar Medicamento'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF27AE60),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: AppColors.white,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppSizes.paddingM,
+                  ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
                   ),
                 ),
               ),
@@ -417,36 +605,35 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
 
   Widget _buildPrescribedMedicationsList() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.15),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.list_alt, color: Color(0xFF3498DB), size: 24),
-              const SizedBox(width: 8),
-              Text(
-                'Medicamentos Prescritos (${prescribedMedications.length})',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2C3E50),
-                ),
-              ),
-            ],
+          _buildStepHeader(
+            'Medicamentos Prescritos',
+            '${prescribedMedications.length} medicamento${prescribedMedications.length != 1 ? 's' : ''} agregado${prescribedMedications.length != 1 ? 's' : ''}',
+            Icons.list_alt,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSizes.spaceL),
           ...prescribedMedications.asMap().entries.map((entry) {
             int index = entry.key;
             Map<String, dynamic> medication = entry.value;
@@ -459,71 +646,61 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
 
   Widget _buildMedicationItem(Map<String, dynamic> medication, int index) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: AppSizes.spaceM),
+      padding: const EdgeInsets.all(AppSizes.paddingM),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        color: AppColors.backgroundLight,
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        border: Border.all(color: AppColors.primary.withOpacity(0.1)),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getTypeColor(medication['type']).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
+              Expanded(
                 child: Text(
-                  medication['type'],
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: _getTypeColor(medication['type']),
+                  medication['name'],
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(
-                  Icons.delete_outline,
-                  color: Color(0xFFE74C3C),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _getStatusColor(medication['status']).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
                 ),
+                child: Text(
+                  _getStatusDisplayName(medication['status']),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: _getStatusColor(medication['status']),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSizes.spaceS),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: AppColors.error),
                 onPressed: () => _removeMedication(index),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  medication['name'],
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2C3E50),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _buildMedicationInfoRow('Dosificación', medication['dosage']),
-                _buildMedicationInfoRow('Frecuencia', medication['frequency']),
-                _buildMedicationInfoRow('Duración', medication['duration']),
-                _buildMedicationInfoRow('Vía', medication['route']),
-                if (medication['sideEffects'].isNotEmpty)
-                  _buildMedicationInfoRow(
-                    'Efectos Secundarios',
-                    medication['sideEffects'],
-                  ),
-              ],
-            ),
+          const SizedBox(height: AppSizes.spaceS),
+          _buildMedicationInfoRow('Dosificación', medication['dosage']),
+          _buildMedicationInfoRow('Frecuencia', medication['frequency']),
+          _buildMedicationInfoRow(
+            'Duración',
+            '${medication['duration_days']} días',
           ),
+          _buildMedicationInfoRow('Fecha inicio', medication['start_date']),
+          _buildMedicationInfoRow('Fecha fin', medication['end_date']),
+          _buildMedicationInfoRow('Instrucciones', medication['instructions']),
         ],
       ),
     );
@@ -531,17 +708,17 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
 
   Widget _buildMedicationInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: AppSizes.spaceXS),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
+            width: 90,
             child: Text(
               '$label:',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[600],
+                color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -549,7 +726,10 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF2C3E50)),
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
         ],
@@ -557,144 +737,229 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
     );
   }
 
-  Widget _buildAdditionalNotesSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+  Widget _buildStepHeader(String title, String subtitle, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(AppSizes.paddingS),
+          decoration: BoxDecoration(
+            gradient: AppColors.primaryGradient,
+            borderRadius: BorderRadius.circular(AppSizes.radiusS),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
+          child: Icon(icon, color: AppColors.white, size: 20),
+        ),
+        const SizedBox(width: AppSizes.spaceM),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.note_alt, color: Color(0xFF8E44AD), size: 24),
-              SizedBox(width: 8),
               Text(
-                'Notas Adicionales',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2C3E50),
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _notesController,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              hintText: 'Agregar notas o observaciones adicionales...',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.edit_note),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormSection(
+    String title,
+    IconData icon, {
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: AppColors.primary, size: 16),
+            const SizedBox(width: AppSizes.spaceXS),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+        const SizedBox(height: AppSizes.spaceS),
+        child,
+      ],
+    );
+  }
+
+  InputDecoration _buildInputDecoration(String? hintText) {
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: TextStyle(color: AppColors.textSecondary),
+      filled: true,
+      fillColor: AppColors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        borderSide: BorderSide(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        borderSide: BorderSide(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        borderSide: BorderSide(color: AppColors.primary),
+      ),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.paddingM,
+        vertical: AppSizes.paddingS,
       ),
     );
   }
 
   Widget _buildActionButtons() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.primary.withOpacity(0.1),
             blurRadius: 10,
-            offset: const Offset(0, -2),
+            offset: const Offset(0, -4),
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _clearForm,
-                  icon: const Icon(Icons.clear_all),
-                  label: const Text('Limpiar'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFF39C12),
-                    side: const BorderSide(color: Color(0xFFF39C12)),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+              child: OutlinedButton.icon(
+                onPressed: _clearForm,
+                icon: const Icon(Icons.clear_all),
+                label: const Text('Limpiar'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary,
+                  side: const BorderSide(color: Colors.transparent),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppSizes.paddingM,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 2,
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _savePrescription,
-                  icon:
-                      _isLoading
-                          ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
+            ),
+          ),
+          const SizedBox(width: AppSizes.spaceM),
+          Expanded(
+            flex: 2,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: _isLoading ? null : _savePrescription,
+                icon:
+                    _isLoading
+                        ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.white,
                             ),
-                          )
-                          : const Icon(Icons.save),
-                  label: Text(
-                    _isLoading ? 'Guardando...' : 'Guardar Prescripción',
+                          ),
+                        )
+                        : const Icon(Icons.save),
+                label: Text(
+                  _isLoading ? 'Guardando...' : 'Guardar Prescripción',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: AppColors.white,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppSizes.paddingM,
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3498DB),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
                   ),
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Color _getTypeColor(String type) {
-    switch (type.toLowerCase()) {
-      case 'antibiótico':
-        return const Color(0xFFE74C3C);
-      case 'antiinflamatorio':
-        return const Color(0xFFF39C12);
-      case 'analgésico':
-        return const Color(0xFF9B59B6);
-      case 'antihistamínico':
-        return const Color(0xFF3498DB);
-      case 'corticosteroide':
-        return const Color(0xFFE67E22);
-      case 'antiparasitario':
-        return const Color(0xFF2ECC71);
-      case 'suplemento':
-        return const Color(0xFF27AE60);
-      case 'vitamina':
-        return const Color(0xFF16A085);
-      case 'probiótico':
-        return const Color(0xFF8E44AD);
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'ACTIVE':
+        return AppColors.success;
+      case 'COMPLETED':
+        return AppColors.primary;
+      case 'DISCONTINUED':
+        return AppColors.error;
       default:
-        return const Color(0xFF7F8C8D);
+        return AppColors.textSecondary;
+    }
+  }
+
+  String _getStatusDisplayName(String status) {
+    switch (status) {
+      case 'ACTIVE':
+        return 'Activo';
+      case 'COMPLETED':
+        return 'Completado';
+      case 'DISCONTINUED':
+        return 'Descontinuado';
+      default:
+        return status;
+    }
+  }
+
+  void _selectStartDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: startDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 30)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+
+    if (picked != null && picked != startDate) {
+      setState(() {
+        startDate = picked;
+      });
     }
   }
 
@@ -702,14 +967,14 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
     if (_formKey.currentState!.validate()) {
       setState(() {
         prescribedMedications.add({
-          'name': _medicationController.text.trim(),
-          'type': _typeController.text.trim(),
+          'name': _medicationNameController.text.trim(),
           'dosage': _dosageController.text.trim(),
           'frequency': _frequencyController.text.trim(),
-          'duration': selectedDuration,
-          'route': _routeController.text.trim(),
-          'sideEffects': _sideEffectsController.text.trim(),
-          'startDate': startDate,
+          'duration_days': durationDays,
+          'start_date': startDate.toIso8601String().split('T')[0],
+          'end_date': endDate.toIso8601String().split('T')[0],
+          'instructions': _instructionsController.text.trim(),
+          'status': selectedStatus,
         });
       });
 
@@ -718,9 +983,13 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '${_medicationController.text} agregado a la prescripción',
+            '${_medicationNameController.text} agregado a la prescripción',
           ),
-          backgroundColor: const Color(0xFF27AE60),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          ),
         ),
       );
     }
@@ -731,26 +1000,30 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
       context: context,
       builder:
           (context) => AlertDialog(
+            backgroundColor: AppColors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
             ),
             title: const Text(
               'Eliminar Medicamento',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2C3E50),
+                color: AppColors.textPrimary,
               ),
             ),
             content: Text(
               '¿Estás seguro de que quieres eliminar "${prescribedMedications[index]['name']}" de la prescripción?',
-              style: const TextStyle(color: Color(0xFF7F8C8D), height: 1.4),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text(
                   'Cancelar',
-                  style: TextStyle(color: Color(0xFF7F8C8D)),
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
               ),
               ElevatedButton(
@@ -760,17 +1033,21 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
                     prescribedMedications.removeAt(index);
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Medicamento eliminado'),
-                      backgroundColor: Color(0xFFE74C3C),
+                    SnackBar(
+                      content: const Text('Medicamento eliminado'),
+                      backgroundColor: AppColors.error,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                      ),
                     ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE74C3C),
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.error,
+                  foregroundColor: AppColors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
                   ),
                 ),
                 child: const Text('Eliminar'),
@@ -781,14 +1058,14 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
   }
 
   void _clearMedicationForm() {
-    _medicationController.clear();
-    _typeController.clear();
+    _medicationNameController.clear();
     _dosageController.clear();
     _frequencyController.clear();
-    _routeController.clear();
-    _sideEffectsController.clear();
+    _instructionsController.clear();
     setState(() {
-      selectedDuration = '7 días';
+      selectedStatus = 'ACTIVE';
+      durationDays = 7;
+      startDate = DateTime.now();
     });
   }
 
@@ -797,26 +1074,27 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
       context: context,
       builder:
           (context) => AlertDialog(
+            backgroundColor: AppColors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
             ),
             title: const Text(
               'Limpiar Formulario',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2C3E50),
+                color: AppColors.textPrimary,
               ),
             ),
             content: const Text(
               '¿Estás seguro de que quieres limpiar toda la prescripción? Se perderán todos los medicamentos agregados.',
-              style: TextStyle(color: Color(0xFF7F8C8D), height: 1.4),
+              style: TextStyle(color: AppColors.textSecondary, height: 1.4),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text(
                   'Cancelar',
-                  style: TextStyle(color: Color(0xFF7F8C8D)),
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
               ),
               ElevatedButton(
@@ -826,19 +1104,22 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
                     prescribedMedications.clear();
                   });
                   _clearMedicationForm();
-                  _notesController.clear();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Formulario limpiado'),
-                      backgroundColor: Color(0xFF3498DB),
+                    SnackBar(
+                      content: const Text('Formulario limpiado'),
+                      backgroundColor: AppColors.primary,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                      ),
                     ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF39C12),
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.warning,
+                  foregroundColor: AppColors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
                   ),
                 ),
                 child: const Text('Limpiar'),
@@ -851,9 +1132,15 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
   void _savePrescription() async {
     if (prescribedMedications.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Agrega al menos un medicamento antes de guardar'),
-          backgroundColor: Color(0xFFE74C3C),
+        SnackBar(
+          content: const Text(
+            'Agrega al menos un medicamento antes de guardar',
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          ),
         ),
       );
       return;
@@ -861,27 +1148,33 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
 
     setState(() => _isLoading = true);
 
-    try {
-      await Future.delayed(const Duration(seconds: 2));
+    final prescriptionData =
+        prescribedMedications
+            .map(
+              (medication) => {
+                'pet_id': '82756d69-b1ea-48c8-8cb8-bb1c01047f6f',
+                'medical_record_id':
+                    selectedMedicalRecordId ??
+                    '59e7514d-48ad-48cf-a1db-0aa1605f6b84',
+                'vet_id': 'c608e323-3bc8-46dc-9847-a5e19bbfc0b4',
+                'medication_name': medication['name'],
+                'dosage': medication['dosage'],
+                'frequency': medication['frequency'],
+                'duration_days': medication['duration_days'],
+                'start_date': medication['start_date'],
+                'end_date': medication['end_date'],
+                'instructions': medication['instructions'],
+                'status': medication['status'],
+              },
+            )
+            .toList();
 
-      if (mounted) {
-        _showSuccessDialog();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Error al guardar la prescripción. Inténtalo de nuevo.',
-            ),
-            backgroundColor: Color(0xFFE74C3C),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    await Future.delayed(const Duration(seconds: 2));
+
+    setState(() => _isLoading = false);
+
+    if (mounted) {
+      _showSuccessDialog();
     }
   }
 
@@ -891,111 +1184,114 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
       barrierDismissible: false,
       builder:
           (context) => AlertDialog(
+            backgroundColor: AppColors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF27AE60).withOpacity(0.1),
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.success,
+                        AppColors.success.withOpacity(0.8),
+                      ],
+                    ),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.check_circle,
-                    color: Color(0xFF27AE60),
-                    size: 48,
+                    color: AppColors.white,
+                    size: 50,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSizes.spaceL),
                 const Text(
-                  'Prescripción Guardada',
+                  '¡Prescripción Guardada!',
                   style: TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2C3E50),
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
+                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSizes.spaceS),
                 Text(
                   'La prescripción ha sido guardada exitosamente y estará disponible en el expediente del paciente.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: AppColors.textSecondary,
                     height: 1.4,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSizes.spaceXL),
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _generatePrescription,
-                        icon: const Icon(Icons.print),
-                        label: const Text('Imprimir'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF3498DB),
-                          side: const BorderSide(color: Color(0xFF3498DB)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.primary),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                        ),
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _createNewPrescription();
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            side: const BorderSide(color: Colors.transparent),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusM,
+                              ),
+                            ),
                           ),
+                          child: const Text('Nueva Prescripción'),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSizes.spaceM),
                     Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          Navigator.pop(context);
-                        },
-                        icon: const Icon(Icons.check),
-                        label: const Text('Finalizar'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF27AE60),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.success,
+                              AppColors.success.withOpacity(0.8),
+                            ],
                           ),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            foregroundColor: AppColors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusM,
+                              ),
+                            ),
+                          ),
+                          child: const Text('Finalizar'),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _createNewPrescription();
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Nueva Prescripción'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF27AE60),
-                      side: const BorderSide(color: Color(0xFF27AE60)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
-    );
-  }
-
-  void _generatePrescription() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Generando prescripción para imprimir...'),
-        backgroundColor: Color(0xFF3498DB),
-      ),
     );
   }
 
@@ -1004,12 +1300,15 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
       prescribedMedications.clear();
     });
     _clearMedicationForm();
-    _notesController.clear();
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Listo para crear una nueva prescripción'),
-        backgroundColor: Color(0xFF27AE60),
+      SnackBar(
+        content: const Text('Listo para crear una nueva prescripción'),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        ),
       ),
     );
   }

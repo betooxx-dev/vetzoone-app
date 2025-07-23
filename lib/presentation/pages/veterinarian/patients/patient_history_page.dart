@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
 
 class PatientHistoryPage extends StatefulWidget {
   final Map<String, dynamic>? patient;
@@ -76,7 +78,7 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -90,101 +92,212 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
     final patient = widget.patient;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: Text(
-          'Historial de ${patient?['name'] ?? 'Paciente'}',
-          style: const TextStyle(
-            color: Color(0xFF2C3E50),
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF2C3E50)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Color(0xFF2C3E50)),
-            onSelected: _handleMenuAction,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+      backgroundColor: AppColors.backgroundLight,
+      body: Stack(
+        children: [
+          _buildBackgroundShapes(),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildModernAppBar(patient),
+                _buildPatientHeader(patient),
+                _buildTabBar(),
+                Expanded(child: _buildTabBarView()),
+              ],
             ),
-            itemBuilder:
-                (context) => [
-                  const PopupMenuItem(
-                    value: 'create_record',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.note_add_rounded,
-                          size: 20,
-                          color: Color(0xFF81D4FA),
-                        ),
-                        SizedBox(width: 12),
-                        Text(
-                          'Crear Registro Médico',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'prescribe_medication',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.medication_rounded,
-                          size: 20,
-                          color: Color(0xFF4CAF50),
-                        ),
-                        SizedBox(width: 12),
-                        Text(
-                          'Prescribir Medicamentos',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'register_vaccine',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.vaccines_rounded,
-                          size: 20,
-                          color: Color(0xFF9C27B0),
-                        ),
-                        SizedBox(width: 12),
-                        Text(
-                          'Registrar Vacuna',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
           ),
         ],
       ),
-      body: Column(
+    );
+  }
+
+  Widget _buildBackgroundShapes() {
+    return Stack(
+      children: [
+        Positioned(
+          top: -100,
+          right: -50,
+          child: Container(
+            width: AppSizes.decorativeShapeXL,
+            height: AppSizes.decorativeShapeXL,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(125),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 200,
+          left: -80,
+          child: Container(
+            width: AppSizes.decorativeShapeL,
+            height: AppSizes.decorativeShapeL,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(90),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: -100,
+          right: -60,
+          child: Container(
+            width: AppSizes.decorativeShapeM,
+            height: AppSizes.decorativeShapeM,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(60),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModernAppBar(Map<String, dynamic>? patient) {
+    return Container(
+      margin: const EdgeInsets.all(AppSizes.paddingL),
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
         children: [
-          _buildPatientHeader(patient),
-          _buildStatsSection(),
-          _buildTabBar(),
-          Expanded(child: _buildTabBarView()),
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: AppColors.white,
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          const SizedBox(width: AppSizes.spaceM),
+          Expanded(
+            child: Text(
+              'Historial de ${patient?['name'] ?? 'Paciente'}',
+              style: const TextStyle(
+                color: AppColors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            child: PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: AppColors.white),
+              onSelected: _handleMenuAction,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusL),
+              ),
+              itemBuilder:
+                  (context) => [
+                    PopupMenuItem(
+                      value: 'create_record',
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(AppSizes.paddingS),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusS,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.note_add_rounded,
+                              size: 16,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: AppSizes.spaceM),
+                          const Text(
+                            'Crear Registro Médico',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'prescribe_medication',
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(AppSizes.paddingS),
+                            decoration: BoxDecoration(
+                              color: AppColors.secondary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusS,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.medication_rounded,
+                              size: 16,
+                              color: AppColors.secondary,
+                            ),
+                          ),
+                          const SizedBox(width: AppSizes.spaceM),
+                          const Text(
+                            'Prescribir Medicamentos',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'register_vaccine',
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(AppSizes.paddingS),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusS,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.vaccines_rounded,
+                              size: 16,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                          const SizedBox(width: AppSizes.spaceM),
+                          const Text(
+                            'Registrar Vacuna',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+            ),
+          ),
         ],
       ),
     );
@@ -218,35 +331,58 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
 
   Widget _buildPatientHeader(Map<String, dynamic>? patient) {
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.15),
+          width: 1,
+        ),
+      ),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(40),
-            child: Image.network(
-              patient?['profileImage'] ?? 'https://via.placeholder.com/80',
-              width: 80,
-              height: 80,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF3498DB).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(40),
-                  ),
-                  child: const Icon(
-                    Icons.pets,
-                    size: 40,
-                    color: Color(0xFF3498DB),
-                  ),
-                );
-              },
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+              image:
+                  patient?['profileImage'] != null
+                      ? DecorationImage(
+                        image: NetworkImage(patient!['profileImage']),
+                        fit: BoxFit.cover,
+                      )
+                      : null,
             ),
+            child:
+                patient?['profileImage'] == null
+                    ? Container(
+                      decoration: BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+                      ),
+                      child: const Icon(
+                        Icons.pets_rounded,
+                        size: 40,
+                        color: AppColors.white,
+                      ),
+                    )
+                    : null,
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSizes.spaceM),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,27 +392,33 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2C3E50),
+                    color: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSizes.spaceS),
                 Text(
                   '${patient?['species'] ?? 'Especie'} • ${patient?['breed'] ?? 'Raza'} • ${patient?['age'] ?? 'Edad'}',
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF7F8C8D),
+                    color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _buildInfoChip(Icons.person, patient?['ownerName'] ?? ''),
-                    const SizedBox(width: 8),
-                    _buildInfoChip(
-                      Icons.monitor_weight,
-                      patient?['weight'] ?? '',
-                    ),
-                  ],
+                const SizedBox(height: AppSizes.spaceS),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildInfoChip(
+                        Icons.person_rounded,
+                        patient?['ownerName'] ?? '',
+                      ),
+                      const SizedBox(width: AppSizes.spaceS),
+                      _buildInfoChip(
+                        Icons.monitor_weight_rounded,
+                        patient?['weight'] ?? '',
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -288,21 +430,25 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
 
   Widget _buildInfoChip(IconData icon, String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.paddingS,
+        vertical: 4,
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFF3498DB).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: const Color(0xFF3498DB)),
-          const SizedBox(width: 4),
+          Icon(icon, size: 12, color: AppColors.primary),
+          const SizedBox(width: AppSizes.spaceXS),
           Text(
             text,
             style: const TextStyle(
               fontSize: 10,
-              color: Color(0xFF3498DB),
+              color: AppColors.primary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -311,90 +457,46 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
     );
   }
 
-  Widget _buildStatsSection() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildStatCard(
-              'Consultas',
-              '${consultations.length}',
-              Icons.medical_services,
-              const Color(0xFF3498DB),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _buildStatCard(
-              'Tratamientos',
-              '${treatments.length}',
-              Icons.medication,
-              const Color(0xFF27AE60),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _buildStatCard(
-              'Vacunas',
-              '12',
-              Icons.vaccines,
-              const Color(0xFFE74C3C),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF7F8C8D)),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildTabBar() {
     return Container(
-      color: Colors.white,
-      child: TabBar(
-        controller: _tabController,
-        labelColor: const Color(0xFF3498DB),
-        unselectedLabelColor: const Color(0xFF7F8C8D),
-        indicatorColor: const Color(0xFF3498DB),
-        tabs: const [
-          Tab(text: 'Consultas'),
-          Tab(text: 'Tratamientos'),
-          Tab(text: 'Vacunas'),
-          Tab(text: 'Notas'),
+      margin: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
         ],
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.15),
+          width: 1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        child: TabBar(
+          controller: _tabController,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: AppColors.primary,
+          indicatorWeight: 3,
+          indicatorSize: TabBarIndicatorSize.tab,
+          labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+          dividerColor: Colors.transparent,
+          overlayColor: WidgetStateProperty.all(Colors.transparent),
+          tabs: const [
+            Tab(text: 'Consultas'),
+            Tab(text: 'Expedientes'),
+            Tab(text: 'Vacunas'),
+          ],
+        ),
       ),
     );
   }
@@ -404,16 +506,15 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
       controller: _tabController,
       children: [
         _buildConsultationsTab(),
-        _buildTreatmentsTab(),
+        _buildExpedientesTab(),
         _buildVaccinationsTab(),
-        _buildNotesTab(),
       ],
     );
   }
 
   Widget _buildConsultationsTab() {
     return ListView.builder(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       itemCount: consultations.length,
       itemBuilder: (context, index) {
         final consultation = consultations[index];
@@ -424,211 +525,324 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
 
   Widget _buildConsultationCard(Map<String, dynamic> consultation) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: AppSizes.spaceL),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.15),
+          width: 1,
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3498DB).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.medical_services,
-                  color: Color(0xFF3498DB),
-                  size: 20,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(
-                    consultation['status'],
-                  ).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  consultation['status'],
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: _getStatusColor(consultation['status']),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.paddingM),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSizes.paddingS),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  ),
+                  child: const Icon(
+                    Icons.medical_services_rounded,
+                    color: AppColors.white,
+                    size: 20,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            consultation['diagnosis'],
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2C3E50),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _formatDate(consultation['date']),
-            style: const TextStyle(fontSize: 14, color: Color(0xFF7F8C8D)),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            consultation['notes'],
-            style: const TextStyle(fontSize: 14, color: Color(0xFF34495E)),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.attach_money,
-                    size: 16,
-                    color: Color(0xFF27AE60),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.paddingS,
+                    vertical: 4,
                   ),
-                  Text(
-                    '\$${consultation['cost'].toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF27AE60),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(
+                      consultation['status'],
+                    ).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                    border: Border.all(
+                      color: _getStatusColor(
+                        consultation['status'],
+                      ).withOpacity(0.3),
+                      width: 1,
                     ),
                   ),
-                ],
+                  child: Text(
+                    consultation['status'],
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: _getStatusColor(consultation['status']),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+            Text(
+              consultation['diagnosis'],
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
               ),
-              Text(
-                consultation['veterinarian'],
-                style: const TextStyle(fontSize: 12, color: Color(0xFF7F8C8D)),
+            ),
+            const SizedBox(height: AppSizes.spaceS),
+            Text(
+              _formatDate(consultation['date']),
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
               ),
-            ],
-          ),
-        ],
+            ),
+            const SizedBox(height: AppSizes.spaceS),
+            Text(
+              consultation['notes'],
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textPrimary,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.paddingS,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.orangeGradient,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.attach_money_rounded,
+                        size: 14,
+                        color: AppColors.white,
+                      ),
+                      const SizedBox(width: AppSizes.spaceXS),
+                      Text(
+                        '\$${consultation['cost'].toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: Text(
+                    consultation['veterinarian'],
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTreatmentsTab() {
+  Widget _buildExpedientesTab() {
     return ListView.builder(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       itemCount: treatments.length,
       itemBuilder: (context, index) {
         final treatment = treatments[index];
-        return _buildTreatmentCard(treatment);
+        return _buildExpedienteCard(treatment);
       },
     );
   }
 
-  Widget _buildTreatmentCard(Map<String, dynamic> treatment) {
+  Widget _buildExpedienteCard(Map<String, dynamic> treatment) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: AppSizes.spaceL),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: AppColors.secondary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
+        border: Border.all(
+          color: AppColors.secondary.withOpacity(0.15),
+          width: 1,
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                treatment['name'],
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2C3E50),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getTreatmentStatusColor(
-                    treatment['status'],
-                  ).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  treatment['status'],
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: _getTreatmentStatusColor(treatment['status']),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.paddingM),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    treatment['name'],
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            treatment['reason'],
-            style: const TextStyle(fontSize: 14, color: Color(0xFF7F8C8D)),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Medicamentos:',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF2C3E50),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.paddingS,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getTreatmentStatusColor(
+                      treatment['status'],
+                    ).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                    border: Border.all(
+                      color: _getTreatmentStatusColor(
+                        treatment['status'],
+                      ).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    treatment['status'],
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: _getTreatmentStatusColor(treatment['status']),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          ...treatment['medications'].map<Widget>((medication) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                '• ${medication['name']} - ${medication['dosage']} (${medication['frequency']})',
-                style: const TextStyle(fontSize: 13, color: Color(0xFF34495E)),
+            const SizedBox(height: AppSizes.spaceS),
+            Text(
+              treatment['reason'],
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
               ),
-            );
-          }).toList(),
-        ],
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingM),
+              decoration: BoxDecoration(
+                color: AppColors.secondary.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                border: Border.all(color: AppColors.secondary.withOpacity(0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.folder_rounded,
+                        size: 16,
+                        color: AppColors.secondary,
+                      ),
+                      const SizedBox(width: AppSizes.spaceS),
+                      const Text(
+                        'Expedientes Médicos:',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSizes.spaceS),
+                  ...treatment['medications'].map<Widget>((medication) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: AppSizes.spaceXS),
+                      child: Text(
+                        '• ${medication['name']} - ${medication['dosage']} (${medication['frequency']})',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildVaccinationsTab() {
-    return const Center(
-      child: Text(
-        'Historial de vacunas',
-        style: TextStyle(fontSize: 16, color: Color(0xFF7F8C8D)),
-      ),
-    );
-  }
-
-  Widget _buildNotesTab() {
-    return const Center(
-      child: Text(
-        'Notas médicas',
-        style: TextStyle(fontSize: 16, color: Color(0xFF7F8C8D)),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              gradient: AppColors.purpleGradient,
+              borderRadius: BorderRadius.circular(60),
+            ),
+            child: const Icon(
+              Icons.vaccines_rounded,
+              size: 60,
+              color: AppColors.white,
+            ),
+          ),
+          const SizedBox(height: AppSizes.spaceL),
+          const Text(
+            'Historial de vacunas',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppSizes.spaceS),
+          const Text(
+            'Próximamente disponible',
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          ),
+        ],
       ),
     );
   }
@@ -636,26 +850,26 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'completado':
-        return const Color(0xFF27AE60);
+        return AppColors.success;
       case 'pendiente':
-        return const Color(0xFFF39C12);
+        return AppColors.warning;
       case 'cancelado':
-        return const Color(0xFFE74C3C);
+        return AppColors.error;
       default:
-        return const Color(0xFF7F8C8D);
+        return AppColors.textSecondary;
     }
   }
 
   Color _getTreatmentStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'activo':
-        return const Color(0xFF27AE60);
+        return AppColors.success;
       case 'completado':
-        return const Color(0xFF3498DB);
+        return AppColors.primary;
       case 'pausado':
-        return const Color(0xFFF39C12);
+        return AppColors.warning;
       default:
-        return const Color(0xFF7F8C8D);
+        return AppColors.textSecondary;
     }
   }
 
