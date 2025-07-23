@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/confirmation_modal.dart';
+import '../../../../core/injection/injection.dart';
+import '../../../../domain/entities/appointment.dart' as domain;
+import '../../../../domain/usecases/appointment/get_appointment_by_id_usecase.dart';
+import 'package:intl/intl.dart';
+
 
 enum AppointmentStatus {
   scheduled,
@@ -10,64 +15,211 @@ enum AppointmentStatus {
   completed,
   cancelled,
   rescheduled,
+  pending,
 }
 
 class AppointmentDetailPage extends StatefulWidget {
-  final Map<String, dynamic>? appointmentData;
+  final String? appointmentId;
 
-  const AppointmentDetailPage({super.key, this.appointmentData});
+  const AppointmentDetailPage({super.key, this.appointmentId});
 
   @override
   State<AppointmentDetailPage> createState() => _AppointmentDetailPageState();
 }
 
 class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
-  late Map<String, dynamic> appointment;
-  late AppointmentStatus status;
+  domain.Appointment? appointment;
+  AppointmentStatus? status;
+  bool isLoading = true;
+  String? errorMessage;
+
+  late GetAppointmentByIdUseCase getAppointmentByIdUseCase;
+  bool _isInitialLoad = true;
 
   @override
   void initState() {
     super.initState();
-    _initializeAppointmentData();
+    getAppointmentByIdUseCase = sl<GetAppointmentByIdUseCase>();
   }
 
-  void _initializeAppointmentData() {
-    final defaultAppointment = {
-      'id': '1',
-      'appointmentType': 'Consulta General',
-      'petName': 'Max',
-      'petSpecies': 'Perro',
-      'veterinarianName': 'Dr. María González',
-      'veterinarianSpecialty': 'Medicina General',
-      'clinic': 'Veterinaria Central',
-      'date': '25 Dic 2024',
-      'time': '10:00 AM',
-      'duration': '30 min',
-      'notes': 'Consulta de rutina para chequeo general',
-      'address': 'Av. Principal 123, Ciudad',
-      'phone': '+52 999 123 4567',
-      'email': 'contacto@veterinariacentral.com',
-      'cost': '\$500.00',
-      'status': AppointmentStatus.scheduled,
-    };
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isInitialLoad) {
+      _loadAppointmentData();
+      _isInitialLoad = false;
+    }
+  }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+  Future<void> _loadAppointmentData() async {
+    if (!mounted) return;
+
+    String? appointmentId = widget.appointmentId;
+
+    if (appointmentId == null) {
       final arguments = ModalRoute.of(context)?.settings.arguments;
-      if (arguments != null && arguments is Map<String, dynamic>) {
+      if (arguments is Map<String, dynamic>) {
+        appointmentId = arguments['appointmentId'] as String?;
+      } else if (arguments is String) {
+        appointmentId = arguments;
+      }
+    }
+
+    if (appointmentId == null || appointmentId.isEmpty) {
+      if (mounted) {
         setState(() {
-          appointment = arguments;
-          status = appointment['status'] ?? AppointmentStatus.scheduled;
+          errorMessage = 'ID de cita no proporcionado';
+          isLoading = false;
         });
       }
+      return;
+    }
+
+    await _fetchAppointment(appointmentId);
+  }
+
+  Future<void> _fetchAppointment(String appointmentId) async {
+    if (!mounted) return;
+
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
     });
 
-    appointment = widget.appointmentData ?? defaultAppointment;
-    status = appointment['status'] ?? AppointmentStatus.scheduled;
+    try {
+      final fetchedAppointment = await getAppointmentByIdUseCase.call(
+        appointmentId,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        appointment = fetchedAppointment;
+        status = _mapBackendStatusToFrontend(fetchedAppointment.status);
+        isLoading = false;
+        errorMessage = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        errorMessage = 'Error al obtener los datos de la cita: $e';
+        isLoading = false;
+        appointment = null;
+        status = null;
+      });
+    }
+  }
+
+  AppointmentStatus _mapBackendStatusToFrontend(
+    domain.AppointmentStatus backendStatus,
+  ) {
+    switch (backendStatus) {
+      case domain.AppointmentStatus.pending:
+        return AppointmentStatus.pending;
+      case domain.AppointmentStatus.confirmed:
+        return AppointmentStatus.confirmed;
+      case domain.AppointmentStatus.inProgress:
+        return AppointmentStatus.inProgress;
+      case domain.AppointmentStatus.completed:
+        return AppointmentStatus.completed;
+      case domain.AppointmentStatus.cancelled:
+        return AppointmentStatus.cancelled;
+      case domain.AppointmentStatus.rescheduled:
+        return AppointmentStatus.rescheduled;
+      default:
+        return AppointmentStatus.pending;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return DateFormat('dd MMM yyyy', 'es').format(date);
+  }
+
+  String _formatTime(DateTime date) {
+    return DateFormat('HH:mm').format(date);
   }
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = _getStatusColor(status);
+    if (isLoading) {
+      return Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFBDE3FF), Color(0xFFE8F5E8), Color(0xFFE5F3FF)],
+              stops: [0.0, 0.5, 1.0],
+            ),
+          ),
+          child: const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
+        ),
+      );
+    }
+
+    if (errorMessage != null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Error'),
+          backgroundColor: AppColors.error,
+          foregroundColor: AppColors.white,
+        ),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFBDE3FF), Color(0xFFE8F5E8), Color(0xFFE5F3FF)],
+              stops: [0.0, 0.5, 1.0],
+            ),
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSizes.paddingL),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: AppColors.error,
+                  ),
+                  const SizedBox(height: AppSizes.spaceL),
+                  Text(
+                    errorMessage!,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: AppColors.textPrimary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSizes.spaceL),
+                  ElevatedButton(
+                    onPressed: _loadAppointmentData,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.white,
+                    ),
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (appointment == null || status == null) {
+      return const Scaffold(
+        body: Center(child: Text('No se encontraron datos de la cita')),
+      );
+    }
+
+    final statusColor = _getStatusColor(status!);
 
     return Scaffold(
       body: Container(
@@ -96,10 +248,6 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                         _buildPetInfo(),
                         const SizedBox(height: AppSizes.spaceL),
                         _buildVeterinarianInfo(),
-                        const SizedBox(height: AppSizes.spaceL),
-                        _buildLocationInfo(),
-                        const SizedBox(height: AppSizes.spaceL),
-                        _buildCostInfo(),
                         if (_canCancelAppointment()) ...[
                           const SizedBox(height: AppSizes.spaceXXL),
                           _buildCancelButton(),
@@ -203,15 +351,15 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                   ],
                 ),
                 child: Icon(
-                  _getStatusIcon(status),
+                  _getStatusIcon(status!),
                   size: 40,
                   color: AppColors.white,
                 ),
               ),
               const SizedBox(height: AppSizes.spaceM),
-              Text(
-                appointment['appointmentType'] ?? 'Consulta',
-                style: const TextStyle(
+              const Text(
+                'Consulta Veterinaria',
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: AppColors.white,
@@ -233,7 +381,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                   ),
                 ),
                 child: Text(
-                  _getStatusText(status),
+                  _getStatusText(status!),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -256,23 +404,23 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
       children: [
         _buildModernInfoRow(
           'Fecha',
-          appointment['date'] ?? 'No especificada',
+          appointment?.appointmentDate != null
+              ? _formatDate(appointment!.appointmentDate)
+              : 'No especificada',
           Icons.today_outlined,
         ),
         _buildModernInfoRow(
           'Hora',
-          appointment['time'] ?? 'No especificada',
+          appointment?.appointmentDate != null
+              ? _formatTime(appointment!.appointmentDate)
+              : 'No especificada',
           Icons.access_time_outlined,
         ),
-        _buildModernInfoRow(
-          'Duración',
-          appointment['duration'] ?? 'No especificada',
-          Icons.timer_outlined,
-        ),
-        if (appointment['notes'] != null && appointment['notes'].isNotEmpty)
+        _buildModernInfoRow('Duración', '30 min', Icons.timer_outlined),
+        if (appointment?.notes != null && appointment!.notes!.isNotEmpty)
           _buildModernInfoRow(
             'Notas',
-            appointment['notes'],
+            appointment!.notes!,
             Icons.note_outlined,
           ),
       ],
@@ -286,14 +434,14 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
       iconColor: AppColors.secondary,
       children: [
         _buildModernInfoRow(
-          'Nombre',
-          appointment['petName'] ?? 'No especificado',
+          'ID de Mascota',
+          appointment?.petId ?? 'No especificado',
           Icons.pets_rounded,
         ),
         _buildModernInfoRow(
-          'Especie',
-          appointment['petSpecies'] ?? 'No especificado',
-          Icons.category_outlined,
+          'Información',
+          'Datos disponibles en perfil de mascota',
+          Icons.info_outline,
         ),
       ],
     );
@@ -306,62 +454,21 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
       iconColor: AppColors.accent,
       children: [
         _buildModernInfoRow(
-          'Nombre',
-          appointment['veterinarianName'] ?? 'No asignado',
+          'ID del Veterinario',
+          appointment?.vetId ?? 'No asignado',
           Icons.person_rounded,
         ),
         _buildModernInfoRow(
-          'Especialidad',
-          appointment['veterinarianSpecialty'] ?? 'No especificada',
-          Icons.medical_services_outlined,
+          'ID del Usuario',
+          appointment?.userId ?? 'No especificado',
+          Icons.account_circle_outlined,
         ),
         _buildModernInfoRow(
-          'Clínica',
-          appointment['clinic'] ?? 'No especificada',
-          Icons.local_hospital_outlined,
-        ),
-        _buildModernInfoRow(
-          'Teléfono',
-          appointment['phone'] ?? 'No disponible',
-          Icons.phone_outlined,
-          isClickable: true,
-        ),
-        _buildModernInfoRow(
-          'Email',
-          appointment['email'] ?? 'No disponible',
-          Icons.email_outlined,
-          isClickable: true,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLocationInfo() {
-    return _buildModernInfoCard(
-      title: 'Ubicación',
-      icon: Icons.location_on_outlined,
-      iconColor: AppColors.success,
-      children: [
-        _buildModernInfoRow(
-          'Dirección',
-          appointment['address'] ?? 'No especificada',
-          Icons.location_on_outlined,
-          isClickable: true,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCostInfo() {
-    return _buildModernInfoCard(
-      title: 'Costo',
-      icon: Icons.attach_money_outlined,
-      iconColor: AppColors.warning,
-      children: [
-        _buildModernInfoRow(
-          'Consulta',
-          appointment['cost'] ?? 'No especificado',
-          Icons.monetization_on_outlined,
+          'Fecha de Creación',
+          appointment?.createdAt != null
+              ? _formatDate(appointment!.createdAt)
+              : 'No disponible',
+          Icons.schedule_outlined,
         ),
       ],
     );
@@ -473,7 +580,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w600,
@@ -502,7 +609,11 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
             ),
           ),
           if (isClickable)
-            Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.primary),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: AppColors.primary,
+            ),
         ],
       ),
     );
@@ -561,6 +672,8 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
         return AppColors.error;
       case AppointmentStatus.rescheduled:
         return AppColors.secondary;
+      case AppointmentStatus.pending:
+        return AppColors.primary;
     }
   }
 
@@ -578,6 +691,8 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
         return Icons.cancel_outlined;
       case AppointmentStatus.rescheduled:
         return Icons.update_outlined;
+      case AppointmentStatus.pending:
+        return Icons.pending_actions_outlined;
     }
   }
 
@@ -595,12 +710,15 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
         return 'Cancelada';
       case AppointmentStatus.rescheduled:
         return 'Reprogramada';
+      case AppointmentStatus.pending:
+        return 'Pendiente';
     }
   }
 
   bool _canCancelAppointment() {
     return status == AppointmentStatus.scheduled ||
-        status == AppointmentStatus.confirmed;
+        status == AppointmentStatus.confirmed ||
+        status == AppointmentStatus.pending;
   }
 
   void _handleClickableValue(String label, String value) {
@@ -665,25 +783,22 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
       confirmButtonColor: AppColors.error,
     );
 
-    if (confirmed == true) {
+    if (confirmed == true && mounted) {
       setState(() {
-        appointment['status'] = AppointmentStatus.cancelled;
         status = AppointmentStatus.cancelled;
       });
 
-      if (mounted) {
-        Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Cita cancelada exitosamente'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusM),
-            ),
+      Navigator.pop(context, true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Cita cancelada exitosamente'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
           ),
-        );
-      }
+        ),
+      );
     }
   }
 }

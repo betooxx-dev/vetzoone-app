@@ -13,20 +13,44 @@ class AppointmentModel extends Appointment {
   });
 
   factory AppointmentModel.fromJson(Map<String, dynamic> json) {
-    return AppointmentModel(
-      id: json['id'] ?? '',
-      status: _parseAppointmentStatus(json['status'] ?? 'pending'),
-      notes: json['notes'],
-      appointmentDate: json['appointmentDate'] != null
-          ? DateTime.parse(json['appointmentDate'])
-          : DateTime.now(),
-      userId: json['user_id'] ?? '',
-      vetId: json['vet_id'] ?? '',
-      petId: json['pet_id'] ?? '',
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : DateTime.now(),
-    );
+    print('🔍 Parsing JSON: $json');
+    
+    try {
+      final appointment = AppointmentModel(
+        id: json['id']?.toString() ?? '',
+        status: _parseAppointmentStatus(json['status']?.toString() ?? 'pending'),
+        notes: json['notes']?.toString(),
+        appointmentDate: _parseDateTime(json['appointmentDate']),
+        userId: json['user_id']?.toString() ?? '',
+        vetId: json['vet_id']?.toString() ?? '',
+        petId: json['pet_id']?.toString() ?? '',
+        createdAt: _parseDateTime(json['created_at']),
+      );
+      
+      print('✅ Appointment parseado exitosamente: ${appointment.id}');
+      return appointment;
+    } catch (e) {
+      print('❌ Error parseando appointment: $e');
+      rethrow;
+    }
+  }
+
+  static DateTime _parseDateTime(dynamic dateValue) {
+    if (dateValue == null) return DateTime.now();
+    
+    try {
+      if (dateValue is String) {
+        return DateTime.parse(dateValue);
+      } else if (dateValue is DateTime) {
+        return dateValue;
+      } else {
+        print('⚠️ Formato de fecha inesperado: $dateValue');
+        return DateTime.now();
+      }
+    } catch (e) {
+      print('❌ Error parseando fecha: $dateValue - $e');
+      return DateTime.now();
+    }
   }
 
   Map<String, dynamic> toJson() {

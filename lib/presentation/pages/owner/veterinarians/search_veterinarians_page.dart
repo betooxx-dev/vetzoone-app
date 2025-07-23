@@ -160,19 +160,6 @@ class _SearchVeterinariansPageState extends State<SearchVeterinariansPage>
       ),
       child: Row(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(AppSizes.radiusM),
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.arrow_back_ios_new,
-                color: AppColors.white,
-              ),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
           const SizedBox(width: AppSizes.spaceM),
           const Expanded(
             child: Column(

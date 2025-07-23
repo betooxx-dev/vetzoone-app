@@ -181,21 +181,44 @@ class _MyPetsPageState extends State<MyPetsPage>
 
   Widget _buildAppBar() {
     return Container(
-      padding: const EdgeInsets.all(AppSizes.paddingL),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Mis Mascotas',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+      margin: const EdgeInsets.all(AppSizes.paddingL),
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
-          Text(
-            'Gestiona la información de tus mascotas',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+        ],
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: AppSizes.spaceM),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Mis Mascotas',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.white,
+                  ),
+                ),
+                Text(
+                  'Gestiona la información de tus mascotas',
+                  style: TextStyle(fontSize: 14, color: AppColors.white),
+                ),
+              ],
+            ),
           ),
         ],
       ),

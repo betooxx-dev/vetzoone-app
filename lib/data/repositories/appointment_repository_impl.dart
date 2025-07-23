@@ -36,4 +36,14 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
     final models = await remoteDataSource.getAllAppointmentsByUserId(userId);
     return models;
   }
+
+  @override
+  Future<Appointment> getAppointmentById(String appointmentId) async {
+    try {
+      final model = await remoteDataSource.getAppointmentById(appointmentId);
+      return model;
+    } catch (e) {
+      throw Exception('Repository error: $e');
+    }
+  }
 } 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/services/user_service.dart';
@@ -749,62 +750,172 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
         throw Exception('No se encontró ID del usuario');
       }
 
-      final userRemoteDataSource = sl<UserRemoteDataSource>();
+      final token = await SharedPreferencesHelper.getToken();
+      if (token == null) {
+        throw Exception('No se encontró token de autenticación');
+      }
 
       final firstName = _firstNameController.text.trim();
       final lastName = _lastNameController.text.trim();
+      final phone = _phoneController.text.trim();
 
-      final userData = {
-        'first_name': firstName,
-        'last_name': lastName,
-        'phone': _phoneController.text.trim(),
+      // Endpoint específico solicitado por el usuario
+      final url = 'https://web-62dilcrvfkkb.up-de-fra1-k8s-1.apps.run-on-seenode.com/user/$userId';
+
+      // Configurar Dio con headers de autenticación
+      final dio = Dio();
+      dio.options.headers = {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
       };
 
-      Map<String, dynamic> updatedUser;
+      print('🔄 ACTUALIZANDO PERFIL DE USUARIO:');
+      print('URL: $url');
+      print('User ID: $userId');
+      print('Token disponible: ${token.isNotEmpty ? 'SÍ' : 'NO'}');
+
+      late Response response;
 
       if (_selectedImageFile != null) {
-        updatedUser = await userRemoteDataSource.updateUserWithFile(
-          userId,
-          userData,
-          _selectedImageFile!,
-        );
+        // Verificar que el archivo existe antes de enviarlo
+        if (!await _selectedImageFile!.exists()) {
+          throw Exception('Archivo de imagen no encontrado. Por favor, selecciona la imagen nuevamente.');
+        }
+
+        final fileSize = await _selectedImageFile!.length();
+        print('📁 Archivo encontrado: ${_selectedImageFile!.path}');
+        print('📏 Tamaño: $fileSize bytes');
+
+        // Cambiar Content-Type para multipart/form-data
+        dio.options.headers['Content-Type'] = 'multipart/form-data';
+
+        // Crear FormData para enviar con imagen
+        final formData = FormData.fromMap({
+          'first_name': firstName,
+          'last_name': lastName,
+          'phone': phone,
+          'file': await MultipartFile.fromFile(
+            _selectedImageFile!.path,
+            filename: _selectedImageFile!.path.split('/').last,
+          ),
+        });
+
+        print('📤 Enviando con imagen - FormData fields: ${formData.fields.length}');
+        print('📤 FormData files: ${formData.files.length}');
+
+        response = await dio.patch(url, data: formData);
       } else {
-        updatedUser = await userRemoteDataSource.updateUser(userId, userData);
+        // Enviar solo datos JSON sin imagen
+        final requestData = {
+          'first_name': firstName,
+          'last_name': lastName,
+          'phone': phone,
+        };
+
+        print('📤 Enviando sin imagen - Data: $requestData');
+
+        response = await dio.patch(url, data: requestData);
       }
 
-      setState(() {
-        this.userData['firstName'] = updatedUser['first_name'];
-        this.userData['lastName'] = updatedUser['last_name'];
-        this.userData['fullName'] =
-            '${updatedUser['first_name']} ${updatedUser['last_name']}';
-        this.userData['phone'] = updatedUser['phone'];
-        if (updatedUser['profile_photo'] != null) {
-          this.userData['profileImage'] = updatedUser['profile_photo'];
+      print('✅ RESPUESTA DEL SERVIDOR:');
+      print('Status: ${response.statusCode}');
+      print('Data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        // Extraer datos de la respuesta
+        final responseData = response.data;
+        Map<String, dynamic> updatedUser;
+
+        if (responseData is Map<String, dynamic>) {
+          if (responseData.containsKey('data')) {
+            updatedUser = responseData['data'];
+          } else {
+            updatedUser = responseData;
+          }
+        } else {
+          throw Exception('Formato de respuesta inválido');
         }
-        _isEditing = false;
-        _selectedImageFile = null;
-      });
 
-      _updateControllers();
+        // Actualizar SharedPreferences con los nuevos datos
+        if (updatedUser['first_name'] != null) {
+          await SharedPreferencesHelper.saveUserFirstName(updatedUser['first_name']);
+        }
+        if (updatedUser['last_name'] != null) {
+          await SharedPreferencesHelper.saveUserLastName(updatedUser['last_name']);
+        }
+        if (updatedUser['phone'] != null) {
+          await SharedPreferencesHelper.saveUserPhone(updatedUser['phone']);
+        }
+        if (updatedUser['profile_photo'] != null) {
+          await SharedPreferencesHelper.saveUserProfilePhoto(updatedUser['profile_photo']);
+        }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Perfil actualizado correctamente'),
-            backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        // Actualizar el estado local de la UI
+        setState(() {
+          this.userData['firstName'] = updatedUser['first_name'] ?? firstName;
+          this.userData['lastName'] = updatedUser['last_name'] ?? lastName;
+          this.userData['fullName'] = '${updatedUser['first_name'] ?? firstName} ${updatedUser['last_name'] ?? lastName}';
+          this.userData['phone'] = updatedUser['phone'] ?? phone;
+          if (updatedUser['profile_photo'] != null) {
+            this.userData['profileImage'] = updatedUser['profile_photo'];
+          }
+          _isEditing = false;
+          _selectedImageFile = null;
+        });
+
+        _updateControllers();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Perfil actualizado correctamente'),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
             ),
-          ),
-        );
+          );
+        }
+
+        print('✅ Perfil actualizado exitosamente');
+      } else {
+        throw Exception('Error del servidor: ${response.statusCode}');
       }
     } catch (e) {
       print('❌ Error actualizando perfil: $e');
+      
+      String errorMessage = 'Error al actualizar el perfil';
+      
+      if (e is DioException) {
+        print('❌ Dio Error type: ${e.type}');
+        print('❌ Dio Error message: ${e.message}');
+        print('❌ Response status: ${e.response?.statusCode}');
+        print('❌ Response data: ${e.response?.data}');
+        
+        switch (e.type) {
+          case DioExceptionType.connectionTimeout:
+          case DioExceptionType.sendTimeout:
+          case DioExceptionType.receiveTimeout:
+            errorMessage = 'Tiempo de conexión agotado. Verifica tu conexión a internet.';
+            break;
+          case DioExceptionType.badResponse:
+            errorMessage = 'Error del servidor: ${e.response?.statusCode}';
+            break;
+          case DioExceptionType.connectionError:
+            errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
+            break;
+          default:
+            errorMessage = 'Error al actualizar el perfil: ${e.message}';
+        }
+      } else {
+        errorMessage = e.toString();
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al actualizar el perfil: $e'),
+            content: Text(errorMessage),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
