@@ -147,6 +147,9 @@ Future<void> init() async {
     () => GetAllAppointmentsUseCase(sl<AppointmentRepository>()),
   );
   sl.registerLazySingleton(
+    () => GetVetAppointmentsUseCase(sl<AppointmentRepository>()),
+  );
+  sl.registerLazySingleton(
     () => GetAppointmentByIdUseCase(sl<AppointmentRepository>()),
   );
   sl.registerLazySingleton(

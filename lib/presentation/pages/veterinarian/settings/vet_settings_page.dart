@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/services/user_service.dart';
+import '../../../../core/storage/shared_preferences_helper.dart';
 
 class VetSettingsPage extends StatefulWidget {
   const VetSettingsPage({super.key});
@@ -12,6 +13,9 @@ class VetSettingsPage extends StatefulWidget {
 
 class _VetSettingsPageState extends State<VetSettingsPage> {
   Map<String, dynamic> userData = {};
+  String? _vetProfilePhoto;
+  String _vetName = '';
+  String _vetSpecialty = '';
 
   @override
   void initState() {
@@ -20,10 +24,46 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
   }
 
   Future<void> _loadUserData() async {
-    final user = await UserService.getCurrentUser();
-    setState(() {
-      userData = user;
-    });
+    try {
+      // Cargar datos básicos del usuario
+      final user = await UserService.getCurrentUser();
+      
+      // Cargar foto de perfil desde SharedPreferences
+      final profilePhoto = await SharedPreferencesHelper.getUserProfilePhoto() ?? '';
+      final firstName = await SharedPreferencesHelper.getUserFirstName() ?? '';
+      final lastName = await SharedPreferencesHelper.getUserLastName() ?? '';
+      
+      // Construir nombre completo
+      String fullName = 'Dr. Usuario';
+      if (firstName.isNotEmpty || lastName.isNotEmpty) {
+        fullName = 'Dr. ${firstName.isNotEmpty ? firstName : ''} ${lastName.isNotEmpty ? lastName : ''}'.trim();
+      }
+      
+      // Obtener especialidad del veterinario
+      String specialty = 'Medicina General • Cirugía';
+      final vetData = await SharedPreferencesHelper.getVetData();
+      if (vetData != null && vetData.isNotEmpty) {
+        final specialties = vetData['specialties'] as List?;
+        if (specialties != null && specialties.isNotEmpty) {
+          specialty = specialties.take(2).join(' • ');
+        }
+      }
+
+      setState(() {
+        userData = user;
+        _vetProfilePhoto = profilePhoto.isNotEmpty ? profilePhoto : null;
+        _vetName = fullName;
+        _vetSpecialty = specialty;
+      });
+    } catch (e) {
+      print('Error cargando datos del usuario: $e');
+      setState(() {
+        userData = {};
+        _vetProfilePhoto = null;
+        _vetName = 'Dr. Usuario';
+        _vetSpecialty = 'Medicina General • Cirugía';
+      });
+    }
   }
 
   @override
@@ -178,8 +218,58 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
             decoration: BoxDecoration(
               gradient: AppColors.primaryGradient,
               borderRadius: BorderRadius.circular(AppSizes.radiusL),
+              border: Border.all(
+                color: AppColors.primary.withOpacity(0.3),
+                width: 2,
+              ),
             ),
-            child: const Icon(Icons.person, color: AppColors.white, size: 32),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppSizes.radiusL - 2),
+              child: _vetProfilePhoto != null && _vetProfilePhoto!.isNotEmpty
+                  ? Image.network(
+                      _vetProfilePhoto!,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            gradient: AppColors.primaryGradient,
+                            borderRadius: BorderRadius.circular(AppSizes.radiusL - 2),
+                          ),
+                          child: const Icon(
+                            Icons.person,
+                            color: AppColors.white,
+                            size: 32,
+                          ),
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            gradient: AppColors.primaryGradient,
+                            borderRadius: BorderRadius.circular(AppSizes.radiusL - 2),
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.white,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  : const Icon(
+                      Icons.person,
+                      color: AppColors.white,
+                      size: 32,
+                    ),
+            ),
           ),
           const SizedBox(width: AppSizes.spaceM),
           Expanded(
@@ -187,7 +277,7 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  userData['fullName'] ?? 'Dr. Usuario',
+                  _vetName,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 20,
@@ -196,7 +286,7 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
                 ),
                 const SizedBox(height: AppSizes.spaceXS),
                 Text(
-                  'Medicina General • Cirugía',
+                  _vetSpecialty,
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 14,

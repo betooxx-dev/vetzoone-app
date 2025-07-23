@@ -8,6 +8,7 @@ abstract class AppointmentRepository {
   );
   Future<List<Appointment>> getAppointmentsByPetId(String petId);
   Future<List<Appointment>> getAllAppointmentsByUserId(String userId);
+  Future<List<Appointment>> getAppointmentsByVetId(String vetId);
   Future<Appointment> getAppointmentById(String appointmentId);
   Future<Appointment> createAppointment(Map<String, dynamic> appointmentData);
 } 

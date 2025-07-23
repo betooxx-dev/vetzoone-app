@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/services/user_service.dart';
 import '../../../../core/injection/injection.dart';
 import '../../../../data/datasources/user/user_remote_data_source.dart';
+import '../../../../data/datasources/vet/vet_remote_datasource.dart';
 import '../../../../core/storage/shared_preferences_helper.dart';
 import '../../../widgets/common/profile_image_picker_widget.dart';
 
@@ -16,80 +19,138 @@ class ProfessionalProfilePage extends StatefulWidget {
       _ProfessionalProfilePageState();
 }
 
-class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
-    with TickerProviderStateMixin {
-  late TabController _tabController;
+class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
   bool _isEditing = false;
   bool _isLoading = false;
   Map<String, dynamic> professionalData = {};
+  Map<String, dynamic> vetData = {};
   File? _selectedImageFile;
 
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _experienceController = TextEditingController();
+
   final _bioController = TextEditingController();
+  final _experienceController = TextEditingController();
+  final _locationCityController = TextEditingController();
+  final _locationStateController = TextEditingController();
+  final _consultationFeeController = TextEditingController();
+
+  List<String> _specialties = [];
+  List<String> _services = [];
+  List<String> _animalsServed = [];
+  List<Map<String, dynamic>> _availability = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _loadUserData();
   }
 
   Future<void> _loadUserData() async {
-    final user = await UserService.getCurrentUser();
     setState(() {
-      professionalData = {
-        'firstName': user['firstName'],
-        'lastName': user['lastName'],
-        'fullName': user['fullName'],
-        'license': 'MV-12345',
-        'email': user['email'],
-        'phone': user['phone'],
-        'address': 'Av. Central 123, Col. Centro, Tuxtla Gutiérrez, Chiapas',
-        'experience': '8',
-        'bio':
-            'Especialista en medicina interna veterinaria con más de 8 años de experiencia. Dedicada al bienestar animal y la atención integral de mascotas.',
-        'specialties': [
-          'Medicina General',
-          'Cirugía Menor',
-          'Dermatología Veterinaria',
-          'Medicina Preventiva',
-        ],
-        'services': [
-          'Consulta General',
-          'Vacunación',
-          'Desparasitación',
-          'Cirugía Menor',
-          'Análisis Clínicos',
-          'Radiografías',
-        ],
-        'profileImage': user['profilePhoto'],
-      };
+      _isLoading = true;
     });
-    _initializeControllers();
+
+    try {
+      final firstName = await SharedPreferencesHelper.getUserFirstName() ?? '';
+      final lastName = await SharedPreferencesHelper.getUserLastName() ?? '';
+      final email = await SharedPreferencesHelper.getUserEmail() ?? '';
+      final phone = await SharedPreferencesHelper.getUserPhone() ?? '';
+      final profilePhoto = await SharedPreferencesHelper.getUserProfilePhoto() ?? '';
+
+      final vetProfileData = await SharedPreferencesHelper.getVetData();
+      
+      if (vetProfileData != null) {
+        vetData = vetProfileData;
+        
+        setState(() {
+          professionalData = {
+            'firstName': firstName,
+            'lastName': lastName,
+            'fullName': '$firstName $lastName'.trim(),
+            'email': email,
+            'phone': phone,
+            'profileImage': profilePhoto,
+            'license': vetData['license'] ?? '',
+            'bio': vetData['bio'] ?? '',
+            'yearsExperience': vetData['years_experience'] ?? 0,
+            'locationCity': vetData['location_city'] ?? '',
+            'locationState': vetData['location_state'] ?? '',
+            'consultationFee': vetData['consultation_fee'] ?? 0.0,
+          };
+          
+          _specialties = List<String>.from(vetData['specialties'] ?? []);
+          _services = List<String>.from(vetData['services'] ?? []);
+          _animalsServed = List<String>.from(vetData['animals_served'] ?? []);
+          _availability = List<Map<String, dynamic>>.from(vetData['availability'] ?? []);
+        });
+        
+        print('📊 Datos del veterinario cargados:');
+        print('Nombre completo: ${professionalData['fullName']}');
+        print('Licencia: ${professionalData['license']}');
+        print('Especialidades: $_specialties');
+        print('Servicios: $_services');
+      } else {
+        print('⚠️ No se encontraron datos del veterinario en SharedPreferences');
+        setState(() {
+          professionalData = {
+            'firstName': firstName,
+            'lastName': lastName,
+            'fullName': '$firstName $lastName'.trim(),
+            'email': email,
+            'phone': phone,
+            'profileImage': profilePhoto,
+            'license': 'No disponible',
+            'bio': '',
+            'yearsExperience': 0,
+            'locationCity': '',
+            'locationState': '',
+            'consultationFee': 0.0,
+          };
+        });
+      }
+      
+      _initializeControllers();
+    } catch (e) {
+      print('❌ Error cargando datos del perfil: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar el perfil: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _initializeControllers() {
     _firstNameController.text = professionalData['firstName'] ?? '';
     _lastNameController.text = professionalData['lastName'] ?? '';
     _phoneController.text = professionalData['phone'] ?? '';
-    _addressController.text = professionalData['address'] ?? '';
-    _experienceController.text = professionalData['experience'] ?? '';
+    
     _bioController.text = professionalData['bio'] ?? '';
+    _experienceController.text = professionalData['yearsExperience']?.toString() ?? '0';
+    _locationCityController.text = professionalData['locationCity'] ?? '';
+    _locationStateController.text = professionalData['locationState'] ?? '';
+    _consultationFeeController.text = professionalData['consultationFee']?.toString() ?? '0';
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _phoneController.dispose();
-    _addressController.dispose();
-    _experienceController.dispose();
     _bioController.dispose();
+    _experienceController.dispose();
+    _locationCityController.dispose();
+    _locationStateController.dispose();
+    _consultationFeeController.dispose();
     super.dispose();
   }
 
@@ -111,16 +172,8 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
             child: Column(
               children: [
                 _buildModernAppBar(),
-                _buildTabBar(),
                 Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildProfessionalInfoTab(),
-                      _buildSpecialtiesTab(),
-                      _buildServicesTab(),
-                    ],
-                  ),
+                  child: _buildProfessionalInfoTab(),
                 ),
               ],
             ),
@@ -249,53 +302,9 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
     );
   }
 
-  Widget _buildTabBar() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.white, Colors.grey.shade50],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(AppSizes.radiusL),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.15),
-          width: 1,
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppSizes.radiusL),
-        child: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary,
-          indicatorWeight: 3,
-          indicatorSize: TabBarIndicatorSize.tab,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w600),
-          dividerColor: Colors.transparent,
-          overlayColor: WidgetStateProperty.all(Colors.transparent),
-          tabs: const [
-            Tab(text: 'Información'),
-            Tab(text: 'Especialidades'),
-            Tab(text: 'Servicios'),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildProfessionalInfoTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSizes.paddingL),
+      padding: const EdgeInsets.fromLTRB(AppSizes.paddingL, 0, AppSizes.paddingL, AppSizes.paddingL),
       child: Column(
         children: [
           _buildProfileHeader(),
@@ -307,14 +316,14 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
                 icon: Icons.person_outline,
                 label: 'Nombre',
                 controller: _firstNameController,
-                enabled: _isEditing,
+                enabled: false,
               ),
               const SizedBox(height: AppSizes.spaceM),
               _buildInfoField(
                 icon: Icons.person,
                 label: 'Apellido',
                 controller: _lastNameController,
-                enabled: _isEditing,
+                enabled: false,
               ),
               const SizedBox(height: AppSizes.spaceM),
               _buildInfoField(
@@ -341,9 +350,17 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
               _buildInfoField(
                 icon: Icons.location_on_outlined,
                 label: 'Dirección de consulta',
-                controller: _addressController,
+                controller: _locationCityController,
                 enabled: _isEditing,
-                maxLines: 2,
+                maxLines: 1,
+              ),
+              const SizedBox(height: AppSizes.spaceM),
+              _buildInfoField(
+                icon: Icons.location_on_outlined,
+                label: 'Estado',
+                controller: _locationStateController,
+                enabled: _isEditing,
+                maxLines: 1,
               ),
               const SizedBox(height: AppSizes.spaceM),
               _buildInfoField(
@@ -352,6 +369,14 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
                 controller: _experienceController,
                 enabled: _isEditing,
                 keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: AppSizes.spaceM),
+              _buildInfoField(
+                icon: Icons.attach_money,
+                label: 'Tarifa de consulta (MXN)',
+                controller: _consultationFeeController,
+                enabled: _isEditing,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
               ),
             ],
           ),
@@ -366,40 +391,6 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
                 enabled: _isEditing,
                 maxLines: 5,
               ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSpecialtiesTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSizes.paddingL),
-      child: Column(
-        children: [
-          _buildInfoCard(
-            title: 'Especialidades',
-            children: [
-              for (final specialty in professionalData['specialties'] ?? [])
-                _buildSpecialtyItem(specialty),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildServicesTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSizes.paddingL),
-      child: Column(
-        children: [
-          _buildInfoCard(
-            title: 'Servicios Ofrecidos',
-            children: [
-              for (final service in professionalData['services'] ?? [])
-                _buildServiceItem(service),
             ],
           ),
         ],
@@ -458,29 +449,29 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
                         _selectedImageFile != null
                             ? Image.file(_selectedImageFile!, fit: BoxFit.cover)
                             : (professionalData['profileImage'] != null &&
-                                professionalData['profileImage'].isNotEmpty)
-                            ? Image.network(
-                              professionalData['profileImage'],
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: AppColors.primary.withOpacity(0.1),
-                                  child: Icon(
-                                    Icons.person,
-                                    size: 40,
-                                    color: AppColors.primary,
+                                    professionalData['profileImage'].isNotEmpty)
+                                ? Image.network(
+                                    professionalData['profileImage'],
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: AppColors.primary.withOpacity(0.1),
+                                        child: Icon(
+                                          Icons.person,
+                                          size: 40,
+                                          color: AppColors.primary,
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : Container(
+                                    color: AppColors.primary.withOpacity(0.1),
+                                    child: Icon(
+                                      Icons.person,
+                                      size: 40,
+                                      color: AppColors.primary,
+                                    ),
                                   ),
-                                );
-                              },
-                            )
-                            : Container(
-                              color: AppColors.primary.withOpacity(0.1),
-                              child: Icon(
-                                Icons.person,
-                                size: 40,
-                                color: AppColors.primary,
-                              ),
-                            ),
                   ),
                 ),
               const SizedBox(width: AppSizes.spaceM),
@@ -672,67 +663,59 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
     );
   }
 
-  Widget _buildSpecialtyItem(String specialty) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSizes.paddingM),
-      margin: const EdgeInsets.only(bottom: AppSizes.spaceS),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.star, color: AppColors.primary, size: 20),
-          const SizedBox(width: AppSizes.spaceM),
-          Text(
-            specialty,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildServiceItem(String service) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSizes.paddingM),
-      margin: const EdgeInsets.only(bottom: AppSizes.spaceS),
-      decoration: BoxDecoration(
-        color: AppColors.secondary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        border: Border.all(
-          color: AppColors.secondary.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.medical_services, color: AppColors.secondary, size: 20),
-          const SizedBox(width: AppSizes.spaceM),
-          Text(
-            service,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _toggleEditing() {
     setState(() {
       _isEditing = !_isEditing;
     });
+  }
+
+  bool _isValidUUID(String uuid) {
+    final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+    return uuidRegex.hasMatch(uuid);
+  }
+
+  Future<void> _updateVetProfile(String vetId, String userId, Map<String, dynamic> vetDataToSave) async {
+    final vetRemoteDataSource = sl<VetRemoteDataSource>();
+    
+    print('🔄 ACTUALIZANDO DATOS DEL VETERINARIO:');
+    final updatedVet = await vetRemoteDataSource.updateVet(vetId, userId, vetDataToSave);
+
+    if (updatedVet['data'] != null) {
+      print('💾 Actualizando SharedPreferences del veterinario...');
+      final vetDataForSP = {
+        ...vetData,
+        'bio': updatedVet['data']['bio'],
+        'specialties': updatedVet['data']['specialties'],
+        'years_experience': updatedVet['data']['years_experience'],
+        'location_city': updatedVet['data']['location_city'],
+        'location_state': updatedVet['data']['location_state'],
+        'services': updatedVet['data']['services'],
+        'consultation_fee': updatedVet['data']['consultation_fee'],
+        'animals_served': updatedVet['data']['animals_served'],
+        'availability': updatedVet['data']['availability'],
+      };
+      await SharedPreferencesHelper.saveVetData(vetDataForSP);
+
+      setState(() {
+        professionalData['bio'] = updatedVet['data']['bio'];
+        professionalData['yearsExperience'] = updatedVet['data']['years_experience'];
+        professionalData['locationCity'] = updatedVet['data']['location_city'];
+        professionalData['locationState'] = updatedVet['data']['location_state'];
+        professionalData['consultationFee'] = updatedVet['data']['consultation_fee'];
+        
+        _specialties = List<String>.from(updatedVet['data']['specialties'] ?? []);
+        _services = List<String>.from(updatedVet['data']['services'] ?? []);
+        _animalsServed = List<String>.from(updatedVet['data']['animals_served'] ?? []);
+        _availability = List<Map<String, dynamic>>.from(updatedVet['data']['availability'] ?? []);
+        
+        _isEditing = false;
+        _selectedImageFile = null;
+      });
+
+      _initializeControllers();
+    } else {
+      throw Exception('Respuesta inválida del servidor al actualizar veterinario');
+    }
   }
 
   Future<void> _saveProfile() async {
@@ -744,47 +727,231 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
 
     try {
       final userId = await SharedPreferencesHelper.getUserId();
-      if (userId == null) {
-        throw Exception('No se encontró ID del usuario');
+      print('👤 Usuario ID obtenido: "$userId"');
+      
+      if (userId == null || userId.isEmpty) {
+        throw Exception('No se encontró ID del usuario. Por favor, inicia sesión nuevamente.');
       }
 
-      final userRemoteDataSource = sl<UserRemoteDataSource>();
+      final token = await SharedPreferencesHelper.getToken();
+      if (token == null || token.isEmpty) {
+        throw Exception('No se encontró token de autenticación. Por favor, inicia sesión nuevamente.');
+      }
 
-      final firstName = _firstNameController.text.trim();
-      final lastName = _lastNameController.text.trim();
+      print('🔐 Token válido encontrado');
 
-      final userData = {
-        'first_name': firstName,
-        'last_name': lastName,
-        'phone': _phoneController.text.trim(),
-      };
+      final phone = _phoneController.text.trim();
+      bool userUpdated = false;
+      bool vetNeedsUpdate = false;
 
-      Map<String, dynamic> updatedUser;
+      final bio = _bioController.text.trim();
+      final experience = int.tryParse(_experienceController.text.trim()) ?? 0;
+      final locationCity = _locationCityController.text.trim();
+      final locationState = _locationStateController.text.trim();
+      final consultationFee = double.tryParse(_consultationFeeController.text.trim()) ?? 0.0;
 
-      if (_selectedImageFile != null) {
-        updatedUser = await userRemoteDataSource.updateUserWithFile(
-          userId,
-          userData,
-          _selectedImageFile!,
-        );
-      } else {
-        updatedUser = await userRemoteDataSource.updateUser(userId, userData);
+      if (bio != professionalData['bio'] || 
+          experience != professionalData['yearsExperience'] ||
+          locationCity != professionalData['locationCity'] ||
+          locationState != professionalData['locationState'] ||
+          consultationFee != professionalData['consultationFee']) {
+        vetNeedsUpdate = true;
+      }
+
+      if (_selectedImageFile != null || phone != professionalData['phone']) {
+        print('📸 ACTUALIZANDO USUARIO (foto/teléfono)...');
+        
+        final userUrl = 'https://web-62dilcrvfkkb.up-de-fra1-k8s-1.apps.run-on-seenode.com/user/$userId';
+        final dio = Dio();
+        dio.options.headers = {
+          'Authorization': 'Bearer $token',
+        };
+
+        if (_selectedImageFile != null) {
+          print('📁 Subiendo imagen: ${_selectedImageFile!.path}');
+          dio.options.headers['Content-Type'] = 'multipart/form-data';
+          
+          final formData = FormData.fromMap({
+            'phone': phone,
+            'file': await MultipartFile.fromFile(_selectedImageFile!.path),
+          });
+          
+          final response = await dio.patch(userUrl, data: formData);
+          if (response.statusCode == 200) {
+            final userData = response.data['data'] ?? response.data;
+            if (userData['profile_photo'] != null) {
+              await SharedPreferencesHelper.saveUserProfilePhoto(userData['profile_photo']);
+              professionalData['profileImage'] = userData['profile_photo'];
+            }
+            if (userData['phone'] != null) {
+              await SharedPreferencesHelper.saveUserPhone(userData['phone']);
+              professionalData['phone'] = userData['phone'];
+            }
+            userUpdated = true;
+            print('✅ Usuario actualizado con imagen');
+          }
+        } else {
+          print('📞 Actualizando solo teléfono');
+          dio.options.headers['Content-Type'] = 'application/json';
+          
+          final response = await dio.patch(userUrl, data: {'phone': phone});
+          if (response.statusCode == 200) {
+            final userData = response.data['data'] ?? response.data;
+            if (userData['phone'] != null) {
+              await SharedPreferencesHelper.saveUserPhone(userData['phone']);
+              professionalData['phone'] = userData['phone'];
+            }
+            userUpdated = true;
+            print('✅ Teléfono actualizado');
+          }
+        }
+      }
+
+      if (vetNeedsUpdate) {
+        print('🩺 ACTUALIZANDO DATOS DEL VETERINARIO...');
+        
+        print('🔍 OBTENIENDO VET ID PARA ACTUALIZACIÓN...');
+        String? vetId = await SharedPreferencesHelper.getVetId();
+        print('🔍 getVetId() inicial: "$vetId"');
+        
+        if (vetId == null || vetId.isEmpty) {
+          print('🚨 VET ID VACÍO - INTENTANDO RECARGAR DESDE SERVIDOR...');
+          
+          try {
+            final vetDataSource = sl<VetRemoteDataSource>();
+            print('🌐 Realizando petición getVetByUserId para: $userId');
+            
+            final vetResponse = await vetDataSource.getVetByUserId(userId);
+            print('📥 Respuesta cruda del servidor: $vetResponse');
+            
+            if (vetResponse == null) {
+              throw Exception('El servidor devolvió una respuesta vacía. Es posible que no tengas un perfil de veterinario creado.');
+            }
+            
+            if (vetResponse is! Map<String, dynamic>) {
+              throw Exception('El servidor devolvió una respuesta en formato inválido: ${vetResponse.runtimeType}');
+            }
+            
+            final responseData = vetResponse['data'] ?? vetResponse;
+            if (responseData == null) {
+              throw Exception('La respuesta del servidor no contiene datos del veterinario');
+            }
+            
+            if (responseData['id'] == null) {
+              throw Exception('El perfil del veterinario no tiene un ID válido');
+            }
+            
+            print('✅ Respuesta válida del servidor recibida');
+            
+            final fullResponse = vetResponse.containsKey('message') ? vetResponse : {
+              'message': 'Vet retrieved successfully',
+              'data': vetResponse
+            };
+            
+            await SharedPreferencesHelper.saveVetProfileFromResponse(fullResponse);
+            
+            vetId = await SharedPreferencesHelper.getVetId();
+            print('✅ VET ID REOBTENIDO Y GUARDADO: "$vetId"');
+            
+            if (vetId == null || vetId.isEmpty) {
+              vetId = responseData['id']?.toString();
+              print('🔧 EXTRACCIÓN MANUAL DE ID: "$vetId"');
+              
+              if (vetId != null && vetId.isNotEmpty) {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setString('vet_id', vetId);
+                print('💾 GUARDADO MANUAL EXITOSO');
+              } else {
+                throw Exception('No se pudo extraer el ID del veterinario de la respuesta del servidor');
+              }
+            }
+            
+          } catch (e) {
+            print('❌ Error detallado al recargar datos del veterinario: $e');
+            String errorMessage = 'No se pudo obtener el perfil del veterinario';
+            
+            if (e.toString().contains('404') || e.toString().contains('not found')) {
+              errorMessage = 'No tienes un perfil de veterinario creado. Por favor, completa tu perfil profesional primero.';
+            } else if (e.toString().contains('network') || e.toString().contains('connection')) {
+              errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
+            } else if (e.toString().contains('timeout')) {
+              errorMessage = 'Tiempo de espera agotado. Intenta nuevamente.';
+            } else if (e is Exception) {
+              errorMessage = e.toString().replaceFirst('Exception: ', '');
+            }
+            
+            throw Exception(errorMessage);
+          }
+        }
+
+        if (vetId == null || vetId.isEmpty) {
+          throw Exception('FALLO CRÍTICO: No se pudo obtener el ID del veterinario después de todos los intentos. Por favor, contacta al soporte técnico.');
+        }
+
+        print('🆔 VetId final validado: $vetId');
+        print('🆔 UserId validado: $userId');
+
+        final vetDataToSave = {
+          'bio': bio,
+          'specialties': _specialties,
+          'years_experience': experience,
+          'location_city': locationCity,
+          'location_state': locationState,
+          'services': _services,
+          'consultation_fee': consultationFee,
+          'animals_served': _animalsServed,
+          'availability': _availability,
+        };
+
+        print('📋 Datos a actualizar: $vetDataToSave');
+
+        final vetRemoteDataSource = sl<VetRemoteDataSource>();
+        final updatedVet = await vetRemoteDataSource.updateVet(vetId, userId, vetDataToSave);
+
+        if (updatedVet != null && updatedVet['data'] != null) {
+          final vetResponseData = updatedVet['data'];
+          
+          final vetDataForSP = {
+            ...vetData,
+            'bio': vetResponseData['bio'],
+            'specialties': vetResponseData['specialties'],
+            'years_experience': vetResponseData['years_experience'],
+            'location_city': vetResponseData['location_city'],
+            'location_state': vetResponseData['location_state'],
+            'services': vetResponseData['services'],
+            'consultation_fee': vetResponseData['consultation_fee'],
+            'animals_served': vetResponseData['animals_served'],
+            'availability': vetResponseData['availability'],
+          };
+          await SharedPreferencesHelper.saveVetData(vetDataForSP);
+
+          professionalData['bio'] = vetResponseData['bio'];
+          professionalData['yearsExperience'] = vetResponseData['years_experience'];
+          professionalData['locationCity'] = vetResponseData['location_city'];
+          professionalData['locationState'] = vetResponseData['location_state'];
+          professionalData['consultationFee'] = vetResponseData['consultation_fee'];
+          
+          _specialties = List<String>.from(vetResponseData['specialties'] ?? []);
+          _services = List<String>.from(vetResponseData['services'] ?? []);
+          _animalsServed = List<String>.from(vetResponseData['animals_served'] ?? []);
+          _availability = List<Map<String, dynamic>>.from(vetResponseData['availability'] ?? []);
+
+          print('✅ Veterinario actualizado exitosamente');
+        } else {
+          throw Exception('La respuesta del servidor para la actualización del veterinario es inválida');
+        }
       }
 
       setState(() {
-        professionalData['firstName'] = updatedUser['first_name'];
-        professionalData['lastName'] = updatedUser['last_name'];
-        professionalData['fullName'] =
-            '${updatedUser['first_name']} ${updatedUser['last_name']}';
-        professionalData['phone'] = updatedUser['phone'];
-        if (updatedUser['profile_photo'] != null) {
-          professionalData['profileImage'] = updatedUser['profile_photo'];
-        }
         _isEditing = false;
         _selectedImageFile = null;
       });
 
       _initializeControllers();
+
+      print('✅ Perfil actualizado correctamente');
+      print('Usuario actualizado: $userUpdated');
+      print('Veterinario actualizado: $vetNeedsUpdate');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -800,15 +967,50 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
       }
     } catch (e) {
       print('❌ Error actualizando perfil profesional: $e');
+      
+      String errorMessage = 'Error al actualizar el perfil';
+      
+      if (e is DioException) {
+        print('❌ Dio Error type: ${e.type}');
+        print('❌ Dio Error message: ${e.message}');
+        print('❌ Response status: ${e.response?.statusCode}');
+        print('❌ Response data: ${e.response?.data}');
+        
+        switch (e.type) {
+          case DioExceptionType.connectionTimeout:
+          case DioExceptionType.sendTimeout:
+          case DioExceptionType.receiveTimeout:
+            errorMessage = 'Tiempo de conexión agotado. Verifica tu conexión a internet.';
+            break;
+          case DioExceptionType.badResponse:
+            if (e.response?.statusCode == 404) {
+              errorMessage = 'Perfil no encontrado. Por favor, completa tu perfil profesional primero.';
+            } else {
+              errorMessage = 'Error del servidor: ${e.response?.statusCode}';
+            }
+            break;
+          case DioExceptionType.connectionError:
+            errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
+            break;
+          default:
+            errorMessage = 'Error al actualizar el perfil: ${e.message}';
+        }
+      } else if (e is Exception) {
+        errorMessage = e.toString().replaceFirst('Exception: ', '');
+      } else {
+        errorMessage = e.toString();
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al actualizar el perfil: $e'),
+            content: Text(errorMessage),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusM),
             ),
+            duration: const Duration(seconds: 5),
           ),
         );
       }

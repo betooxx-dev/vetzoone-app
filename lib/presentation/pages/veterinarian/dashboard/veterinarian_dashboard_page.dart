@@ -18,6 +18,8 @@ class VeterinarianDashboardPage extends StatefulWidget {
 class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
   String _userGreeting = 'Cargando...';
   bool _isCheckingVetProfile = true;
+  String? _vetProfilePhoto;
+  String _vetFirstName = '';
 
   @override
   void initState() {
@@ -42,10 +44,27 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
       greeting = 'Buenas noches';
     }
 
-    if (mounted) {
-      setState(() {
-        _userGreeting = greeting;
-      });
+    try {
+      final firstName = await SharedPreferencesHelper.getUserFirstName() ?? '';
+      final profilePhoto =
+          await SharedPreferencesHelper.getUserProfilePhoto() ?? '';
+
+      if (mounted) {
+        setState(() {
+          _userGreeting = greeting;
+          _vetFirstName = firstName.isNotEmpty ? firstName : 'Doctor';
+          _vetProfilePhoto = profilePhoto.isNotEmpty ? profilePhoto : null;
+        });
+      }
+    } catch (e) {
+      print('Error cargando datos del veterinario: $e');
+      if (mounted) {
+        setState(() {
+          _userGreeting = greeting;
+          _vetFirstName = 'Doctor';
+          _vetProfilePhoto = null;
+        });
+      }
     }
   }
 
@@ -56,17 +75,22 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
       });
 
       final userId = await SharedPreferencesHelper.getUserId();
-      if (userId == null) {
-        print('❌ No se encontró userId en SharedPreferences');
-        return;
+      print('👤 User ID obtenido: "$userId"');
+
+      if (userId == null || userId.isEmpty) {
+        print('❌ No se encontró userId válido en SharedPreferences');
+        throw Exception(
+          'No se encontró información del usuario. Por favor, inicia sesión nuevamente.',
+        );
       }
 
       final savedVetData = await SharedPreferencesHelper.getVetData();
-      if (savedVetData != null) {
+      if (savedVetData != null && savedVetData.isNotEmpty) {
         print('✅ Datos del veterinario encontrados en SharedPreferences');
         print(
           'Veterinario: ${savedVetData['name']} - Licencia: ${savedVetData['license']}',
         );
+        await _updateHeaderData();
         return;
       }
 
@@ -75,31 +99,110 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
       );
 
       final vetDataSource = sl<VetRemoteDataSource>();
-      final vetData = await vetDataSource.getVetByUserId(userId);
 
-      await SharedPreferencesHelper.saveVetData(vetData);
-      print('✅ Veterinario encontrado en servidor y guardado localmente');
+      try {
+        final vetResponse = await vetDataSource.getVetByUserId(userId);
+        print('📥 Respuesta del servidor: $vetResponse');
+
+        if (vetResponse == null) {
+          print('❌ El servidor devolvió una respuesta null');
+          throw VetNotFoundException(
+            'No se encontró perfil de veterinario para este usuario',
+          );
+        }
+
+        if (vetResponse is! Map<String, dynamic>) {
+          print(
+            '❌ La respuesta del servidor no es un mapa válido: ${vetResponse.runtimeType}',
+          );
+          throw Exception('Formato de respuesta inválido del servidor');
+        }
+
+        final fullResponse =
+            vetResponse.containsKey('message')
+                ? vetResponse
+                : {
+                  'message': 'Vet retrieved successfully',
+                  'data': vetResponse,
+                };
+
+        await SharedPreferencesHelper.saveVetProfileFromResponse(fullResponse);
+        print('✅ Veterinario encontrado en servidor y guardado localmente');
+
+        await _updateHeaderData();
+      } catch (e) {
+        print('❌ Error específico al obtener datos del veterinario: $e');
+
+        if (e.toString().contains('404') ||
+            e.toString().contains('not found') ||
+            e.toString().contains('no encontrado') ||
+            e is VetNotFoundException) {
+          print(
+            '🚨 Veterinario no encontrado - Mostrando modal de completar perfil',
+          );
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              print('🔄 Widget montado, mostrando modal...');
+              _showCompleteProfileModal();
+            } else {
+              print('❌ Widget no montado, no se puede mostrar modal');
+            }
+          });
+        } else {
+          rethrow;
+        }
+      }
     } catch (e) {
-      print('❌ Error al verificar perfil de veterinario: $e');
+      print('❌ Error general al verificar perfil de veterinario: $e');
 
-      if (e.toString().contains('404') ||
-          e.toString().contains('no encontrado')) {
-        print(
-          '🚨 Veterinario no encontrado - Mostrando modal de completar perfil',
-        );
+      String errorMessage = 'Error al verificar el perfil del veterinario';
+
+      if (e.toString().contains('network') ||
+          e.toString().contains('connection')) {
+        errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
+      } else if (e.toString().contains('timeout')) {
+        errorMessage = 'Tiempo de espera agotado. Intenta nuevamente.';
+      } else if (e.toString().contains('inicia sesión')) {
+        errorMessage = e.toString();
+      }
+
+      if (!e.toString().contains('404') &&
+          !e.toString().contains('not found')) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            print('🔄 Widget montado, mostrando modal...');
-            _showCompleteProfileModal();
-          } else {
-            print('❌ Widget no montado, no se puede mostrar modal');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 5),
+              ),
+            );
           }
         });
       }
     } finally {
-      setState(() {
-        _isCheckingVetProfile = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isCheckingVetProfile = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _updateHeaderData() async {
+    try {
+      final firstName = await SharedPreferencesHelper.getUserFirstName() ?? '';
+      final profilePhoto =
+          await SharedPreferencesHelper.getUserProfilePhoto() ?? '';
+
+      if (mounted) {
+        setState(() {
+          _vetFirstName = firstName.isNotEmpty ? firstName : 'Doctor';
+          _vetProfilePhoto = profilePhoto.isNotEmpty ? profilePhoto : null;
+        });
+      }
+    } catch (e) {
+      print('Error actualizando datos del header: $e');
     }
   }
 
@@ -226,6 +329,7 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
             onProfileCompleted: () {
               Navigator.pop(context);
               _checkVetProfile();
+              _updateHeaderData();
             },
           ),
     );
@@ -277,8 +381,6 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
                         _buildTodayStats(),
                         const SizedBox(height: AppSizes.spaceXL),
                         _buildTodaySchedule(),
-                        const SizedBox(height: AppSizes.spaceXL),
-                        _buildQuickActions(),
                         const SizedBox(height: 100),
                       ],
                     ),
@@ -356,24 +458,39 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _userGreeting,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textOnDark,
+                RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: _userGreeting,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textOnDark,
+                        ),
+                      ),
+                      if (_vetFirstName.isNotEmpty) ...[
+                        const TextSpan(
+                          text: ', ',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textOnDark,
+                          ),
+                        ),
+                        TextSpan(
+                          text: 'Dr. $_vetFirstName',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.secondary,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: AppSizes.spaceS),
-                const Text(
-                  'Medicina Veterinaria General',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.textOnDark,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
               ],
             ),
           ),
@@ -383,11 +500,66 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
             decoration: BoxDecoration(
               color: AppColors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(40),
+              border: Border.all(
+                color: AppColors.white.withOpacity(0.3),
+                width: 2,
+              ),
             ),
-            child: const Icon(
-              Icons.medical_services_rounded,
-              color: AppColors.white,
-              size: 40,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(38),
+              child:
+                  _vetProfilePhoto != null && _vetProfilePhoto!.isNotEmpty
+                      ? Image.network(
+                        _vetProfilePhoto!,
+                        width: 76,
+                        height: 76,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 76,
+                            height: 76,
+                            decoration: BoxDecoration(
+                              color: AppColors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(38),
+                            ),
+                            child: const Icon(
+                              Icons.medical_services_rounded,
+                              color: AppColors.white,
+                              size: 40,
+                            ),
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            width: 76,
+                            height: 76,
+                            decoration: BoxDecoration(
+                              color: AppColors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(38),
+                            ),
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.white,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                      : Container(
+                        width: 76,
+                        height: 76,
+                        decoration: BoxDecoration(
+                          color: AppColors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(38),
+                        ),
+                        child: const Icon(
+                          Icons.medical_services_rounded,
+                          color: AppColors.white,
+                          size: 40,
+                        ),
+                      ),
             ),
           ),
         ],
@@ -641,90 +813,6 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
       ],
     );
   }
-
-  Widget _buildQuickActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Acciones Rápidas',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: AppSizes.spaceM),
-        _buildActionCard(
-          title: 'Configurar Horarios',
-          icon: Icons.schedule_rounded,
-          color: AppColors.secondary,
-          onTap: () {
-            Navigator.pushNamed(context, '/configure-schedule');
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionCard({
-    required String title,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(AppSizes.paddingM),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppColors.white, Colors.grey.shade50],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(AppSizes.radiusXL),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.15),
-              blurRadius: 15,
-              offset: const Offset(0, 6),
-            ),
-          ],
-          border: Border.all(color: color.withOpacity(0.2), width: 1),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSizes.paddingM),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(AppSizes.radiusM),
-              ),
-              child: Icon(icon, color: color, size: AppSizes.iconL),
-            ),
-            const SizedBox(width: AppSizes.spaceM),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: AppColors.textSecondary,
-              size: 16,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class VetProfileFormModal extends StatefulWidget {
@@ -771,17 +859,52 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
   Future<void> _fetchAndSaveVetData(String userId) async {
     try {
       print('🔄 Obteniendo datos completos del veterinario...');
+      print('User ID: $userId');
+
+      if (userId.isEmpty) {
+        throw Exception('User ID está vacío');
+      }
 
       final vetDataSource = sl<VetRemoteDataSource>();
-      final vetData = await vetDataSource.getVetByUserId(userId);
+      final vetResponse = await vetDataSource.getVetByUserId(userId);
 
-      print('📥 Datos del veterinario obtenidos: $vetData');
+      print('📥 Datos del veterinario obtenidos: $vetResponse');
 
-      await SharedPreferencesHelper.saveVetData(vetData);
+      if (vetResponse == null) {
+        throw Exception('El servidor devolvió una respuesta vacía');
+      }
+
+      if (vetResponse is! Map<String, dynamic>) {
+        throw Exception(
+          'El servidor devolvió un formato de respuesta inválido: ${vetResponse.runtimeType}',
+        );
+      }
+
+      final fullResponse =
+          vetResponse.containsKey('message')
+              ? vetResponse
+              : {'message': 'Vet retrieved successfully', 'data': vetResponse};
+
+      await SharedPreferencesHelper.saveVetProfileFromResponse(fullResponse);
 
       print('✅ Datos del veterinario guardados en SharedPreferences');
     } catch (e) {
       print('❌ Error al obtener y guardar datos del veterinario: $e');
+
+      String errorMessage = 'Error al obtener datos del veterinario';
+
+      if (e.toString().contains('404') || e.toString().contains('not found')) {
+        errorMessage =
+            'No se encontró el perfil del veterinario después de crearlo. Intenta nuevamente.';
+      } else if (e.toString().contains('network') ||
+          e.toString().contains('connection')) {
+        errorMessage = 'Error de conexión al obtener datos del veterinario.';
+      } else if (e.toString().contains('timeout')) {
+        errorMessage =
+            'Tiempo de espera agotado al obtener datos del veterinario.';
+      }
+
+      throw Exception(errorMessage);
     }
   }
 

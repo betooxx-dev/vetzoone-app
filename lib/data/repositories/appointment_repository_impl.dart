@@ -38,6 +38,16 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
   }
 
   @override
+  Future<List<Appointment>> getAppointmentsByVetId(String vetId) async {
+    try {
+      final models = await remoteDataSource.getAppointmentsByVetId(vetId);
+      return models;
+    } catch (e) {
+      throw Exception('Repository error: $e');
+    }
+  }
+
+  @override
   Future<Appointment> getAppointmentById(String appointmentId) async {
     try {
       final model = await remoteDataSource.getAppointmentById(appointmentId);

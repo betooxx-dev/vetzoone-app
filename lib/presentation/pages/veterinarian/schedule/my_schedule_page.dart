@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import '../../../widgets/cards/appointment_card.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/storage/shared_preferences_helper.dart';
+import '../../../../core/injection/injection.dart';
+import '../../../../domain/usecases/appointment/get_upcoming_appointments_usecase.dart';
+import '../../../../domain/entities/appointment.dart' as domain;
+import '../../../widgets/cards/appointment_card.dart' show AppointmentStatus;
+
+
 
 class MySchedulePage extends StatefulWidget {
   const MySchedulePage({super.key});
@@ -10,113 +17,91 @@ class MySchedulePage extends StatefulWidget {
   State<MySchedulePage> createState() => _MySchedulePageState();
 }
 
-class _MySchedulePageState extends State<MySchedulePage>
-    with TickerProviderStateMixin {
-  late TabController _tabController;
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-
+class _MySchedulePageState extends State<MySchedulePage> {
   DateTime selectedDate = DateTime.now();
   String _viewMode = 'day';
-
-  final List<Map<String, dynamic>> _allAppointments = [
-    {
-      'id': '1',
-      'petName': 'Max',
-      'ownerName': 'Juan Pérez',
-      'appointmentType': 'Consulta General',
-      'dateTime': DateTime.now().add(const Duration(hours: 2)),
-      'status': AppointmentStatus.confirmed,
-      'duration': 30,
-      'notes': 'Control de rutina',
-      'ownerPhone': '+52 961 123 4567',
-    },
-    {
-      'id': '2',
-      'petName': 'Luna',
-      'ownerName': 'Ana García',
-      'appointmentType': 'Vacunación',
-      'dateTime': DateTime.now().add(const Duration(hours: 4)),
-      'status': AppointmentStatus.scheduled,
-      'duration': 20,
-      'notes': 'Vacuna anual',
-      'ownerPhone': '+52 961 234 5678',
-    },
-    {
-      'id': '3',
-      'petName': 'Rocky',
-      'ownerName': 'Carlos López',
-      'appointmentType': 'Cirugía Menor',
-      'dateTime': DateTime.now().add(const Duration(days: 1, hours: 1)),
-      'status': AppointmentStatus.scheduled,
-      'duration': 60,
-      'notes': 'Remoción de quiste',
-      'ownerPhone': '+52 961 345 6789',
-    },
-    {
-      'id': '4',
-      'petName': 'Milo',
-      'ownerName': 'María Rodríguez',
-      'appointmentType': 'Control de peso',
-      'dateTime': DateTime.now().add(const Duration(days: 2)),
-      'status': AppointmentStatus.scheduled,
-      'duration': 15,
-      'notes': 'Seguimiento dieta',
-      'ownerPhone': '+52 961 456 7890',
-    },
-    {
-      'id': '5',
-      'petName': 'Bella',
-      'ownerName': 'Luis Martínez',
-      'appointmentType': 'Emergencia',
-      'dateTime': DateTime.now().add(const Duration(days: 3)),
-      'status': AppointmentStatus.completed,
-      'duration': 45,
-      'notes': 'Revisión urgente',
-      'ownerPhone': '+52 961 567 8901',
-    },
-    {
-      'id': '6',
-      'petName': 'Coco',
-      'ownerName': 'Patricia Silva',
-      'appointmentType': 'Consulta General',
-      'dateTime': DateTime.now().add(const Duration(days: 7)),
-      'status': AppointmentStatus.scheduled,
-      'duration': 30,
-      'notes': 'Primera consulta',
-      'ownerPhone': '+52 961 678 9012',
-    },
-    {
-      'id': '7',
-      'petName': 'Rex',
-      'ownerName': 'Fernando López',
-      'appointmentType': 'Vacunación',
-      'dateTime': DateTime.now().add(const Duration(days: 14)),
-      'status': AppointmentStatus.scheduled,
-      'duration': 20,
-      'notes': 'Refuerzo vacuna',
-      'ownerPhone': '+52 961 789 0123',
-    },
-  ];
+  
+  List<domain.Appointment> _allAppointments = [];
+  bool _isLoading = false;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
-    _animationController.forward();
+    _loadVetAppointments();
+  }
+
+  Future<void> _loadVetAppointments() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // Obtener el vet UUID desde SharedPreferences
+      final vetId = await SharedPreferencesHelper.getVetId();
+      
+      if (vetId == null || vetId.isEmpty) {
+        throw Exception('No se encontró el ID del veterinario');
+      }
+
+      print('🔍 Cargando citas para veterinario: $vetId');
+
+      // Usar el use case para obtener las citas
+      final getVetAppointmentsUseCase = sl<GetVetAppointmentsUseCase>();
+      final appointments = await getVetAppointmentsUseCase.call(vetId);
+
+      // Ordenar las citas por fecha
+      appointments.sort((a, b) => a.appointmentDate.compareTo(b.appointmentDate));
+
+      setState(() {
+        _allAppointments = appointments;
+        _isLoading = false;
+      });
+
+      print('✅ Citas cargadas exitosamente: ${appointments.length}');
+    } catch (e) {
+      print('❌ Error cargando citas: $e');
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Funciones auxiliares para mapear datos de Appointment a AppointmentCard
+  String _getPetName(domain.Appointment appointment) {
+    return appointment.pet?.name ?? 'Mascota sin nombre';
+  }
+
+  String _getOwnerName(domain.Appointment appointment) {
+    // Si no hay user en la relación, intentamos crear un nombre genérico
+    return 'Propietario';
+  }
+
+  String _getAppointmentType(domain.Appointment appointment) {
+    return appointment.notes ?? 'Consulta General';
+  }
+
+  AppointmentStatus _mapAppointmentStatus(domain.Appointment appointment) {
+    switch (appointment.status) {
+      case domain.AppointmentStatus.pending:
+        return AppointmentStatus.scheduled;
+      case domain.AppointmentStatus.confirmed:
+        return AppointmentStatus.confirmed;
+      case domain.AppointmentStatus.inProgress:
+        return AppointmentStatus.inProgress;
+      case domain.AppointmentStatus.completed:
+        return AppointmentStatus.completed;
+      case domain.AppointmentStatus.cancelled:
+        return AppointmentStatus.cancelled;
+      case domain.AppointmentStatus.rescheduled:
+        return AppointmentStatus.rescheduled;
+    }
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 
@@ -127,16 +112,17 @@ class _MySchedulePageState extends State<MySchedulePage>
       body: Stack(
         children: [
           _buildBackgroundShapes(),
-          FadeTransition(
-            opacity: _fadeAnimation,
-            child: NestedScrollView(
-              headerSliverBuilder: (context, innerBoxIsScrolled) {
-                return [
-                  _buildSliverAppBar(),
-                  SliverToBoxAdapter(child: _buildViewToggle()),
-                ];
-              },
-              body: _buildCurrentView(),
+          SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildModernAppBar(),
+                  const SizedBox(height: AppSizes.spaceL),
+                  _buildViewToggle(),
+                  const SizedBox(height: AppSizes.spaceL),
+                  _buildCurrentViewContent(),
+                ],
+              ),
             ),
           ),
         ],
@@ -187,45 +173,74 @@ class _MySchedulePageState extends State<MySchedulePage>
     );
   }
 
-  Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      expandedHeight: 120,
-      floating: false,
-      pinned: true,
-      backgroundColor: AppColors.primary,
-      automaticallyImplyLeading: false,
-      centerTitle: true,
-      flexibleSpace: FlexibleSpaceBar(
-        centerTitle: true,
-        titlePadding: const EdgeInsets.only(bottom: 16),
-        title: const Text(
-          'Mi Agenda',
-          style: TextStyle(
-            color: AppColors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+  Widget _buildModernAppBar() {
+    return Container(
+      margin: const EdgeInsets.all(AppSizes.paddingL),
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
-        ),
-        background: Container(
-          decoration: BoxDecoration(gradient: AppColors.primaryGradient),
-        ),
+        ],
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.calendar_today, color: AppColors.white),
-          onPressed: () => _selectDate(),
-        ),
-        IconButton(
-          icon: const Icon(Icons.settings, color: AppColors.white),
-          onPressed: () => Navigator.pushNamed(context, '/configure-schedule'),
-        ),
-      ],
+      child: Row(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: AppColors.white,
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          const SizedBox(width: AppSizes.spaceM),
+          const Expanded(
+            child: Text(
+              'Mi Agenda',
+              style: TextStyle(
+                color: AppColors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.calendar_today, color: AppColors.white),
+              onPressed: () => _selectDate(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
+  Widget _buildCurrentViewContent() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
+      child: _buildCurrentView(),
+    );
+  }
+
+
+
   Widget _buildViewToggle() {
     return Container(
-      margin: const EdgeInsets.all(AppSizes.paddingL),
+      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [AppColors.white, Colors.grey.shade50],
@@ -294,34 +309,32 @@ class _MySchedulePageState extends State<MySchedulePage>
   Widget _buildDayView() {
     final dayAppointments = _getAppointmentsForDate(selectedDate);
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(AppSizes.paddingL),
-      itemCount: dayAppointments.length + 1,
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return _buildDateHeader();
-        }
-
-        final appointment = dayAppointments[index - 1];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: AppSizes.spaceM),
-          child: AppointmentCard(
-            petName: appointment['petName'],
-            veterinarianName: 'Dr. María González',
-            appointmentType: appointment['appointmentType'],
-            dateTime: appointment['dateTime'],
-            status: appointment['status'],
-            notes: appointment['notes'],
-            isOwnerView: false,
-            ownerName: appointment['ownerName'],
-            onTap: () => _navigateToAppointmentDetail(appointment),
-            onConfirm:
-                _canConfirmAppointment(appointment['status'])
-                    ? () => _confirmAppointment(appointment)
-                    : null,
+    return Column(
+      children: [
+        _buildDateHeader(),
+        const SizedBox(height: AppSizes.spaceM),
+        ...dayAppointments.map(
+          (appointment) => Padding(
+            padding: const EdgeInsets.only(bottom: AppSizes.spaceM),
+            child: AppointmentCard(
+              petName: _getPetName(appointment),
+              veterinarianName: 'Dr. María González',
+              appointmentType: _getAppointmentType(appointment),
+              dateTime: appointment.appointmentDate,
+              status: _mapAppointmentStatus(appointment),
+              notes: appointment.notes,
+              isOwnerView: false,
+              ownerName: _getOwnerName(appointment),
+              onTap: () => _navigateToAppointmentDetail(appointment),
+              onConfirm:
+                  _canConfirmAppointment(appointment.status)
+                      ? () => _confirmAppointment(appointment)
+                      : null,
+            ),
           ),
-        );
-      },
+        ),
+        const SizedBox(height: 100), // Espacio adicional al final
+      ],
     );
   }
 
@@ -334,21 +347,20 @@ class _MySchedulePageState extends State<MySchedulePage>
       (index) => weekStart.add(Duration(days: index)),
     );
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(AppSizes.paddingL),
-      itemCount: weekDays.length,
-      itemBuilder: (context, index) {
-        final day = weekDays[index];
-        final dayAppointments = _getAppointmentsForDate(day);
-
-        return _buildWeekDaySection(day, dayAppointments);
-      },
+    return Column(
+      children: [
+        ...weekDays.map((day) {
+          final dayAppointments = _getAppointmentsForDate(day);
+          return _buildWeekDaySection(day, dayAppointments);
+        }),
+        const SizedBox(height: 100), // Espacio adicional al final
+      ],
     );
   }
 
   Widget _buildWeekDaySection(
     DateTime day,
-    List<Map<String, dynamic>> appointments,
+    List<domain.Appointment> appointments,
   ) {
     final isToday = _isSameDay(day, DateTime.now());
     final dayName = _getDayName(day.weekday);
@@ -460,9 +472,9 @@ class _MySchedulePageState extends State<MySchedulePage>
     );
   }
 
-  Widget _buildWeekAppointmentItem(Map<String, dynamic> appointment) {
+  Widget _buildWeekAppointmentItem(domain.Appointment appointment) {
     final time =
-        '${appointment['dateTime'].hour.toString().padLeft(2, '0')}:${appointment['dateTime'].minute.toString().padLeft(2, '0')}';
+        '${appointment.appointmentDate.hour.toString().padLeft(2, '0')}:${appointment.appointmentDate.minute.toString().padLeft(2, '0')}';
 
     return InkWell(
       onTap: () => _navigateToAppointmentDetail(appointment),
@@ -500,7 +512,7 @@ class _MySchedulePageState extends State<MySchedulePage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${appointment['petName']} - ${appointment['ownerName']}',
+                    '${_getPetName(appointment)} - ${_getOwnerName(appointment)}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -508,7 +520,7 @@ class _MySchedulePageState extends State<MySchedulePage>
                     ),
                   ),
                   Text(
-                    appointment['appointmentType'],
+                    _getAppointmentType(appointment),
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -517,7 +529,7 @@ class _MySchedulePageState extends State<MySchedulePage>
                 ],
               ),
             ),
-            _buildStatusChip(appointment['status']),
+            _buildStatusChip(_mapAppointmentStatus(appointment)),
           ],
         ),
       ),
@@ -546,17 +558,15 @@ class _MySchedulePageState extends State<MySchedulePage>
         break;
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSizes.paddingL),
-      child: Column(
-        children: [
-          _buildMonthHeader(),
-          const SizedBox(height: AppSizes.spaceM),
-          _buildMonthCalendar(weeks),
-          const SizedBox(height: AppSizes.spaceL),
-          _buildMonthAppointmentsList(),
-        ],
-      ),
+    return Column(
+      children: [
+        _buildMonthHeader(),
+        const SizedBox(height: AppSizes.spaceM),
+        _buildMonthCalendar(weeks),
+        const SizedBox(height: AppSizes.spaceL),
+        _buildMonthAppointmentsList(),
+        const SizedBox(height: 100), // Espacio adicional al final
+      ],
     );
   }
 
@@ -842,9 +852,9 @@ class _MySchedulePageState extends State<MySchedulePage>
     );
   }
 
-  Widget _buildMonthAppointmentItem(Map<String, dynamic> appointment) {
+  Widget _buildMonthAppointmentItem(domain.Appointment appointment) {
     final time =
-        '${appointment['dateTime'].hour.toString().padLeft(2, '0')}:${appointment['dateTime'].minute.toString().padLeft(2, '0')}';
+        '${appointment.appointmentDate.hour.toString().padLeft(2, '0')}:${appointment.appointmentDate.minute.toString().padLeft(2, '0')}';
 
     return InkWell(
       onTap: () => _navigateToAppointmentDetail(appointment),
@@ -882,7 +892,7 @@ class _MySchedulePageState extends State<MySchedulePage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${appointment['petName']} - ${appointment['ownerName']}',
+                    '${_getPetName(appointment)} - ${_getOwnerName(appointment)}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -890,7 +900,7 @@ class _MySchedulePageState extends State<MySchedulePage>
                     ),
                   ),
                   Text(
-                    appointment['appointmentType'],
+                    _getAppointmentType(appointment),
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -899,7 +909,7 @@ class _MySchedulePageState extends State<MySchedulePage>
                 ],
               ),
             ),
-            _buildStatusChip(appointment['status']),
+            _buildStatusChip(_mapAppointmentStatus(appointment)),
           ],
         ),
       ),
@@ -1023,14 +1033,14 @@ class _MySchedulePageState extends State<MySchedulePage>
     );
   }
 
-  List<Map<String, dynamic>> _getAppointmentsForDate(DateTime date) {
+  List<domain.Appointment> _getAppointmentsForDate(DateTime date) {
     return _allAppointments.where((appointment) {
-        final appointmentDate = appointment['dateTime'] as DateTime;
+        final appointmentDate = appointment.appointmentDate;
         return _isSameDay(appointmentDate, date);
       }).toList()
       ..sort(
         (a, b) =>
-            (a['dateTime'] as DateTime).compareTo(b['dateTime'] as DateTime),
+            a.appointmentDate.compareTo(b.appointmentDate),
       );
   }
 
@@ -1115,7 +1125,7 @@ class _MySchedulePageState extends State<MySchedulePage>
     }
   }
 
-  void _navigateToAppointmentDetail(Map<String, dynamic> appointment) {
+  void _navigateToAppointmentDetail(domain.Appointment appointment) {
     Navigator.pushNamed(
       context,
       '/appointment-detail-vet',
@@ -1123,18 +1133,17 @@ class _MySchedulePageState extends State<MySchedulePage>
     );
   }
 
-  bool _canConfirmAppointment(AppointmentStatus status) {
-    return status == AppointmentStatus.scheduled;
+  bool _canConfirmAppointment(domain.AppointmentStatus status) {
+    return status == domain.AppointmentStatus.pending;
   }
 
-  void _confirmAppointment(Map<String, dynamic> appointment) {
-    setState(() {
-      appointment['status'] = AppointmentStatus.confirmed;
-    });
-
+  void _confirmAppointment(domain.Appointment appointment) {
+    // TODO: Implementar llamada al API para actualizar el status
+    // El status es immutable, necesitamos hacer una petición HTTP
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Cita confirmada para ${appointment['petName']}'),
+        content: Text('Cita confirmada para ${_getPetName(appointment)}'),
         backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
