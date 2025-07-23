@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/services/user_service.dart';
 import '../../../../core/injection/injection.dart';
 import '../../../../data/datasources/user/user_remote_data_source.dart';
@@ -42,7 +44,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
       professionalData = {
         'firstName': user['firstName'],
         'lastName': user['lastName'],
-        'fullName': user['fullName'], // Para mostrar en el header
+        'fullName': user['fullName'],
         'license': 'MV-12345',
         'email': user['email'],
         'phone': user['phone'],
@@ -94,68 +96,197 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
   @override
   Widget build(BuildContext context) {
     if (professionalData.isEmpty) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        backgroundColor: AppColors.backgroundLight,
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8F9FA),
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          title: const Text(
-            'Perfil Profesional',
-            style: TextStyle(
-              color: Color(0xFF1A1A1A),
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          actions: [
-            if (_isLoading)
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0D9488)),
+    return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
+      body: Stack(
+        children: [
+          _buildBackgroundShapes(),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildModernAppBar(),
+                _buildTabBar(),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildProfessionalInfoTab(),
+                      _buildSpecialtiesTab(),
+                      _buildServicesTab(),
+                    ],
                   ),
                 ),
-              )
-            else
-              IconButton(
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackgroundShapes() {
+    return Stack(
+      children: [
+        Positioned(
+          top: -100,
+          right: -50,
+          child: Container(
+            width: AppSizes.decorativeShapeXL,
+            height: AppSizes.decorativeShapeXL,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(125),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 200,
+          left: -80,
+          child: Container(
+            width: AppSizes.decorativeShapeL,
+            height: AppSizes.decorativeShapeL,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(90),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: -100,
+          right: -60,
+          child: Container(
+            width: AppSizes.decorativeShapeM,
+            height: AppSizes.decorativeShapeM,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(60),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModernAppBar() {
+    return Container(
+      margin: const EdgeInsets.all(AppSizes.paddingL),
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: AppColors.white,
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          const SizedBox(width: AppSizes.spaceM),
+          const Expanded(
+            child: Text(
+              'Perfil Profesional',
+              style: TextStyle(
+                color: AppColors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          if (_isLoading)
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingS),
+              decoration: BoxDecoration(
+                color: AppColors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+              child: const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                ),
+              ),
+            )
+          else
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+              child: IconButton(
                 icon: Icon(
                   _isEditing ? Icons.check : Icons.edit,
-                  color: const Color(0xFF0D9488),
+                  color: AppColors.white,
                 ),
                 onPressed: _isEditing ? _saveProfile : _toggleEditing,
               ),
-          ],
-          bottom: TabBar(
-            controller: _tabController,
-            labelColor: const Color(0xFF0D9488),
-            unselectedLabelColor: const Color(0xFF6B7280),
-            indicatorColor: const Color(0xFF0D9488),
-            tabs: const [
-              Tab(text: 'Información'),
-              Tab(text: 'Especialidades'),
-              Tab(text: 'Servicios'),
-            ],
-          ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabBar() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        body: TabBarView(
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.15),
+          width: 1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        child: TabBar(
           controller: _tabController,
-          children: [
-            _buildProfessionalInfoTab(),
-            _buildSpecialtiesTab(),
-            _buildServicesTab(),
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: AppColors.primary,
+          indicatorWeight: 3,
+          indicatorSize: TabBarIndicatorSize.tab,
+          labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+          dividerColor: Colors.transparent,
+          overlayColor: WidgetStateProperty.all(Colors.transparent),
+          tabs: const [
+            Tab(text: 'Información'),
+            Tab(text: 'Especialidades'),
+            Tab(text: 'Servicios'),
           ],
         ),
       ),
@@ -164,11 +295,11 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
 
   Widget _buildProfessionalInfoTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       child: Column(
         children: [
           _buildProfileHeader(),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSizes.spaceL),
           _buildInfoCard(
             title: 'Información Profesional',
             children: [
@@ -178,35 +309,35 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
                 controller: _firstNameController,
                 enabled: _isEditing,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spaceM),
               _buildInfoField(
                 icon: Icons.person,
                 label: 'Apellido',
                 controller: _lastNameController,
                 enabled: _isEditing,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spaceM),
               _buildInfoField(
                 icon: Icons.badge_outlined,
                 label: 'Cédula profesional',
                 value: professionalData['license'],
                 enabled: false,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spaceM),
               _buildInfoField(
                 icon: Icons.email_outlined,
                 label: 'Correo electrónico',
                 value: professionalData['email'],
                 enabled: false,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spaceM),
               _buildInfoField(
                 icon: Icons.phone_outlined,
                 label: 'Teléfono',
                 controller: _phoneController,
                 enabled: _isEditing,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spaceM),
               _buildInfoField(
                 icon: Icons.location_on_outlined,
                 label: 'Dirección de consulta',
@@ -214,7 +345,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
                 enabled: _isEditing,
                 maxLines: 2,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spaceM),
               _buildInfoField(
                 icon: Icons.work_outline,
                 label: 'Años de experiencia',
@@ -224,7 +355,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSizes.spaceL),
           _buildInfoCard(
             title: 'Biografía Profesional',
             children: [
@@ -244,7 +375,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
 
   Widget _buildSpecialtiesTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       child: Column(
         children: [
           _buildInfoCard(
@@ -261,7 +392,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
 
   Widget _buildServicesTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       child: Column(
         children: [
           _buildInfoCard(
@@ -279,17 +410,25 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
   Widget _buildProfileHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.15),
+          width: 1,
+        ),
       ),
       child: Column(
         children: [
@@ -312,44 +451,39 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
                   height: 80,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFF0D9488),
-                      width: 3,
-                    ),
+                    border: Border.all(color: AppColors.primary, width: 3),
                   ),
                   child: ClipOval(
-                    child: _selectedImageFile != null
-                        ? Image.file(
-                            _selectedImageFile!,
-                            fit: BoxFit.cover,
-                          )
-                        : (professionalData['profileImage'] != null &&
+                    child:
+                        _selectedImageFile != null
+                            ? Image.file(_selectedImageFile!, fit: BoxFit.cover)
+                            : (professionalData['profileImage'] != null &&
                                 professionalData['profileImage'].isNotEmpty)
                             ? Image.network(
-                                professionalData['profileImage'],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    color: const Color(0xFF0D9488).withOpacity(0.1),
-                                    child: const Icon(
-                                      Icons.person,
-                                      size: 40,
-                                      color: Color(0xFF0D9488),
-                                    ),
-                                  );
-                                },
-                              )
+                              professionalData['profileImage'],
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: AppColors.primary.withOpacity(0.1),
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 40,
+                                    color: AppColors.primary,
+                                  ),
+                                );
+                              },
+                            )
                             : Container(
-                                color: const Color(0xFF0D9488).withOpacity(0.1),
-                                child: const Icon(
-                                  Icons.person,
-                                  size: 40,
-                                  color: Color(0xFF0D9488),
-                                ),
+                              color: AppColors.primary.withOpacity(0.1),
+                              child: Icon(
+                                Icons.person,
+                                size: 40,
+                                color: AppColors.primary,
                               ),
+                            ),
                   ),
                 ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSizes.spaceM),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,39 +493,39 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1A1A),
+                        color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSizes.spaceXS),
                     Text(
                       'Cédula: ${professionalData['license']}',
                       style: const TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF6B7280),
+                        color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            'Verificado',
-                            style: TextStyle(
-                              color: Color(0xFF10B981),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                    const SizedBox(height: AppSizes.spaceS),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.paddingS,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                        border: Border.all(
+                          color: AppColors.success.withOpacity(0.3),
+                          width: 1,
                         ),
-                      ],
+                      ),
+                      child: Text(
+                        'Verificado',
+                        style: TextStyle(
+                          color: AppColors.success,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -409,17 +543,25 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.15),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,10 +571,10 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSizes.spaceL),
           ...children,
         ],
       ),
@@ -453,62 +595,77 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
       children: [
         Row(
           children: [
-            Icon(icon, size: 20, color: const Color(0xFF6B7280)),
-            const SizedBox(width: 8),
+            Icon(icon, size: 20, color: AppColors.primary),
+            const SizedBox(width: AppSizes.spaceS),
             Text(
               label,
               style: const TextStyle(
                 fontSize: 14,
-                color: Color(0xFF6B7280),
+                color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSizes.spaceS),
         if (controller != null)
           TextFormField(
             controller: controller,
             enabled: enabled,
             maxLines: maxLines,
             keyboardType: keyboardType,
+            style: const TextStyle(color: AppColors.textPrimary),
             decoration: InputDecoration(
               filled: true,
-              fillColor: enabled ? Colors.white : const Color(0xFFF8F9FA),
+              fillColor: enabled ? AppColors.white : AppColors.backgroundLight,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                borderSide: BorderSide(
+                  color: AppColors.primary.withOpacity(0.2),
+                ),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                borderSide: BorderSide(
+                  color: AppColors.primary.withOpacity(0.2),
+                ),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF0D9488)),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                borderSide: BorderSide(color: AppColors.primary),
               ),
               disabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                borderSide: BorderSide(
+                  color: AppColors.textSecondary.withOpacity(0.2),
+                ),
               ),
               contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
+                horizontal: AppSizes.paddingM,
+                vertical: AppSizes.paddingS,
               ),
             ),
           )
         else
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.paddingM,
+              vertical: AppSizes.paddingS,
+            ),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8F9FA),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
+              color: AppColors.backgroundLight,
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              border: Border.all(
+                color: AppColors.textSecondary.withOpacity(0.2),
+              ),
             ),
             child: Text(
               value ?? '',
-              style: const TextStyle(fontSize: 16, color: Color(0xFF6B7280)),
+              style: const TextStyle(
+                fontSize: 16,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
       ],
@@ -518,22 +675,23 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
   Widget _buildSpecialtyItem(String specialty) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      margin: const EdgeInsets.only(bottom: AppSizes.spaceS),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D9488).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
       ),
       child: Row(
         children: [
-          Icon(Icons.star, color: const Color(0xFF0D9488), size: 20),
-          const SizedBox(width: 12),
+          Icon(Icons.star, color: AppColors.primary, size: 20),
+          const SizedBox(width: AppSizes.spaceM),
           Text(
             specialty,
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF1A1A1A),
+              color: AppColors.textPrimary,
             ),
           ),
         ],
@@ -544,26 +702,26 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
   Widget _buildServiceItem(String service) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      margin: const EdgeInsets.only(bottom: AppSizes.spaceS),
       decoration: BoxDecoration(
-        color: const Color(0xFF3B82F6).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.secondary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        border: Border.all(
+          color: AppColors.secondary.withOpacity(0.3),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.medical_services,
-            color: const Color(0xFF3B82F6),
-            size: 20,
-          ),
-          const SizedBox(width: 12),
+          Icon(Icons.medical_services, color: AppColors.secondary, size: 20),
+          const SizedBox(width: AppSizes.spaceM),
           Text(
             service,
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF1A1A1A),
+              color: AppColors.textPrimary,
             ),
           ),
         ],
@@ -591,8 +749,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
       }
 
       final userRemoteDataSource = sl<UserRemoteDataSource>();
-      
-      // Obtener nombre y apellido de los controladores
+
       final firstName = _firstNameController.text.trim();
       final lastName = _lastNameController.text.trim();
 
@@ -614,11 +771,11 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
         updatedUser = await userRemoteDataSource.updateUser(userId, userData);
       }
 
-      // Actualizar datos locales
       setState(() {
         professionalData['firstName'] = updatedUser['first_name'];
         professionalData['lastName'] = updatedUser['last_name'];
-        professionalData['fullName'] = '${updatedUser['first_name']} ${updatedUser['last_name']}';
+        professionalData['fullName'] =
+            '${updatedUser['first_name']} ${updatedUser['last_name']}';
         professionalData['phone'] = updatedUser['phone'];
         if (updatedUser['profile_photo'] != null) {
           professionalData['profileImage'] = updatedUser['profile_photo'];
@@ -627,14 +784,17 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
         _selectedImageFile = null;
       });
 
-      // Actualizar controladores
       _initializeControllers();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Perfil actualizado correctamente'),
-            backgroundColor: Color(0xFF0D9488),
+          SnackBar(
+            content: const Text('Perfil actualizado correctamente'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
           ),
         );
       }
@@ -644,7 +804,11 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al actualizar el perfil: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
           ),
         );
       }
@@ -656,6 +820,4 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage>
       }
     }
   }
-
-
 }

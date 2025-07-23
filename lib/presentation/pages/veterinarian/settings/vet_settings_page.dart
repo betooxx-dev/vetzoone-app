@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/services/user_service.dart';
 
 class VetSettingsPage extends StatefulWidget {
@@ -10,9 +12,6 @@ class VetSettingsPage extends StatefulWidget {
 
 class _VetSettingsPageState extends State<VetSettingsPage> {
   Map<String, dynamic> userData = {};
-  bool _consultationReminders = true;
-  int _reminderMinutes = 15;
-  bool _patientDataEncryption = true;
 
   @override
   void initState() {
@@ -30,59 +29,90 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
   @override
   Widget build(BuildContext context) {
     if (userData.isEmpty) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        backgroundColor: AppColors.backgroundLight,
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          'Configuraciones',
-          style: TextStyle(
-            color: Color(0xFF1A1A1A),
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+      backgroundColor: AppColors.backgroundLight,
+      body: Stack(
+        children: [
+          _buildBackgroundShapes(),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSizes.paddingL),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildModernAppBar(),
+                  const SizedBox(height: AppSizes.spaceL),
+                  _buildUserHeader(),
+                  const SizedBox(height: AppSizes.spaceL),
+                  _buildAccountSettings(),
+                ],
+              ),
+            ),
           ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildUserHeader(),
-            const SizedBox(height: 24),
-            _buildProfessionalSettings(),
-            const SizedBox(height: 20),
-            _buildSecuritySettings(),
-            const SizedBox(height: 20),
-            _buildAccountSettings(),
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildUserHeader() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0D9488), Color(0xFF14B8A6)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  Widget _buildBackgroundShapes() {
+    return Stack(
+      children: [
+        Positioned(
+          top: -100,
+          right: -50,
+          child: Container(
+            width: AppSizes.decorativeShapeXL,
+            height: AppSizes.decorativeShapeXL,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(125),
+            ),
+          ),
         ),
-        borderRadius: BorderRadius.circular(20),
+        Positioned(
+          top: 200,
+          left: -80,
+          child: Container(
+            width: AppSizes.decorativeShapeL,
+            height: AppSizes.decorativeShapeL,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(90),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: -100,
+          right: -60,
+          child: Container(
+            width: AppSizes.decorativeShapeM,
+            height: AppSizes.decorativeShapeM,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(60),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModernAppBar() {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0D9488).withOpacity(0.3),
-            blurRadius: 15,
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
@@ -90,15 +120,68 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
       child: Row(
         children: [
           Container(
+            decoration: BoxDecoration(
+              color: AppColors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: AppColors.white,
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          const SizedBox(width: AppSizes.spaceM),
+          const Expanded(
+            child: Text(
+              'Configuraciones',
+              style: TextStyle(
+                color: AppColors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserHeader() {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.15),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(16),
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
             ),
-            child: const Icon(Icons.person, color: Colors.white, size: 32),
+            child: const Icon(Icons.person, color: AppColors.white, size: 32),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSizes.spaceM),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,33 +189,37 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
                 Text(
                   userData['fullName'] ?? 'Dr. Usuario',
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSizes.spaceXS),
                 Text(
                   'Medicina General • Cirugía',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: AppColors.textSecondary,
                     fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSizes.spaceXS),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
+                    horizontal: AppSizes.paddingS,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(10),
+                    color: AppColors.success.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                    border: Border.all(
+                      color: AppColors.success.withOpacity(0.3),
+                      width: 1,
+                    ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Verificado',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.success,
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                     ),
@@ -144,72 +231,6 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
         ],
       ),
     );
-  }
-
-  Widget _buildProfessionalSettings() {
-    return _buildSettingsSection(
-      title: 'Configuración Profesional',
-      icon: Icons.medical_services_outlined,
-      children: [
-        _buildSwitchTile(
-          title: 'Recordatorios de consulta',
-          subtitle: 'Recibe alertas antes de cada consulta programada',
-          value: _consultationReminders,
-          onChanged: (value) {
-            setState(() {
-              _consultationReminders = value;
-            });
-          },
-        ),
-        if (_consultationReminders) ...[
-          const SizedBox(height: 12),
-          _buildSliderTile(
-            title: 'Tiempo de recordatorio',
-            subtitle: '$_reminderMinutes minutos antes de la consulta',
-            value: _reminderMinutes.toDouble(),
-            min: 5,
-            max: 60,
-            divisions: 11,
-            onChanged: (value) {
-              setState(() {
-                _reminderMinutes = value.round();
-              });
-            },
-          ),
-        ],
-        _buildSwitchTile(
-          title: 'Encriptación de datos',
-          subtitle: 'Protege la información médica de los pacientes',
-          value: _patientDataEncryption,
-          onChanged: (value) {
-            setState(() {
-              _patientDataEncryption = value;
-            });
-          },
-        ),
-        const SizedBox(height: 16),
-        _buildActionTile(
-          icon: Icons.schedule_outlined,
-          title: 'Configurar horarios',
-          subtitle: 'Gestiona tu agenda y disponibilidad',
-          onTap: () {
-            Navigator.pushNamed(context, '/configure-schedule');
-          },
-        ),
-        _buildActionTile(
-          icon: Icons.analytics_outlined,
-          title: 'Ver estadísticas',
-          subtitle: 'Revisa métricas de tu práctica profesional',
-          onTap: () {
-            Navigator.pushNamed(context, '/statistics');
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSecuritySettings() {
-    return Container(); // Sección vacía ya que se eliminó el botón de cambiar contraseña
   }
 
   Widget _buildAccountSettings() {
@@ -225,19 +246,19 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
             Navigator.pushNamed(context, '/professional-profile');
           },
         ),
-        const SizedBox(height: 16),
+        _buildActionTile(
+          icon: Icons.schedule_outlined,
+          title: 'Configuración de horarios',
+          subtitle: 'Gestiona tu agenda y disponibilidad',
+          onTap: () {
+            Navigator.pushNamed(context, '/configure-schedule');
+          },
+        ),
         _buildActionTile(
           icon: Icons.logout,
           title: 'Cerrar sesión',
           subtitle: 'Salir de la aplicación',
           onTap: _showLogoutDialog,
-          isDestructive: true,
-        ),
-        _buildActionTile(
-          icon: Icons.delete_forever_outlined,
-          title: 'Eliminar cuenta',
-          subtitle: 'Elimina permanentemente tu cuenta y datos',
-          onTap: _showDeleteAccountDialog,
           isDestructive: true,
         ),
       ],
@@ -251,17 +272,25 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.15),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,116 +298,26 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(AppSizes.paddingS),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0D9488).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
                 ),
-                child: Icon(icon, color: const Color(0xFF0D9488), size: 20),
+                child: Icon(icon, color: AppColors.primary, size: 20),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSizes.spaceM),
               Text(
                 title,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1A1A),
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSizes.spaceL),
           ...children,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSwitchTile({
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF1A1A1A),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF6B7280),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch.adaptive(
-            value: value,
-            onChanged: onChanged,
-            activeColor: const Color(0xFF0D9488),
-            activeTrackColor: const Color(0xFF0D9488).withOpacity(0.3),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSliderTile({
-    required String title,
-    required String subtitle,
-    required double value,
-    required double min,
-    required double max,
-    required int divisions,
-    required ValueChanged<double> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF1A1A1A),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF0D9488),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Slider.adaptive(
-            value: value,
-            min: min,
-            max: max,
-            divisions: divisions,
-            onChanged: onChanged,
-            activeColor: const Color(0xFF0D9488),
-            inactiveColor: const Color(0xFF0D9488).withOpacity(0.3),
-          ),
         ],
       ),
     );
@@ -393,46 +332,43 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
     bool isDestructive = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: AppSizes.spaceM),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSizes.paddingM),
           decoration: BoxDecoration(
             color:
                 isDestructive
-                    ? const Color(0xFFEF4444).withOpacity(0.05)
-                    : const Color(0xFF0D9488).withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
+                    ? AppColors.error.withOpacity(0.05)
+                    : AppColors.primary.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
             border: Border.all(
               color:
                   isDestructive
-                      ? const Color(0xFFEF4444).withOpacity(0.2)
-                      : const Color(0xFF0D9488).withOpacity(0.2),
+                      ? AppColors.error.withOpacity(0.2)
+                      : AppColors.primary.withOpacity(0.2),
             ),
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(AppSizes.paddingS),
                 decoration: BoxDecoration(
                   color:
                       isDestructive
-                          ? const Color(0xFFEF4444).withOpacity(0.1)
-                          : const Color(0xFF0D9488).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                          ? AppColors.error.withOpacity(0.1)
+                          : AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
                 ),
                 child: Icon(
                   icon,
-                  color:
-                      isDestructive
-                          ? const Color(0xFFEF4444)
-                          : const Color(0xFF0D9488),
+                  color: isDestructive ? AppColors.error : AppColors.primary,
                   size: 20,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSizes.spaceM),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,16 +380,16 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
                         fontWeight: FontWeight.w500,
                         color:
                             isDestructive
-                                ? const Color(0xFFEF4444)
-                                : const Color(0xFF1A1A1A),
+                                ? AppColors.error
+                                : AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSizes.spaceXS),
                     Text(
                       subtitle,
                       style: const TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF6B7280),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -465,8 +401,8 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
                     size: 16,
                     color:
                         isDestructive
-                            ? const Color(0xFFEF4444)
-                            : const Color(0xFF6B7280),
+                            ? AppColors.error
+                            : AppColors.textSecondary,
                   ),
             ],
           ),
@@ -475,79 +411,62 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
     );
   }
 
-
-
   void _showLogoutDialog() {
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
+            backgroundColor: AppColors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
             ),
             title: const Text(
               'Cerrar Sesión',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A1A),
-              ),
-            ),
-            content: const Text('¿Estás seguro de que quieres cerrar sesión?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFEF4444),
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/login',
-                    (route) => false,
-                  );
-                },
-                child: const Text('Cerrar Sesión'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  void _showDeleteAccountDialog() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Text(
-              'Eliminar Cuenta',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Color(0xFFEF4444),
+                color: AppColors.textPrimary,
               ),
             ),
             content: const Text(
-              'Esta acción es irreversible. Se eliminarán permanentemente:\n\n• Tu perfil profesional\n• Historial de consultas\n• Datos de pacientes\n• Configuraciones\n\n¿Estás completamente seguro?',
+              '¿Estás seguro de que quieres cerrar sesión?',
+              style: TextStyle(color: AppColors.textSecondary),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFEF4444),
+                child: Text(
+                  'Cancelar',
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text('Eliminar Cuenta'),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.error, AppColors.error.withOpacity(0.8)],
+                  ),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                ),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/login',
+                      (route) => false,
+                    );
+                  },
+                  child: const Text(
+                    'Cerrar Sesión',
+                    style: TextStyle(color: AppColors.white),
+                  ),
+                ),
               ),
             ],
           ),

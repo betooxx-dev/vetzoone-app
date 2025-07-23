@@ -4,6 +4,8 @@ import '../../../../core/services/user_service.dart';
 import '../../../../core/injection/injection.dart';
 import '../../../../core/storage/shared_preferences_helper.dart';
 import '../../../../data/datasources/vet/vet_remote_datasource.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_sizes.dart';
 
 class VeterinarianDashboardPage extends StatefulWidget {
   const VeterinarianDashboardPage({super.key});
@@ -14,7 +16,7 @@ class VeterinarianDashboardPage extends StatefulWidget {
 }
 
 class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
-  String userGreeting = 'Cargando...';
+  String _userGreeting = 'Cargando...';
   bool _isCheckingVetProfile = true;
 
   @override
@@ -29,10 +31,22 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
   }
 
   Future<void> _loadUserData() async {
-    final greeting = await UserService.getUserGreeting();
-    setState(() {
-      userGreeting = greeting;
-    });
+    final hour = DateTime.now().hour;
+    String greeting;
+
+    if (hour < 12) {
+      greeting = 'Buenos días';
+    } else if (hour < 18) {
+      greeting = 'Buenas tardes';
+    } else {
+      greeting = 'Buenas noches';
+    }
+
+    if (mounted) {
+      setState(() {
+        _userGreeting = greeting;
+      });
+    }
   }
 
   Future<void> _checkVetProfile() async {
@@ -47,28 +61,32 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
         return;
       }
 
-      // Primero verificar en SharedPreferences
       final savedVetData = await SharedPreferencesHelper.getVetData();
       if (savedVetData != null) {
         print('✅ Datos del veterinario encontrados en SharedPreferences');
-        print('Veterinario: ${savedVetData['name']} - Licencia: ${savedVetData['license']}');
-        return; // Ya tiene perfil completo guardado localmente
+        print(
+          'Veterinario: ${savedVetData['name']} - Licencia: ${savedVetData['license']}',
+        );
+        return;
       }
 
-      print('🔍 No se encontraron datos locales, verificando en servidor para userId: $userId');
-      
+      print(
+        '🔍 No se encontraron datos locales, verificando en servidor para userId: $userId',
+      );
+
       final vetDataSource = sl<VetRemoteDataSource>();
       final vetData = await vetDataSource.getVetByUserId(userId);
-      
-      // Si se encuentra en el servidor, guardar en SharedPreferences
+
       await SharedPreferencesHelper.saveVetData(vetData);
       print('✅ Veterinario encontrado en servidor y guardado localmente');
     } catch (e) {
       print('❌ Error al verificar perfil de veterinario: $e');
-      
-      // Verificar si es un error 404 (veterinario no encontrado)
-      if (e.toString().contains('404') || e.toString().contains('no encontrado')) {
-        print('🚨 Veterinario no encontrado - Mostrando modal de completar perfil');
+
+      if (e.toString().contains('404') ||
+          e.toString().contains('no encontrado')) {
+        print(
+          '🚨 Veterinario no encontrado - Mostrando modal de completar perfil',
+        );
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             print('🔄 Widget montado, mostrando modal...');
@@ -90,109 +108,179 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Stack(
-        children: [
-          // Blur background
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-            child: Container(
-              color: Colors.black.withOpacity(0.3),
-            ),
-          ),
-          // Modal
-          Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+      builder:
+          (context) => Stack(
+            children: [
+              BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                child: Container(color: AppColors.black.withOpacity(0.3)),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Icono
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF81D4FA), Color(0xFF4FC3F7)],
-                      ),
-                      borderRadius: BorderRadius.circular(40),
-                    ),
-                    child: const Icon(
-                      Icons.medical_services_rounded,
-                      color: Colors.white,
-                      size: 40,
-                    ),
+              Dialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(AppSizes.paddingL),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusXL),
                   ),
-                  const SizedBox(height: 24),
-                  
-                  // Título
-                  const Text(
-                    'Completa tu perfil profesional',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Descripción
-                  const Text(
-                    'Para utilizar tu cuenta de veterinario, necesitas completar la siguiente información profesional.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF757575),
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  
-                  // Botón Continuar
-                  Container(
-                    width: double.infinity,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF81D4FA), Color(0xFF4FC3F7)],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF81D4FA).withOpacity(0.3),
-                          blurRadius: 15,
-                          offset: const Offset(0, 6),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF0D9488), Color(0xFF14B8A6)],
+                          ),
+                          borderRadius: BorderRadius.circular(40),
                         ),
-                      ],
-                    ),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showVetProfileForm();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                        child: const Icon(
+                          Icons.medical_services_rounded,
+                          color: AppColors.white,
+                          size: 40,
                         ),
                       ),
-                      child: const Text(
-                        'Continuar',
+                      const SizedBox(height: AppSizes.spaceL),
+
+                      const Text(
+                        'Completa tu perfil profesional',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
                         ),
                       ),
+                      const SizedBox(height: AppSizes.spaceM),
+
+                      const Text(
+                        'Para utilizar tu cuenta de veterinario, necesitas completar la siguiente información profesional.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColors.textSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: AppSizes.spaceXL),
+
+                      Container(
+                        width: double.infinity,
+                        height: AppSizes.buttonHeightL,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF0D9488), Color(0xFF14B8A6)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF0D9488).withOpacity(0.3),
+                              blurRadius: 15,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _showVetProfileForm();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: AppColors.white,
+                            elevation: 0,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusL,
+                              ),
+                            ),
+                          ),
+                          child: const Text(
+                            'Continuar',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _showVetProfileForm() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => VetProfileFormModal(
+            onProfileCompleted: () {
+              Navigator.pop(context);
+              _checkVetProfile();
+            },
+          ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isCheckingVetProfile) {
+      return Scaffold(
+        backgroundColor: AppColors.backgroundLight,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  const Color(0xFF0D9488),
+                ),
+              ),
+              const SizedBox(height: AppSizes.spaceM),
+              const Text(
+                'Verificando perfil profesional...',
+                style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
+      body: Stack(
+        children: [
+          _buildBackgroundShapes(),
+          SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: AppSizes.spaceXL),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.paddingL,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTodayStats(),
+                        const SizedBox(height: AppSizes.spaceXL),
+                        _buildTodaySchedule(),
+                        const SizedBox(height: AppSizes.spaceXL),
+                        _buildQuickActions(),
+                        const SizedBox(height: 100),
+                      ],
                     ),
                   ),
                 ],
@@ -204,131 +292,105 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
     );
   }
 
-  void _showVetProfileForm() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => VetProfileFormModal(
-        onProfileCompleted: () {
-          Navigator.pop(context);
-          // Recargar el dashboard después de completar el perfil
-          _checkVetProfile();
-        },
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isCheckingVetProfile) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFFAFAFA),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF81D4FA)),
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Verificando perfil profesional...',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF757575),
-                ),
-              ),
-            ],
+  Widget _buildBackgroundShapes() {
+    return Stack(
+      children: [
+        Positioned(
+          top: -100,
+          right: -50,
+          child: Container(
+            width: AppSizes.decorativeShapeXL,
+            height: AppSizes.decorativeShapeXL,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(125),
+            ),
           ),
         ),
-      );
-    }
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 32),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTodayStats(),
-                    const SizedBox(height: 32),
-                    _buildTodaySchedule(),
-                    const SizedBox(height: 32),
-                    _buildQuickActions(),
-                    const SizedBox(height: 100),
-                  ],
-                ),
-              ),
-            ],
+        Positioned(
+          top: 200,
+          left: -80,
+          child: Container(
+            width: AppSizes.decorativeShapeL,
+            height: AppSizes.decorativeShapeL,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(90),
+            ),
           ),
         ),
-      ),
+        Positioned(
+          bottom: -100,
+          right: -60,
+          child: Container(
+            width: AppSizes.decorativeShapeM,
+            height: AppSizes.decorativeShapeM,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(60),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildHeader() {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF81D4FA), Color(0xFF4FC3F7)],
-        ),
+      margin: const EdgeInsets.all(AppSizes.paddingL),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-        child: Column(
-          children: [
-            Row(
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        userGreeting,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Medicina General',
-                        style: TextStyle(fontSize: 16, color: Colors.white70),
-                      ),
-                    ],
+                Text(
+                  _userGreeting,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textOnDark,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(width: 12),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(51),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.notifications_outlined,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/notifications');
-                    },
+                const SizedBox(height: AppSizes.spaceS),
+                const Text(
+                  'Medicina Veterinaria General',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.textOnDark,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(40),
+            ),
+            child: const Icon(
+              Icons.medical_services_rounded,
+              color: AppColors.white,
+              size: 40,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -342,121 +404,117 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF212121),
+            color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 20),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                title: 'Citas',
-                value: '8',
-                subtitle: '3 completadas',
-                icon: Icons.calendar_today_rounded,
-                color: const Color(0xFF4CAF50),
-              ),
+        const SizedBox(height: AppSizes.spaceL),
+        Container(
+          padding: const EdgeInsets.all(AppSizes.paddingL),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.white, Colors.grey.shade50],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildStatCard(
-                title: 'Pacientes',
-                value: '6',
-                subtitle: '2 nuevos',
-                icon: Icons.pets_rounded,
-                color: const Color(0xFF81D4FA),
+            borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+                spreadRadius: 0,
               ),
+            ],
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.15),
+              width: 1,
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                title: 'Ingresos',
-                value: '\$2,450',
-                subtitle: 'Hoy',
-                icon: Icons.attach_money_rounded,
-                color: const Color(0xFF66BB6A),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildStatItem(
+                  title: 'Citas',
+                  value: '8',
+                  subtitle: '3 completadas',
+                  icon: Icons.calendar_today_rounded,
+                  color: AppColors.primary,
+                ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildStatCard(
-                title: 'Urgencias',
-                value: '1',
-                subtitle: 'Pendiente',
-                icon: Icons.warning_rounded,
-                color: const Color(0xFFFF7043),
+              Container(
+                width: 1,
+                height: 60,
+                margin: const EdgeInsets.symmetric(horizontal: AppSizes.spaceL),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      AppColors.primary.withOpacity(0.1),
+                      AppColors.primary.withOpacity(0.3),
+                      AppColors.primary.withOpacity(0.1),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
+              Expanded(
+                child: _buildStatItem(
+                  title: 'Pacientes',
+                  value: '6',
+                  subtitle: '2 nuevos',
+                  icon: Icons.pets_rounded,
+                  color: AppColors.secondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildStatCard({
+  Widget _buildStatItem({
     required String title,
     required String value,
     required String subtitle,
     required IconData icon,
     required Color color,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(13),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(AppSizes.paddingM),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withAlpha(25),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const Spacer(),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+          child: Icon(icon, color: color, size: AppSizes.iconL),
+        ),
+        const SizedBox(height: AppSizes.spaceM),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: color,
           ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+        ),
+        const SizedBox(height: AppSizes.spaceS),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
           ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: AppSizes.spaceXS),
+        Text(
+          subtitle,
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
@@ -472,39 +530,43 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF212121),
+                color: AppColors.textPrimary,
               ),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pushNamed(context, '/my-schedule');
               },
-              child: const Text(
+              child: Text(
                 'Ver agenda',
                 style: TextStyle(
-                  color: Color(0xFF81D4FA),
+                  color: AppColors.primary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSizes.spaceM),
         GestureDetector(
           onTap: () {
             Navigator.pushNamed(context, '/appointment-detail-vet');
           },
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSizes.paddingM),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF4CAF50), width: 1),
+              gradient: LinearGradient(
+                colors: [AppColors.white, Colors.grey.shade50],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+              border: Border.all(color: AppColors.primary, width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(13),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: AppColors.primary.withOpacity(0.15),
+                  blurRadius: 15,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -512,23 +574,25 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                    horizontal: AppSizes.paddingM,
+                    vertical: AppSizes.paddingS,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50).withAlpha(25),
-                    borderRadius: BorderRadius.circular(8),
+                    gradient: LinearGradient(
+                      colors: [AppColors.primary, AppColors.darkBlue],
+                    ),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
                   ),
                   child: const Text(
                     '10:00',
                     style: TextStyle(
-                      color: Color(0xFF4CAF50),
+                      color: AppColors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: AppSizes.spaceM),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -538,30 +602,33 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF212121),
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSizes.spaceS),
                       Text(
                         'Consulta General',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
+                    horizontal: AppSizes.paddingM,
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50).withAlpha(25),
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.primary.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Siguiente',
                     style: TextStyle(
-                      color: Color(0xFF4CAF50),
+                      color: AppColors.primary,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -584,34 +651,17 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF212121),
+            color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(
-                title: 'Configurar\nHorarios',
-                icon: Icons.schedule_rounded,
-                color: const Color(0xFFFF7043),
-                onTap: () {
-                  Navigator.pushNamed(context, '/configure-schedule');
-                },
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildActionCard(
-                title: 'Ver\nEstadísticas',
-                icon: Icons.analytics_rounded,
-                color: const Color(0xFF9C27B0),
-                onTap: () {
-                  Navigator.pushNamed(context, '/statistics');
-                },
-              ),
-            ),
-          ],
+        const SizedBox(height: AppSizes.spaceM),
+        _buildActionCard(
+          title: 'Configurar Horarios',
+          icon: Icons.schedule_rounded,
+          color: AppColors.secondary,
+          onTap: () {
+            Navigator.pushNamed(context, '/configure-schedule');
+          },
         ),
       ],
     );
@@ -626,38 +676,49 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSizes.paddingM),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [AppColors.white, Colors.grey.shade50],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(AppSizes.radiusXL),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(13),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: color.withOpacity(0.15),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
             ),
           ],
+          border: Border.all(color: color.withOpacity(0.2), width: 1),
         ),
-        child: Column(
+        child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSizes.paddingM),
               decoration: BoxDecoration(
-                color: color.withAlpha(25),
-                borderRadius: BorderRadius.circular(12),
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: color, size: AppSizes.iconL),
             ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[800],
-                height: 1.2,
+            const SizedBox(width: AppSizes.spaceM),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
               ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: AppColors.textSecondary,
+              size: 16,
             ),
           ],
         ),
@@ -666,14 +727,10 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
   }
 }
 
-// Widget del formulario modal para completar el perfil del veterinario
 class VetProfileFormModal extends StatefulWidget {
   final VoidCallback onProfileCompleted;
 
-  const VetProfileFormModal({
-    super.key,
-    required this.onProfileCompleted,
-  });
+  const VetProfileFormModal({super.key, required this.onProfileCompleted});
 
   @override
   State<VetProfileFormModal> createState() => _VetProfileFormModalState();
@@ -683,7 +740,7 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
   final _formKey = GlobalKey<FormState>();
   final _licenseController = TextEditingController();
   final _descriptionController = TextEditingController();
-  
+
   bool _isLoading = false;
   String _fullName = '';
 
@@ -696,11 +753,11 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
   Future<void> _loadUserName() async {
     final firstName = await SharedPreferencesHelper.getUserFirstName();
     final lastName = await SharedPreferencesHelper.getUserLastName();
-    
+
     setState(() {
       _fullName = '${firstName ?? ''} ${lastName ?? ''}'.trim();
     });
-    
+
     print('📝 Nombre construido automáticamente: $_fullName');
   }
 
@@ -714,19 +771,17 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
   Future<void> _fetchAndSaveVetData(String userId) async {
     try {
       print('🔄 Obteniendo datos completos del veterinario...');
-      
+
       final vetDataSource = sl<VetRemoteDataSource>();
       final vetData = await vetDataSource.getVetByUserId(userId);
-      
+
       print('📥 Datos del veterinario obtenidos: $vetData');
-      
-      // Guardar en SharedPreferences
+
       await SharedPreferencesHelper.saveVetData(vetData);
-      
+
       print('✅ Datos del veterinario guardados en SharedPreferences');
     } catch (e) {
       print('❌ Error al obtener y guardar datos del veterinario: $e');
-      // No hacer throw aquí para no interrumpir el flujo principal
     }
   }
 
@@ -743,7 +798,6 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
         throw Exception('No se encontró ID del usuario');
       }
 
-      // Datos según el DTO requerido
       final vetData = {
         'name': _fullName,
         'license': _licenseController.text.trim(),
@@ -758,7 +812,6 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
 
       print('✅ Perfil de veterinario creado exitosamente');
 
-      // Obtener los datos completos del veterinario recién creado
       await _fetchAndSaveVetData(userId);
 
       if (mounted) {
@@ -772,7 +825,7 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
       }
     } catch (e) {
       print('❌ Error al crear perfil de veterinario: $e');
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -794,24 +847,20 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Blur background
         BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-          child: Container(
-            color: Colors.black.withOpacity(0.3),
-          ),
+          child: Container(color: AppColors.black.withOpacity(0.3)),
         ),
-        // Modal
         Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppSizes.radiusXL),
           ),
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppSizes.paddingL),
             constraints: const BoxConstraints(maxHeight: 600),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(AppSizes.radiusXL),
             ),
             child: SingleChildScrollView(
               child: Form(
@@ -819,48 +868,44 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Header
                     Row(
                       children: [
                         Container(
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF81D4FA), Color(0xFF4FC3F7)],
-                            ),
+                            gradient: AppColors.primaryGradient,
                             borderRadius: BorderRadius.circular(24),
                           ),
                           child: const Icon(
                             Icons.medical_services_rounded,
-                            color: Colors.white,
+                            color: AppColors.white,
                             size: 24,
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: AppSizes.spaceM),
                         const Expanded(
                           child: Text(
                             'Información Profesional',
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF212121),
+                              color: AppColors.textPrimary,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppSizes.spaceXL),
 
-                    // Información del nombre (automático)
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(AppSizes.paddingM),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF81D4FA).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(AppSizes.radiusL),
                         border: Border.all(
-                          color: const Color(0xFF81D4FA).withOpacity(0.3),
+                          color: AppColors.primary.withOpacity(0.3),
                         ),
                       ),
                       child: Column(
@@ -870,44 +915,43 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
                             children: [
                               const Icon(
                                 Icons.person_outline,
-                                color: Color(0xFF81D4FA),
+                                color: Color(0xFF0D9488),
                                 size: 20,
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: AppSizes.spaceS),
                               const Text(
                                 'Nombre profesional',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF81D4FA),
+                                  color: Color(0xFF0D9488),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSizes.spaceS),
                           Text(
                             _fullName.isNotEmpty ? _fullName : 'Cargando...',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF212121),
+                              color: AppColors.textPrimary,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSizes.spaceS),
                           const Text(
                             'Este nombre se obtiene automáticamente de tu perfil',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF757575),
+                              color: AppColors.textSecondary,
                               fontStyle: FontStyle.italic,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppSizes.spaceL),
 
-                    // Campo Licencia
                     TextFormField(
                       controller: _licenseController,
                       decoration: InputDecoration(
@@ -915,22 +959,22 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
                         hintText: '09718342',
                         prefixIcon: const Icon(
                           Icons.badge_outlined,
-                          color: Color(0xFF81D4FA),
+                          color: AppColors.primary,
                         ),
                         filled: true,
                         fillColor: Colors.grey[50],
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusL),
                           borderSide: BorderSide.none,
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(
-                            color: Color(0xFF81D4FA),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                          borderSide: BorderSide(
+                            color: AppColors.primary,
                             width: 2,
                           ),
                         ),
@@ -945,17 +989,14 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 12),
-                    
-                    // Leyenda de validación
+                    const SizedBox(height: AppSizes.spaceM),
+
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(AppSizes.paddingM),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFF3CD),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFFFFE69C),
-                        ),
+                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                        border: Border.all(color: const Color(0xFFFFE69C)),
                       ),
                       child: Row(
                         children: [
@@ -964,7 +1005,7 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
                             color: Color(0xFFB45309),
                             size: 16,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSizes.spaceS),
                           Expanded(
                             child: Text(
                               'Tu cédula profesional será validada con el Registro Nacional de Profesionales Veterinarios',
@@ -978,36 +1019,36 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppSizes.spaceL),
 
-                    // Campo Descripción
                     TextFormField(
                       controller: _descriptionController,
                       maxLines: 4,
                       decoration: InputDecoration(
                         labelText: 'Descripción profesional',
-                        hintText: 'Veterinario especializado en cirugía y medicina preventiva...',
+                        hintText:
+                            'Veterinario especializado en cirugía y medicina preventiva...',
                         prefixIcon: const Padding(
                           padding: EdgeInsets.only(bottom: 60),
                           child: Icon(
                             Icons.description_outlined,
-                            color: Color(0xFF81D4FA),
+                            color: AppColors.primary,
                           ),
                         ),
                         filled: true,
                         fillColor: Colors.grey[50],
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusL),
                           borderSide: BorderSide.none,
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(
-                            color: Color(0xFF81D4FA),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                          borderSide: BorderSide(
+                            color: AppColors.primary,
                             width: 2,
                           ),
                         ),
@@ -1022,20 +1063,17 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppSizes.spaceXL),
 
-                    // Botón único - obligatorio completar
                     Container(
                       width: double.infinity,
-                      height: 56,
+                      height: AppSizes.buttonHeightL,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF81D4FA), Color(0xFF4FC3F7)],
-                        ),
+                        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                        gradient: AppColors.primaryGradient,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF81D4FA).withOpacity(0.3),
+                            color: AppColors.primary.withOpacity(0.3),
                             blurRadius: 15,
                             offset: const Offset(0, 6),
                           ),
@@ -1045,29 +1083,34 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
                         onPressed: _isLoading ? null : _submitForm,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppColors.white,
                           elevation: 0,
                           shadowColor: Colors.transparent,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusL,
+                            ),
                           ),
                         ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  strokeWidth: 2.5,
+                        child:
+                            _isLoading
+                                ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      AppColors.white,
+                                    ),
+                                    strokeWidth: 2.5,
+                                  ),
+                                )
+                                : const Text(
+                                  'Completar Perfil Profesional',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              )
-                            : const Text(
-                                'Completar Perfil Profesional',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
                       ),
                     ),
                   ],
