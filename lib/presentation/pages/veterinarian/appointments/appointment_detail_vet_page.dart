@@ -60,6 +60,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
       'veterinarianName': '',
       'petDetails': <String, dynamic>{},
       'vetDetails': <String, dynamic>{},
+      'ownerDetails': <String, dynamic>{},
     };
 
     appointment = defaultAppointment;
@@ -148,9 +149,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
         'phone': app.user?.phone ?? '',
         'email': app.user?.email ?? '',
         'profile_photo': app.user?.profilePhoto ?? '',
-        'role': app.user?.role?.toString() ?? '',
-        'is_active': app.user?.isActive ?? false,
-        'is_verified': app.user?.isVerified ?? false,
       },
     };
 
@@ -1183,18 +1181,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
           _buildDetailRow('Teléfono', ownerDetails['phone']),
         if (ownerDetails['email'] != null && ownerDetails['email']!.isNotEmpty)
           _buildDetailRow('Email', ownerDetails['email'], isClickable: true),
-        if (ownerDetails['role'] != null && ownerDetails['role']!.isNotEmpty)
-          _buildDetailRow('Rol', _mapUserRole(ownerDetails['role'])),
-        if (ownerDetails['is_active'] != null)
-          _buildDetailRow(
-            'Estado',
-            ownerDetails['is_active'] ? 'Activo' : 'Inactivo',
-          ),
-        if (ownerDetails['is_verified'] != null)
-          _buildDetailRow(
-            'Verificado',
-            ownerDetails['is_verified'] ? 'Sí' : 'No',
-          ),
       ],
     );
   }

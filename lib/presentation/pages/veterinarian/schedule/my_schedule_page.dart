@@ -1129,7 +1129,7 @@ class _MySchedulePageState extends State<MySchedulePage> {
     Navigator.pushNamed(
       context,
       '/appointment-detail-vet',
-      arguments: appointment,
+      arguments: appointment.id,
     );
   }
 

@@ -40,6 +40,9 @@ class AppointmentModel extends Appointment {
       if (appointment.veterinarian != null) {
         print('✅ Veterinario incluido: ${appointment.veterinarian!.fullName}');
       }
+      if (appointment.user != null) {
+        print('✅ Usuario incluido: ${appointment.user!.fullName}');
+      }
       return appointment;
     } catch (e) {
       print('❌ Error parseando appointment: $e');

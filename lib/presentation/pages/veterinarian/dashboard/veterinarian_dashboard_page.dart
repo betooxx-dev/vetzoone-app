@@ -1016,7 +1016,7 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
         Navigator.pushNamed(
           context, 
           '/appointment-detail-vet',
-          arguments: appointment,
+          arguments: appointment.id,
         );
       },
       child: Container(
