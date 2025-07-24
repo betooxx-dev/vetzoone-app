@@ -4,6 +4,9 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../widgets/cards/appointment_card.dart';
 import '../../../../core/widgets/confirmation_modal.dart';
 import '../../../../core/widgets/date_time_selector.dart';
+import '../../../../core/injection/injection.dart';
+import '../../../../domain/usecases/appointment/get_appointment_by_id_usecase.dart';
+import '../../../../domain/entities/appointment.dart' as domain;
 
 class AppointmentDetailVetPage extends StatefulWidget {
   const AppointmentDetailVetPage({super.key});
@@ -20,6 +23,10 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
   late Animation<Offset> _slideAnimation;
 
   Map<String, dynamic> appointment = {};
+  domain.Appointment? realAppointment;
+  bool isLoading = true;
+  String? errorMessage;
+  bool _hasLoadedData = false;
 
   @override
   void initState() {
@@ -44,51 +51,229 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
 
   void _initializeDefaultData() {
     final defaultAppointment = {
-      'id': '1',
-      'petName': 'Max',
-      'ownerName': 'Juan Pérez',
-      'ownerPhone': '+52 961 123 4567',
-      'ownerEmail': 'juan.perez@email.com',
-      'appointmentType': 'Control de rutina, revisar vacunas pendientes',
+      'id': '',
+      'petName': '',
+      'appointmentType': '',
       'dateTime': DateTime.now(),
-      'status': AppointmentStatus.confirmed,
-      'notes': 'Control de rutina, revisar vacunas pendientes',
-      'petDetails': {
-        'species': 'Perro',
-        'breed': 'Labrador Retriever',
-        'age': '3 años',
-        'weight': '25 kg',
-        'color': 'Dorado',
-        'lastVisit': '15 Oct 2024',
-      },
-      'medicalHistory': [
-        {
-          'date': '15 Oct 2024',
-          'type': 'Vacunación',
-          'notes': 'Vacuna múltiple aplicada',
-        },
-        {
-          'date': '20 Sep 2024',
-          'type': 'Consulta',
-          'notes': 'Revisión general, excelente estado',
-        },
-      ],
+      'status': AppointmentStatus.scheduled,
+      'notes': '',
+      'veterinarianName': '',
+      'petDetails': <String, dynamic>{},
+      'vetDetails': <String, dynamic>{},
     };
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final arguments = ModalRoute.of(context)?.settings.arguments;
-      if (arguments != null && arguments is Map<String, dynamic>) {
-        setState(() {
-          appointment = {...defaultAppointment, ...arguments};
-        });
-      } else {
-        setState(() {
-          appointment = defaultAppointment;
-        });
-      }
-    });
-
     appointment = defaultAppointment;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!_hasLoadedData && mounted) {
+      _loadAppointmentData();
+    }
+  }
+
+  Future<void> _loadAppointmentData() async {
+    if (_hasLoadedData) return;
+
+    try {
+      setState(() {
+        isLoading = true;
+        errorMessage = null;
+        _hasLoadedData = true;
+      });
+
+      final arguments = ModalRoute.of(context)?.settings.arguments;
+
+      if (arguments != null && arguments is domain.Appointment) {
+        realAppointment = arguments;
+        _mapAppointmentData();
+      } else if (arguments != null && arguments is String) {
+        final getAppointmentUseCase = sl<GetAppointmentByIdUseCase>();
+        realAppointment = await getAppointmentUseCase.call(arguments);
+        _mapAppointmentData();
+      } else {
+        _initializeDefaultData();
+      }
+
+      setState(() {
+        isLoading = false;
+      });
+    } catch (e) {
+      print('❌ Error cargando detalles de la cita: $e');
+      setState(() {
+        isLoading = false;
+        errorMessage = 'Error al cargar los detalles de la cita';
+        _hasLoadedData = false;
+      });
+    }
+  }
+
+  void _mapAppointmentData() {
+    if (realAppointment == null) return;
+
+    final app = realAppointment!;
+
+    appointment = {
+      'id': app.id,
+      'petName': app.pet?.name ?? '',
+      'appointmentType': app.notes ?? '',
+      'dateTime': app.appointmentDate,
+      'status': _mapDomainStatusToCardStatus(app.status),
+      'notes': app.notes ?? '',
+      'veterinarianName':
+          app.veterinarian?.user.firstName != null &&
+                  app.veterinarian?.user.lastName != null
+              ? '${app.veterinarian!.user.firstName} ${app.veterinarian!.user.lastName}'
+              : '',
+
+      'petDetails': {
+        'name': app.pet?.name ?? '',
+        'type': _mapPetTypeToSpecies(app.pet?.type.toString()),
+        'breed': app.pet?.breed ?? '',
+        'age': _calculatePetAge(app.pet?.birthDate),
+        'gender': _mapPetGender(app.pet?.gender.toString()),
+        'status': _mapPetStatus(app.pet?.status.toString()),
+        'description': app.pet?.description ?? '',
+        'image_url': app.pet?.imageUrl ?? '',
+        'birthDate': app.pet?.birthDate,
+      },
+
+      'ownerDetails': {
+        'name':
+            app.user?.firstName != null && app.user?.lastName != null
+                ? '${app.user!.firstName} ${app.user!.lastName}'
+                : '',
+        'phone': app.user?.phone ?? '',
+        'email': app.user?.email ?? '',
+        'profile_photo': app.user?.profilePhoto ?? '',
+        'role': app.user?.role?.toString() ?? '',
+        'is_active': app.user?.isActive ?? false,
+        'is_verified': app.user?.isVerified ?? false,
+      },
+    };
+
+    print('✅ Datos de la cita mapeados exitosamente');
+  }
+
+  AppointmentStatus _mapDomainStatusToCardStatus(
+    domain.AppointmentStatus status,
+  ) {
+    switch (status) {
+      case domain.AppointmentStatus.pending:
+        return AppointmentStatus.scheduled;
+      case domain.AppointmentStatus.confirmed:
+        return AppointmentStatus.confirmed;
+      case domain.AppointmentStatus.inProgress:
+        return AppointmentStatus.inProgress;
+      case domain.AppointmentStatus.completed:
+        return AppointmentStatus.completed;
+      case domain.AppointmentStatus.cancelled:
+        return AppointmentStatus.cancelled;
+      case domain.AppointmentStatus.rescheduled:
+        return AppointmentStatus.rescheduled;
+    }
+  }
+
+  String _mapPetTypeToSpecies(String? type) {
+    if (type == null || type.isEmpty) return '';
+    switch (type.toLowerCase()) {
+      case 'dog':
+        return 'Perro';
+      case 'cat':
+        return 'Gato';
+      case 'bird':
+        return 'Ave';
+      case 'rabbit':
+        return 'Conejo';
+      case 'fish':
+        return 'Pez';
+      case 'reptile':
+        return 'Reptil';
+      case 'other':
+        return 'Otro';
+      default:
+        return type;
+    }
+  }
+
+  String _calculatePetAge(DateTime? birthDate) {
+    if (birthDate == null) return '';
+
+    final now = DateTime.now();
+    final difference = now.difference(birthDate);
+    final years = (difference.inDays / 365).floor();
+    final months = ((difference.inDays % 365) / 30).floor();
+
+    if (years > 0) {
+      return '$years año${years > 1 ? 's' : ''}';
+    } else if (months > 0) {
+      return '$months mes${months > 1 ? 'es' : ''}';
+    } else {
+      return 'Menos de 1 mes';
+    }
+  }
+
+  String _mapPetGender(String? gender) {
+    if (gender == null || gender.isEmpty) return '';
+    switch (gender.toLowerCase()) {
+      case 'male':
+        return 'Macho';
+      case 'female':
+        return 'Hembra';
+      case 'unknown':
+        return 'No especificado';
+      default:
+        return gender;
+    }
+  }
+
+  String _mapPetStatus(String? status) {
+    if (status == null || status.isEmpty) return '';
+    switch (status.toLowerCase()) {
+      case 'healthy':
+        return 'Saludable';
+      case 'treatment':
+        return 'En tratamiento';
+      case 'attention':
+        return 'Requiere atención';
+      default:
+        return status;
+    }
+  }
+
+  String _mapUserRole(String? role) {
+    if (role == null || role.isEmpty) return '';
+    switch (role.toUpperCase()) {
+      case 'PET_OWNER':
+        return 'Propietario de mascota';
+      case 'VETERINARIAN':
+        return 'Veterinario';
+      case 'ADMIN':
+        return 'Administrador';
+      default:
+        return role;
+    }
+  }
+
+  String _formatCreatedDate(DateTime date) {
+    final months = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ];
+
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
   @override
@@ -105,38 +290,105 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
         children: [
           _buildBackgroundShapes(),
           SafeArea(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: Column(
-                  children: [
-                    _buildModernAppBar(),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(AppSizes.paddingL),
+            child:
+                isLoading
+                    ? _buildLoadingView()
+                    : errorMessage != null
+                    ? _buildErrorView()
+                    : FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SlideTransition(
+                        position: _slideAnimation,
                         child: Column(
                           children: [
-                            _buildQuickActions(),
-                            const SizedBox(height: AppSizes.spaceL),
-                            _buildAppointmentCard(),
-                            const SizedBox(height: AppSizes.spaceL),
-                            _buildMedicalActionsSection(),
-                            const SizedBox(height: AppSizes.spaceL),
-                            _buildDetailsSections(),
-                            const SizedBox(height: 100),
+                            _buildModernAppBar(),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsets.all(
+                                  AppSizes.paddingL,
+                                ),
+                                child: Column(
+                                  children: [
+                                    _buildQuickActions(),
+                                    const SizedBox(height: AppSizes.spaceL),
+                                    _buildAppointmentDateTimeCard(),
+                                    const SizedBox(height: AppSizes.spaceL),
+                                    _buildMedicalActionsSection(),
+                                    const SizedBox(height: AppSizes.spaceL),
+                                    _buildDetailsSections(),
+                                    const SizedBox(height: 100),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
           ),
         ],
       ),
-      floatingActionButton: _buildFloatingActionButtons(),
+      floatingActionButton: isLoading ? null : _buildFloatingActionButtons(),
+    );
+  }
+
+  Widget _buildLoadingView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+          ),
+          const SizedBox(height: AppSizes.spaceL),
+          const Text(
+            'Cargando detalles de la cita...',
+            style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.paddingL),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: AppColors.error),
+            const SizedBox(height: AppSizes.spaceL),
+            Text(
+              errorMessage ?? 'Error desconocido',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSizes.spaceL),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _hasLoadedData = false;
+                });
+                _loadAppointmentData();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.paddingL,
+                  vertical: AppSizes.paddingM,
+                ),
+              ),
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -447,18 +699,245 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     );
   }
 
-  Widget _buildAppointmentCard() {
-    return AppointmentCard(
-      petName: appointment['petName'] ?? '',
-      veterinarianName: 'Dr. María González',
-      appointmentType: appointment['appointmentType'] ?? '',
-      dateTime: appointment['dateTime'] ?? DateTime.now(),
-      status: appointment['status'] ?? AppointmentStatus.scheduled,
-      notes: appointment['notes'],
-      isOwnerView: false,
-      ownerName: appointment['ownerName'],
-      onTap: null,
+  Widget _buildAppointmentDateTimeCard() {
+    final appointmentDateTime =
+        appointment['dateTime'] as DateTime? ?? DateTime.now();
+    final status =
+        appointment['status'] as AppointmentStatus? ??
+        AppointmentStatus.scheduled;
+    final colors = _getStatusColors(status);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        boxShadow: [
+          BoxShadow(
+            color: colors['primary']!.withOpacity(0.15),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: colors['primary']!.withOpacity(0.3),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSizes.paddingM),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [colors['primary']!, colors['secondary']!],
+                  ),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                ),
+                child: Icon(
+                  Icons.schedule_rounded,
+                  color: AppColors.white,
+                  size: AppSizes.iconL,
+                ),
+              ),
+              const SizedBox(width: AppSizes.spaceM),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Cita Programada',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.spaceS),
+                    Text(
+                      _getStatusText(status),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colors['primary'],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.spaceL),
+
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSizes.paddingS),
+                decoration: BoxDecoration(
+                  color: colors['primary']!.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                ),
+                child: Icon(
+                  Icons.calendar_today_rounded,
+                  color: colors['primary'],
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: AppSizes.spaceM),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Fecha',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: AppSizes.spaceXS),
+                  Text(
+                    _formatAppointmentDate(appointmentDateTime),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.spaceM),
+
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSizes.paddingS),
+                decoration: BoxDecoration(
+                  color: colors['primary']!.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                ),
+                child: Icon(
+                  Icons.access_time_rounded,
+                  color: colors['primary'],
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: AppSizes.spaceM),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Hora',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: AppSizes.spaceXS),
+                  Text(
+                    _formatAppointmentTime(appointmentDateTime),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          if (appointment['notes'] != null &&
+              appointment['notes']!.isNotEmpty) ...[
+            const SizedBox(height: AppSizes.spaceM),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSizes.paddingM),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundLight,
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.1),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Motivo de la consulta',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: AppSizes.spaceXS),
+                  Text(
+                    appointment['notes'] ?? '',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
+  }
+
+  String _formatAppointmentDate(DateTime dateTime) {
+    final weekdays = [
+      'Lunes',
+      'Martes',
+      'Miércoles',
+      'Jueves',
+      'Viernes',
+      'Sábado',
+      'Domingo',
+    ];
+    final months = [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
+    ];
+
+    final weekday = weekdays[dateTime.weekday - 1];
+    final month = months[dateTime.month - 1];
+
+    return '$weekday, ${dateTime.day} de $month ${dateTime.year}';
+  }
+
+  String _formatAppointmentTime(DateTime dateTime) {
+    final hour = dateTime.hour;
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+
+    return '$displayHour:$minute $period';
   }
 
   Widget _buildMedicalActionsSection() {
@@ -656,13 +1135,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
         _buildPatientInfoSection(),
         const SizedBox(height: AppSizes.spaceL),
         _buildOwnerInfoSection(),
-        const SizedBox(height: AppSizes.spaceL),
-        _buildMedicalHistorySection(),
-        if (appointment['notes'] != null &&
-            appointment['notes']!.isNotEmpty) ...[
-          const SizedBox(height: AppSizes.spaceL),
-          _buildNotesSection(),
-        ],
       ],
     );
   }
@@ -672,156 +1144,67 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
 
     return _buildDetailCard(
       title: 'Información del Paciente',
+      imageUrl: petDetails['image_url'],
       icon: Icons.pets_rounded,
       iconColor: AppColors.primary,
       children: [
-        _buildDetailRow('Nombre', appointment['petName'] ?? ''),
-        if (petDetails['species'] != null)
-          _buildDetailRow('Especie', petDetails['species']),
-        if (petDetails['breed'] != null)
+        if (petDetails['name'] != null && petDetails['name']!.isNotEmpty)
+          _buildDetailRow('Nombre', petDetails['name']),
+        if (petDetails['type'] != null && petDetails['type']!.isNotEmpty)
+          _buildDetailRow('Tipo', petDetails['type']),
+        if (petDetails['breed'] != null && petDetails['breed']!.isNotEmpty)
           _buildDetailRow('Raza', petDetails['breed']),
-        if (petDetails['age'] != null)
+        if (petDetails['age'] != null && petDetails['age']!.isNotEmpty)
           _buildDetailRow('Edad', petDetails['age']),
-        if (petDetails['weight'] != null)
-          _buildDetailRow('Peso', petDetails['weight']),
-        if (petDetails['color'] != null)
-          _buildDetailRow('Color', petDetails['color']),
-        if (petDetails['lastVisit'] != null)
-          _buildDetailRow('Última visita', petDetails['lastVisit']),
+        if (petDetails['gender'] != null && petDetails['gender']!.isNotEmpty)
+          _buildDetailRow('Género', petDetails['gender']),
+        if (petDetails['status'] != null && petDetails['status']!.isNotEmpty)
+          _buildDetailRow('Estado', petDetails['status']),
+        if (petDetails['description'] != null &&
+            petDetails['description']!.isNotEmpty)
+          _buildDetailRow('Descripción', petDetails['description']),
       ],
     );
   }
 
   Widget _buildOwnerInfoSection() {
+    final ownerDetails =
+        appointment['ownerDetails'] as Map<String, dynamic>? ?? {};
+
     return _buildDetailCard(
-      title: 'Info. del Propietario',
+      title: 'Información del Propietario',
+      imageUrl: ownerDetails['profile_photo'],
       icon: Icons.person_rounded,
       iconColor: AppColors.secondary,
       children: [
-        _buildDetailRow('Nombre', appointment['ownerName'] ?? ''),
-        if (appointment['ownerPhone'] != null)
+        if (ownerDetails['name'] != null && ownerDetails['name']!.isNotEmpty)
+          _buildDetailRow('Nombre', ownerDetails['name']),
+        if (ownerDetails['phone'] != null && ownerDetails['phone']!.isNotEmpty)
+          _buildDetailRow('Teléfono', ownerDetails['phone']),
+        if (ownerDetails['email'] != null && ownerDetails['email']!.isNotEmpty)
+          _buildDetailRow('Email', ownerDetails['email'], isClickable: true),
+        if (ownerDetails['role'] != null && ownerDetails['role']!.isNotEmpty)
+          _buildDetailRow('Rol', _mapUserRole(ownerDetails['role'])),
+        if (ownerDetails['is_active'] != null)
           _buildDetailRow(
-            'Teléfono',
-            appointment['ownerPhone'],
-            isClickable: false,
+            'Estado',
+            ownerDetails['is_active'] ? 'Activo' : 'Inactivo',
           ),
-        if (appointment['ownerEmail'] != null)
+        if (ownerDetails['is_verified'] != null)
           _buildDetailRow(
-            'Email',
-            appointment['ownerEmail'],
-            isClickable: true,
+            'Verificado',
+            ownerDetails['is_verified'] ? 'Sí' : 'No',
           ),
-      ],
-    );
-  }
-
-  Widget _buildMedicalHistorySection() {
-    final history =
-        appointment['medicalHistory'] as List<Map<String, dynamic>>? ?? [];
-
-    return _buildDetailCard(
-      title: 'Historial Médico Reciente',
-      icon: Icons.history_rounded,
-      iconColor: AppColors.accent,
-      children: [
-        if (history.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(AppSizes.paddingM),
-            child: Text(
-              'No hay historial médico disponible',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          )
-        else
-          ...history.map((record) => _buildHistoryItem(record)),
-      ],
-    );
-  }
-
-  Widget _buildHistoryItem(Map<String, dynamic> record) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSizes.spaceM),
-      padding: const EdgeInsets.all(AppSizes.paddingM),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundLight,
-        borderRadius: BorderRadius.circular(AppSizes.radiusS),
-        border: Border.all(color: AppColors.primary.withOpacity(0.1), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                record['type'] ?? '',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              Text(
-                record['date'] ?? '',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.spaceXS),
-          Text(
-            record['notes'] ?? '',
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNotesSection() {
-    return _buildDetailCard(
-      title: 'Notas adicionales',
-      icon: Icons.note_outlined,
-      iconColor: AppColors.orange,
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppSizes.paddingM),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundLight,
-            borderRadius: BorderRadius.circular(AppSizes.radiusM),
-            border: Border.all(
-              color: AppColors.primary.withOpacity(0.1),
-              width: 1,
-            ),
-          ),
-          child: Text(
-            appointment['notes'] ?? '',
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textPrimary,
-              height: 1.5,
-            ),
-          ),
-        ),
       ],
     );
   }
 
   Widget _buildDetailCard({
     required String title,
-    required IconData icon,
-    required Color iconColor,
     required List<Widget> children,
+    IconData? icon,
+    Color? iconColor,
+    String? imageUrl,
   }) {
     return Container(
       width: double.infinity,
@@ -850,15 +1233,22 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
         children: [
           Row(
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              if (imageUrl != null && imageUrl.isNotEmpty)
+                CircleAvatar(
+                  radius: 20,
+                  backgroundImage: NetworkImage(imageUrl),
+                  backgroundColor: AppColors.backgroundLight,
+                )
+              else if (icon != null && iconColor != null)
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: iconColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 20),
                 ),
-                child: Icon(icon, color: iconColor, size: 20),
-              ),
               const SizedBox(width: AppSizes.spaceM),
               Expanded(
                 child: Text(
@@ -1026,7 +1416,16 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
 
   void _handleClickableValue(String label, String value) {
     if (label == 'Email') {
-      _emailOwner(value);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Enviar email a: $value'),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          ),
+        ),
+      );
     }
   }
 
@@ -1081,19 +1480,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
 
   void _createMedicalRecord() {
     Navigator.pushNamed(context, '/create-medical-record');
-  }
-
-  void _emailOwner(String email) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Enviar email a: $email'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        ),
-      ),
-    );
   }
 
   Future<void> _rescheduleAppointment() async {
@@ -1166,7 +1552,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
           ),
           child: Column(
             children: [
-              // Handle bar
               Container(
                 width: 40,
                 height: 4,
@@ -1177,7 +1562,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                 ),
               ),
 
-              // Header
               Padding(
                 padding: const EdgeInsets.all(AppSizes.paddingL),
                 child: Row(
@@ -1222,7 +1606,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                 ),
               ),
 
-              // Content
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
@@ -1231,7 +1614,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Date Selection
                       _buildModalFormSection(
                         title: 'Fecha',
                         child: GestureDetector(
@@ -1240,8 +1622,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                                 date,
                               ) {
                                 selectedDate = date;
-                                selectedTimeSlot =
-                                    null; // Reset time slot when date changes
+                                selectedTimeSlot = null;
                               }),
                           child: Container(
                             padding: const EdgeInsets.all(AppSizes.paddingM),
@@ -1296,7 +1677,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
 
                       const SizedBox(height: AppSizes.spaceL),
 
-                      // Time Slot Selection
                       if (selectedDate != null)
                         _buildTimeSlotSelectionForReschedule(
                           selectedDate!,
@@ -1310,7 +1690,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
 
                       const SizedBox(height: AppSizes.spaceL),
 
-                      // Info message
                       Container(
                         padding: const EdgeInsets.all(AppSizes.paddingM),
                         decoration: BoxDecoration(
@@ -1346,7 +1725,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                 ),
               ),
 
-              // Action buttons
               Padding(
                 padding: const EdgeInsets.all(AppSizes.paddingL),
                 child: Row(
@@ -1439,8 +1817,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
       },
     );
   }
-
-  // Agregar estos métodos helper nuevos:
 
   Widget _buildModalFormSection({
     required String title,
@@ -1611,12 +1987,10 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
   List<String> _getAvailableTimeSlotsForDate(DateTime date) {
     final dayOfWeek = date.weekday;
 
-    // Domingo - no hay disponibilidad
     if (dayOfWeek == 7) {
       return [];
     }
 
-    // Sábado - horario reducido
     if (dayOfWeek == 6) {
       return [
         '9:00 AM',
@@ -1628,7 +2002,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
       ];
     }
 
-    // Lunes a Viernes - horario completo
     return [
       '8:00 AM',
       '9:00 AM',
@@ -1645,7 +2018,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
   }
 
   DateTime _createDateTimeFromSlot(DateTime date, String timeSlot) {
-    // Parse the time slot string (e.g., "9:00 AM" -> hour: 9, minute: 0)
     final timeParts = timeSlot.split(':');
     final hour = int.parse(timeParts[0]);
     final minutePart = timeParts[1].split(' ');

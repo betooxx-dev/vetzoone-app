@@ -6,6 +6,8 @@ import '../../../../core/storage/shared_preferences_helper.dart';
 import '../../../../data/datasources/vet/vet_remote_datasource.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../domain/usecases/appointment/get_upcoming_appointments_usecase.dart';
+import '../../../../domain/entities/appointment.dart' as domain;
 
 class VeterinarianDashboardPage extends StatefulWidget {
   const VeterinarianDashboardPage({super.key});
@@ -20,6 +22,11 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
   bool _isCheckingVetProfile = true;
   String? _vetProfilePhoto;
   String _vetFirstName = '';
+  
+  // Nuevas variables para las citas
+  List<domain.Appointment> _todayAppointments = [];
+  bool _isLoadingAppointments = false;
+  String? _appointmentsError;
 
   @override
   void initState() {
@@ -30,6 +37,7 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
   Future<void> _initializeDashboard() async {
     await _loadUserData();
     await _checkVetProfile();
+    await _loadTodayAppointments(); // Agregar carga de citas
   }
 
   Future<void> _loadUserData() async {
@@ -106,7 +114,7 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
 
         if (vetResponse == null) {
           print('❌ El servidor devolvió una respuesta null');
-          throw VetNotFoundException(
+          throw Exception(
             'No se encontró perfil de veterinario para este usuario',
           );
         }
@@ -135,8 +143,7 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
 
         if (e.toString().contains('404') ||
             e.toString().contains('not found') ||
-            e.toString().contains('no encontrado') ||
-            e is VetNotFoundException) {
+            e.toString().contains('no encontrado')) {
           print(
             '🚨 Veterinario no encontrado - Mostrando modal de completar perfil',
           );
@@ -333,6 +340,80 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
             },
           ),
     );
+  }
+
+  // Nuevo método para cargar citas de hoy
+  Future<void> _loadTodayAppointments() async {
+    setState(() {
+      _isLoadingAppointments = true;
+      _appointmentsError = null;
+    });
+
+    try {
+      // Obtener el vet UUID desde SharedPreferences
+      final vetId = await SharedPreferencesHelper.getVetId();
+      
+      if (vetId == null || vetId.isEmpty) {
+        throw Exception('No se encontró el ID del veterinario');
+      }
+
+      print('🔍 Cargando citas para veterinario: $vetId');
+
+      // Usar el use case para obtener las citas
+      final getVetAppointmentsUseCase = sl<GetVetAppointmentsUseCase>();
+      final appointments = await getVetAppointmentsUseCase.call(vetId);
+
+      // Filtrar solo las citas de hoy
+      final today = DateTime.now();
+      final todayAppointments = appointments.where((appointment) {
+        final appointmentDate = appointment.appointmentDate;
+        return _isSameDay(appointmentDate, today);
+      }).toList();
+
+      // Ordenar las citas por hora
+      todayAppointments.sort((a, b) => a.appointmentDate.compareTo(b.appointmentDate));
+
+      setState(() {
+        _todayAppointments = todayAppointments;
+        _isLoadingAppointments = false;
+      });
+
+      print('✅ Citas de hoy cargadas: ${todayAppointments.length}');
+    } catch (e) {
+      print('❌ Error cargando citas de hoy: $e');
+      
+      String errorMessage = 'Error al cargar las citas de hoy';
+      
+      if (e.toString().contains('No se encontró el ID del veterinario')) {
+        errorMessage = 'No se pudo identificar al veterinario';
+      } else if (e.toString().contains('connection') || e.toString().contains('network')) {
+        errorMessage = 'Error de conexión. Verifica tu internet';
+      } else if (e.toString().contains('timeout')) {
+        errorMessage = 'Tiempo de espera agotado';
+      }
+      
+      setState(() {
+        _appointmentsError = errorMessage;
+        _isLoadingAppointments = false;
+      });
+    }
+  }
+
+  // Método auxiliar para comparar fechas
+  bool _isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
+
+  // Funciones auxiliares para mapear datos de Appointment (simplificadas)
+  String _getPetName(domain.Appointment appointment) {
+    return appointment.pet?.name ?? 'Mascota';
+  }
+
+  String _getAppointmentTime(domain.Appointment appointment) {
+    final time = appointment.appointmentDate;
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -568,6 +649,20 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
   }
 
   Widget _buildTodayStats() {
+    // Calcular estadísticas reales simplificadas
+    final totalAppointments = _todayAppointments.length;
+    final completedAppointments = _todayAppointments
+        .where((app) => app.status == domain.AppointmentStatus.completed)
+        .length;
+    final uniquePets = _todayAppointments
+        .map((app) => app.pet?.id)
+        .where((id) => id != null)
+        .toSet()
+        .length;
+    final pendingAppointments = _todayAppointments
+        .where((app) => app.status == domain.AppointmentStatus.pending)
+        .length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -607,8 +702,8 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
               Expanded(
                 child: _buildStatItem(
                   title: 'Citas',
-                  value: '8',
-                  subtitle: '3 completadas',
+                  value: '$totalAppointments',
+                  subtitle: '$completedAppointments completadas',
                   icon: Icons.calendar_today_rounded,
                   color: AppColors.primary,
                 ),
@@ -632,8 +727,8 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
               Expanded(
                 child: _buildStatItem(
                   title: 'Pacientes',
-                  value: '6',
-                  subtitle: '2 nuevos',
+                  value: '$uniquePets',
+                  subtitle: '$pendingAppointments pendientes',
                   icon: Icons.pets_rounded,
                   color: AppColors.secondary,
                 ),
@@ -720,97 +815,347 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
           ],
         ),
         const SizedBox(height: AppSizes.spaceM),
-        GestureDetector(
-          onTap: () {
-            Navigator.pushNamed(context, '/appointment-detail-vet');
-          },
-          child: Container(
-            padding: const EdgeInsets.all(AppSizes.paddingM),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.white, Colors.grey.shade50],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(AppSizes.radiusXL),
-              border: Border.all(color: AppColors.primary, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.15),
-                  blurRadius: 15,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.paddingM,
-                    vertical: AppSizes.paddingS,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppColors.primary, AppColors.darkBlue],
-                    ),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                  ),
-                  child: const Text(
-                    '10:00',
-                    style: TextStyle(
-                      color: AppColors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSizes.spaceM),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Max - Juan Pérez',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: AppSizes.spaceS),
-                      Text(
-                        'Consulta General',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.paddingM,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                  ),
-                  child: Text(
-                    'Siguiente',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        _isLoadingAppointments
+            ? _buildLoadingCard()
+            : _appointmentsError != null
+                ? _buildErrorCard()
+                : _todayAppointments.isEmpty
+                    ? _buildNoAppointmentsCard()
+                    : _buildAppointmentsList(),
       ],
+    );
+  }
+
+  Widget _buildLoadingCard() {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+            const Text(
+              'Cargando citas de hoy...',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorCard() {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        border: Border.all(color: AppColors.error.withOpacity(0.3), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.error.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: AppColors.error,
+              size: AppSizes.iconL,
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+            const Text(
+              'Error al cargar las citas',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSizes.spaceS),
+            TextButton(
+              onPressed: _loadTodayAppointments,
+              child: Text(
+                'Reintentar',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoAppointmentsCard() {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingM),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppSizes.radiusL),
+              ),
+              child: Icon(
+                Icons.event_available_rounded,
+                color: AppColors.primary,
+                size: AppSizes.iconL,
+              ),
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+            const Text(
+              'No hay citas programadas para hoy',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSizes.spaceS),
+            Text(
+              '¡Disfruta tu día libre!',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppointmentsList() {
+    // Validar que hay citas disponibles
+    if (_todayAppointments.isEmpty) {
+      return _buildNoAppointmentsCard();
+    }
+
+    // Obtener la próxima cita (primera no completada)
+    domain.Appointment? nextAppointment;
+    
+    try {
+      nextAppointment = _todayAppointments.firstWhere(
+        (appointment) => appointment.status != domain.AppointmentStatus.completed,
+      );
+    } catch (e) {
+      // Si no hay citas no completadas, tomar la primera disponible
+      nextAppointment = _todayAppointments.first;
+    }
+
+    return Column(
+      children: [
+        // Mostrar la próxima cita destacada
+        _buildNextAppointmentCard(nextAppointment),
+        
+        // Si hay más citas, mostrar un resumen
+        if (_todayAppointments.length > 1) ...[
+          const SizedBox(height: AppSizes.spaceM),
+          _buildAdditionalAppointmentsSummary(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildNextAppointmentCard(domain.Appointment appointment) {
+    final time = _getAppointmentTime(appointment);
+    final petName = _getPetName(appointment);
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(
+          context, 
+          '/appointment-detail-vet',
+          arguments: appointment,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(AppSizes.paddingM),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.white, Colors.grey.shade50],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+          border: Border.all(color: AppColors.primary, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.15),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.paddingM,
+                vertical: AppSizes.paddingS,
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.primary, AppColors.darkBlue],
+                ),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+              child: Text(
+                time,
+                style: const TextStyle(
+                  color: AppColors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSizes.spaceM),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    petName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSizes.spaceS),
+                  Text(
+                    'Próxima cita',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.paddingM,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+              child: Text(
+                'Hoy',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdditionalAppointmentsSummary() {
+    final remainingCount = _todayAppointments.length - 1;
+    
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.more_horiz,
+                color: AppColors.primary,
+                size: AppSizes.iconM,
+              ),
+              const SizedBox(width: AppSizes.spaceS),
+              Text(
+                '$remainingCount cita${remainingCount > 1 ? 's' : ''} más programada${remainingCount > 1 ? 's' : ''}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          Icon(
+            Icons.arrow_forward_ios,
+            color: AppColors.primary,
+            size: 16,
+          ),
+        ],
+      ),
     );
   }
 }

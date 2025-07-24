@@ -1,6 +1,7 @@
 import '../../../domain/entities/appointment.dart';
 import '../veterinarian/veterinarian_model.dart';
 import '../pet/pet_model.dart';
+import '../auth/user_model.dart';
 
 class AppointmentModel extends Appointment {
   const AppointmentModel({
@@ -14,6 +15,7 @@ class AppointmentModel extends Appointment {
     super.notes,
     super.veterinarian,
     super.pet,
+    super.user,
   });
 
   factory AppointmentModel.fromJson(Map<String, dynamic> json) {
@@ -31,6 +33,7 @@ class AppointmentModel extends Appointment {
         createdAt: _parseDateTime(json['created_at']),
         veterinarian: json['vet'] != null ? VeterinarianModel.fromJson(json['vet']) : null,
         pet: json['pet'] != null ? PetModel.fromJson(json['pet']) : null,
+        user: json['user'] != null ? UserModel.fromJson(json['user']) : null,
       );
       
       print('✅ Appointment parseado exitosamente: ${appointment.id}');
@@ -80,6 +83,10 @@ class AppointmentModel extends Appointment {
 
     if (pet != null) {
       json['pet'] = (pet as PetModel).toJson();
+    }
+
+    if (user != null) {
+      json['user'] = (user as UserModel).toJson();
     }
 
     return json;
