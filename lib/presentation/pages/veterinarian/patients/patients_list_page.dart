@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/storage/shared_preferences_helper.dart';
+import '../../../../data/datasources/pet/pet_remote_datasource.dart';
+import '../../../../data/models/pet/pet_model.dart';
+import '../../../../core/injection/injection.dart';
 
 class PatientsListPage extends StatefulWidget {
   const PatientsListPage({super.key});
@@ -18,8 +22,8 @@ class _PatientsListPageState extends State<PatientsListPage>
   final _searchController = TextEditingController();
   bool _isLoading = true;
   String _searchQuery = '';
-  List<Map<String, dynamic>> _allPatients = [];
-  List<Map<String, dynamic>> _filteredPatients = [];
+  List<PetModel> _allPatients = [];
+  List<PetModel> _filteredPatients = [];
 
   @override
   void initState() {
@@ -42,127 +46,46 @@ class _PatientsListPageState extends State<PatientsListPage>
     _animationController.forward();
   }
 
-  void _loadPatients() {
-    Future.delayed(const Duration(seconds: 1), () {
+  Future<void> _loadPatients() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Obtener el ID del veterinario
+      final vetId = await SharedPreferencesHelper.getVetId();
+      if (vetId == null || vetId.isEmpty) {
+        throw Exception('No se encontró el ID del veterinario');
+      }
+
+      // Obtener los pacientes desde la API
+      final petDataSource = sl<PetRemoteDataSource>();
+      final patients = await petDataSource.getVetPatients(vetId);
+
       if (mounted) {
         setState(() {
-          _allPatients = [
-            {
-              'id': '1',
-              'name': 'Max',
-              'species': 'Perro',
-              'breed': 'Golden Retriever',
-              'age': '5 años',
-              'gender': 'Macho',
-              'weight': '32.5 kg',
-              'ownerName': 'Ana María López',
-              'ownerPhone': '+52 961 123 4567',
-              'lastVisit': DateTime.now().subtract(const Duration(days: 15)),
-              'nextAppointment': DateTime.now().add(const Duration(days: 7)),
-              'status': 'Activo',
-              'priority': 'Normal',
-              'consultationsCount': 12,
-              'profileImage':
-                  'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=400&fit=crop&crop=face',
-              'medicalNotes':
-                  'Paciente muy cooperativo. Responde bien a tratamientos. Dueña muy responsable con seguimientos.',
-              'conditions': ['Displasia de cadera leve'],
-              'lastDiagnosis': 'Control rutinario - Estado general excelente',
-            },
-            {
-              'id': '2',
-              'name': 'Luna',
-              'species': 'Gato',
-              'breed': 'Siamés',
-              'age': '3 años',
-              'gender': 'Hembra',
-              'weight': '4.2 kg',
-              'ownerName': 'Carlos Mendoza',
-              'ownerPhone': '+52 961 234 5678',
-              'lastVisit': DateTime.now().subtract(const Duration(days: 8)),
-              'nextAppointment': DateTime.now().add(const Duration(days: 30)),
-              'status': 'Seguimiento',
-              'priority': 'Alta',
-              'consultationsCount': 8,
-              'profileImage':
-                  'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=400&fit=crop&crop=face',
-              'medicalNotes':
-                  'Gata nerviosa durante consultas. Requiere manejo cuidadoso. Historial de problemas urinarios.',
-              'conditions': ['Cistitis recurrente'],
-              'lastDiagnosis': 'Cistitis tratada - En observación',
-            },
-            {
-              'id': '3',
-              'name': 'Buddy',
-              'species': 'Perro',
-              'breed': 'Mestizo',
-              'age': '2 años',
-              'gender': 'Macho',
-              'weight': '18.0 kg',
-              'ownerName': 'Patricia Ruiz',
-              'ownerPhone': '+52 961 345 6789',
-              'lastVisit': DateTime.now().subtract(const Duration(days: 3)),
-              'nextAppointment': null,
-              'status': 'Activo',
-              'priority': 'Normal',
-              'consultationsCount': 5,
-              'profileImage':
-                  'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400&h=400&fit=crop&crop=face',
-              'medicalNotes':
-                  'Perro joven muy enérgico. Dueña nueva, necesita educación sobre cuidados preventivos.',
-              'conditions': [],
-              'lastDiagnosis': 'Vacunación completa - Estado óptimo',
-            },
-            {
-              'id': '4',
-              'name': 'Mimi',
-              'species': 'Gato',
-              'breed': 'Persa',
-              'age': '8 años',
-              'gender': 'Hembra',
-              'weight': '5.8 kg',
-              'ownerName': 'Roberto García',
-              'ownerPhone': '+52 961 456 7890',
-              'lastVisit': DateTime.now().subtract(const Duration(days: 120)),
-              'nextAppointment': DateTime.now().add(const Duration(days: 14)),
-              'status': 'Inactivo',
-              'priority': 'Baja',
-              'consultationsCount': 15,
-              'profileImage':
-                  'https://images.unsplash.com/photo-1526336024174-e58f5cdd8e13?w=400&h=400&fit=crop&crop=face',
-              'medicalNotes':
-                  'Última consulta hace 4 meses. Recordar contactar.',
-              'conditions': [],
-              'lastDiagnosis': 'Control geriátrico - Estado general bueno',
-            },
-            {
-              'id': '5',
-              'name': 'Rocky',
-              'species': 'Perro',
-              'breed': 'Bulldog',
-              'age': '4 años',
-              'gender': 'Macho',
-              'weight': '22.5 kg',
-              'ownerName': 'Sofía Morales',
-              'ownerPhone': '+52 961 567 8901',
-              'lastVisit': DateTime.now().subtract(const Duration(days: 2)),
-              'nextAppointment': DateTime.now().add(const Duration(days: 14)),
-              'status': 'Activo',
-              'priority': 'Normal',
-              'consultationsCount': 9,
-              'profileImage':
-                  'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=400&h=400&fit=crop&crop=face',
-              'medicalNotes':
-                  'Paciente cooperativo. Historial de alergias alimentarias. Vacunación al día.',
-              'conditions': [],
-              'lastDiagnosis': 'Control preventivo - Estado óptimo',
-            },
-          ];
-          _filteredPatients = _allPatients;
+          _allPatients = patients;
+          _filteredPatients = patients;
           _isLoading = false;
         });
       }
-    });
+    } catch (e) {
+      print('❌ Error cargando pacientes: $e');
+      if (mounted) {
+        setState(() {
+          _allPatients = [];
+          _filteredPatients = [];
+          _isLoading = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar pacientes: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   void _searchPatients(String query) {
@@ -173,16 +96,14 @@ class _PatientsListPageState extends State<PatientsListPage>
   }
 
   void _applyFilters() {
-    List<Map<String, dynamic>> filtered = _allPatients;
+    List<PetModel> filtered = _allPatients;
 
     if (_searchQuery.isNotEmpty) {
-      filtered =
-          filtered.where((patient) {
-            final searchLower = _searchQuery.toLowerCase();
-            return patient['name'].toLowerCase().contains(searchLower) ||
-                patient['breed'].toLowerCase().contains(searchLower) ||
-                patient['ownerName'].toLowerCase().contains(searchLower);
-          }).toList();
+      filtered = filtered.where((patient) {
+        final searchLower = _searchQuery.toLowerCase();
+        return patient.name.toLowerCase().contains(searchLower) ||
+            patient.breed.toLowerCase().contains(searchLower);
+      }).toList();
     }
 
     _filteredPatients = filtered;
@@ -383,7 +304,7 @@ class _PatientsListPageState extends State<PatientsListPage>
     );
   }
 
-  Widget _buildPatientCard(Map<String, dynamic> patient) {
+  Widget _buildPatientCard(PetModel patient) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSizes.spaceL),
       decoration: BoxDecoration(
@@ -421,26 +342,23 @@ class _PatientsListPageState extends State<PatientsListPage>
                     height: 60,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(AppSizes.radiusL),
-                      image:
-                          patient['profileImage'] != null
-                              ? DecorationImage(
-                                image: NetworkImage(patient['profileImage']),
-                                fit: BoxFit.cover,
-                              )
-                              : null,
-                      gradient:
-                          patient['profileImage'] == null
-                              ? AppColors.primaryGradient
-                              : null,
-                    ),
-                    child:
-                        patient['profileImage'] == null
-                            ? const Icon(
-                              Icons.pets_rounded,
-                              color: AppColors.white,
-                              size: 30,
+                      image: patient.imageUrl != null && patient.imageUrl!.isNotEmpty
+                          ? DecorationImage(
+                              image: NetworkImage(patient.imageUrl!),
+                              fit: BoxFit.cover,
                             )
-                            : null,
+                          : null,
+                      gradient: patient.imageUrl == null || patient.imageUrl!.isEmpty
+                          ? AppColors.primaryGradient
+                          : null,
+                    ),
+                    child: patient.imageUrl == null || patient.imageUrl!.isEmpty
+                        ? const Icon(
+                            Icons.pets_rounded,
+                            color: AppColors.white,
+                            size: 30,
+                          )
+                        : null,
                   ),
                   const SizedBox(width: AppSizes.spaceM),
                   Expanded(
@@ -451,7 +369,7 @@ class _PatientsListPageState extends State<PatientsListPage>
                           children: [
                             Expanded(
                               child: Text(
-                                patient['name'],
+                                patient.name,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -459,12 +377,12 @@ class _PatientsListPageState extends State<PatientsListPage>
                                 ),
                               ),
                             ),
-                            _buildStatusBadge(patient['status']),
+                            _buildStatusBadge(_getStatusText(patient.status)),
                           ],
                         ),
                         const SizedBox(height: AppSizes.spaceS),
                         Text(
-                          '${patient['breed']} • ${patient['age']} • ${patient['gender']}',
+                          '${patient.breed} • ${_getTypeText(patient.type)} • ${_getGenderText(patient.gender)}',
                           style: const TextStyle(
                             fontSize: 14,
                             color: AppColors.textSecondary,
@@ -472,7 +390,7 @@ class _PatientsListPageState extends State<PatientsListPage>
                         ),
                         const SizedBox(height: AppSizes.spaceXS),
                         Text(
-                          'Propietario: ${patient['ownerName']}',
+                          'Registrado: ${_formatTimeAgo(patient.createdAt ?? DateTime.now())}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.textSecondary,
@@ -487,25 +405,25 @@ class _PatientsListPageState extends State<PatientsListPage>
               Row(
                 children: [
                   _buildInfoBadge(
-                    Icons.access_time_rounded,
-                    _formatTimeAgo(patient['lastVisit']),
+                    Icons.cake_rounded,
+                    '${_getAge(patient.birthDate)} años',
                     AppColors.primary,
                   ),
                   const SizedBox(width: AppSizes.spaceS),
                   _buildInfoBadge(
-                    Icons.medical_services_rounded,
-                    '${patient['consultationsCount']} consultas',
+                    Icons.pets_rounded,
+                    _getTypeText(patient.type),
                     AppColors.secondary,
                   ),
                   const SizedBox(width: AppSizes.spaceS),
                   _buildInfoBadge(
-                    Icons.monitor_weight_rounded,
-                    patient['weight'],
+                    Icons.verified_rounded,
+                    _getStatusText(patient.status),
                     AppColors.accent,
                   ),
                 ],
               ),
-              if (patient['lastDiagnosis'] != null) ...[
+              if (patient.description != null && patient.description!.isNotEmpty) ...[
                 const SizedBox(height: AppSizes.spaceM),
                 Container(
                   width: double.infinity,
@@ -523,13 +441,13 @@ class _PatientsListPageState extends State<PatientsListPage>
                       Row(
                         children: [
                           Icon(
-                            Icons.medical_information_rounded,
+                            Icons.description_rounded,
                             size: 16,
                             color: AppColors.primary,
                           ),
                           const SizedBox(width: AppSizes.spaceS),
                           const Text(
-                            'Último diagnóstico:',
+                            'Descripción:',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -540,39 +458,10 @@ class _PatientsListPageState extends State<PatientsListPage>
                       ),
                       const SizedBox(height: AppSizes.spaceS),
                       Text(
-                        patient['lastDiagnosis'],
+                        patient.description!,
                         style: const TextStyle(
                           fontSize: 14,
                           color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              if (patient['nextAppointment'] != null) ...[
-                const SizedBox(height: AppSizes.spaceM),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppSizes.paddingM),
-                  decoration: BoxDecoration(
-                    gradient: AppColors.orangeGradient,
-                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today_rounded,
-                        size: 16,
-                        color: AppColors.white,
-                      ),
-                      const SizedBox(width: AppSizes.spaceS),
-                      Text(
-                        'Próxima cita: ${_formatDate(patient['nextAppointment'])}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.white,
                         ),
                       ),
                     ],
@@ -728,5 +617,41 @@ class _PatientsListPageState extends State<PatientsListPage>
       'Dic',
     ];
     return '${date.day} ${months[date.month - 1]}';
+  }
+
+  String _getStatusText(dynamic status) {
+    if (status == null) return 'Sin estado';
+    return status.toString().split('.').last.toLowerCase() == 'healthy' ? 'Saludable' : 
+           status.toString().split('.').last.toLowerCase() == 'sick' ? 'Enfermo' : 
+           status.toString().split('.').last.toLowerCase() == 'injured' ? 'Herido' :
+           status.toString();
+  }
+
+  String _getTypeText(dynamic type) {
+    if (type == null) return 'Otro';
+    final typeStr = type.toString().split('.').last.toLowerCase();
+    return typeStr == 'dog' ? 'Perro' : 
+           typeStr == 'cat' ? 'Gato' : 
+           typeStr == 'bird' ? 'Ave' :
+           typeStr == 'rabbit' ? 'Conejo' :
+           typeStr;
+  }
+
+  String _getGenderText(dynamic gender) {
+    if (gender == null) return 'No especificado';
+    final genderStr = gender.toString().split('.').last.toLowerCase();
+    return genderStr == 'male' ? 'Macho' : 
+           genderStr == 'female' ? 'Hembra' : 
+           genderStr;
+  }
+
+  int _getAge(DateTime birthDate) {
+    final now = DateTime.now();
+    int age = now.year - birthDate.year;
+    if (now.month < birthDate.month || 
+        (now.month == birthDate.month && now.day < birthDate.day)) {
+      age--;
+    }
+    return age;
   }
 }

@@ -1,9 +1,12 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import '../../../core/constants/pet_endpoints.dart';
+import '../../../core/constants/api_endpoints.dart';
 import '../../../core/storage/shared_preferences_helper.dart';
 import '../../models/pet/pet_model.dart';
 import '../../models/appointment/appointment_model.dart';
+import '../../models/medical_records/medical_record_with_treatments_model.dart';
+import '../../models/medical_records/vaccination_model.dart';
 
 class PetDetailDTO {
   final PetModel pet;
@@ -11,12 +14,28 @@ class PetDetailDTO {
   PetDetailDTO({required this.pet, required this.appointments});
 }
 
+class PetCompleteDetailDTO {
+  final PetModel pet;
+  final List<AppointmentModel> appointments;
+  final List<MedicalRecordWithTreatmentsModel> medicalRecords;
+  final List<VaccinationModel> vaccinations;
+  
+  PetCompleteDetailDTO({
+    required this.pet,
+    required this.appointments,
+    required this.medicalRecords,
+    required this.vaccinations,
+  });
+}
+
 abstract class PetRemoteDataSource {
   Future<List<PetModel>> getAllPets(String userId);
   Future<PetDetailDTO> getPetById(String petId);
+  Future<PetCompleteDetailDTO> getPetCompleteById(String petId);
   Future<PetModel> createPet(PetModel pet, {File? imageFile});
   Future<PetModel> updatePet(String petId, PetModel pet, {File? imageFile});
   Future<void> deletePet(String petId);
+  Future<List<PetModel>> getVetPatients(String vetId);
 }
 
 class PetRemoteDataSourceImpl implements PetRemoteDataSource {
@@ -219,6 +238,66 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
       }
     } catch (e) {
       throw Exception('Error deleting pet: $e');
+    }
+  }
+
+  @override
+  Future<List<PetModel>> getVetPatients(String vetId) async {
+    try {
+      final url = ApiEndpoints.getVetPatientsUrl(vetId);
+      final response = await _dio.get(url);
+      
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data['data'];
+        return data.map((json) => PetModel.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load vet patients');
+      }
+    } catch (e) {
+      print('❌ Error fetching vet patients: $e');
+      throw Exception('Error fetching vet patients: $e');
+    }
+  }
+
+  @override
+  Future<PetCompleteDetailDTO> getPetCompleteById(String petId) async {
+    try {
+      final url = ApiEndpoints.getPetByIdUrl(petId);
+      final response = await _dio.get(url);
+      
+      if (response.statusCode == 200) {
+        final data = response.data['data'];
+        
+        // Parse pet
+        final pet = PetModel.fromJson(data['pet']);
+        
+        // Parse appointments
+        final appointments = (data['appointments'] as List<dynamic>? ?? [])
+            .map((json) => AppointmentModel.fromJson(json))
+            .toList();
+        
+        // Parse medical records with treatments
+        final medicalRecords = (data['medical_records'] as List<dynamic>? ?? [])
+            .map((json) => MedicalRecordWithTreatmentsModel.fromJson(json))
+            .toList();
+        
+        // Parse vaccinations
+        final vaccinations = (data['vaccinations'] as List<dynamic>? ?? [])
+            .map((json) => VaccinationModel.fromJson(json))
+            .toList();
+        
+        return PetCompleteDetailDTO(
+          pet: pet,
+          appointments: appointments,
+          medicalRecords: medicalRecords,
+          vaccinations: vaccinations,
+        );
+      } else {
+        throw Exception('Failed to load pet complete details');
+      }
+    } catch (e) {
+      print('❌ Error fetching pet complete details: $e');
+      throw Exception('Error fetching pet complete details: $e');
     }
   }
 }

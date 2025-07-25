@@ -799,19 +799,7 @@ class _VeterinarianDashboardPageState extends State<VeterinarianDashboardPage> {
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/my-schedule');
-              },
-              child: Text(
-                'Ver agenda',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+            )
           ],
         ),
         const SizedBox(height: AppSizes.spaceM),

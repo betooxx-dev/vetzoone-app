@@ -27,6 +27,8 @@ class ApiEndpoints {
 
   static const String vetSearch = '/vet/search';
   static const String vetById = '/vet';
+  static const String vetPatients = '/vet/patients';
+  static const String petById = '/pet';
 
   static String get baseUrl => gatewayBaseUrl;
   static String get authLoginUrl => '$gatewayBaseUrl$authLogin';
@@ -59,7 +61,20 @@ class ApiEndpoints {
   static String getVaccinationsByPetUrl(String petId) =>
       '$gatewayBaseUrl$vaccinationsByPet/$petId';
 
+  static String getVaccinationByIdUrl(String vaccinationId) =>
+      '$gatewayBaseUrl$vaccination/$vaccinationId';
+
+  static String updateVaccinationUrl(String vaccinationId) =>
+      '$gatewayBaseUrl$vaccination/$vaccinationId';
+
+  static String deleteVaccinationUrl(String vaccinationId) =>
+      '$gatewayBaseUrl$vaccination/$vaccinationId';
+
   static String get searchVeterinariansUrl => '$gatewayBaseUrl$vetSearch';
   static String getVeterinarianByIdUrl(String vetId) =>
       '$gatewayBaseUrl$vetById/$vetId';
+  static String getVetPatientsUrl(String vetId) =>
+      '$gatewayBaseUrl$vetPatients/$vetId';
+  static String getPetByIdUrl(String petId) =>
+      '$gatewayBaseUrl$petById/$petId';
 }

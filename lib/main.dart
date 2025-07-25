@@ -37,6 +37,7 @@ import 'presentation/pages/veterinarian/appointments/appointment_detail_vet_page
 import 'presentation/pages/veterinarian/medical_records/create_medical_record_page.dart';
 import 'presentation/pages/veterinarian/medical_records/prescribe_treatment_page.dart';
 import 'presentation/pages/veterinarian/medical_records/register_vaccination_page.dart';
+import 'presentation/pages/veterinarian/medical_records/edit_vaccination_page.dart';
 import 'presentation/pages/veterinarian/patients/patients_list_page.dart';
 import 'presentation/pages/veterinarian/patients/patient_history_page.dart';
 import 'presentation/pages/veterinarian/profile/professional_profile_page.dart';
@@ -44,6 +45,8 @@ import 'presentation/pages/veterinarian/schedule/configure_schedule_page.dart';
 import 'presentation/pages/veterinarian/settings/vet_settings_page.dart';
 import 'presentation/pages/veterinarian/analytics/statistics_page.dart';
 import 'domain/entities/pet.dart';
+import 'data/models/pet/pet_model.dart';
+import 'data/models/medical_records/vaccination_model.dart';
 import 'dart:async';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -186,11 +189,18 @@ class MyApp extends StatelessWidget {
               (context) => const CreateMedicalRecordPage(),
           '/prescribe-treatment': (context) => const PrescribeTreatmentPage(),
           '/register-vaccination': (context) => const RegisterVaccinationPage(),
+          '/edit-vaccination': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is VaccinationModel) {
+              return EditVaccinationPage(vaccination: args);
+            }
+            return _buildErrorScreen('Datos de vacuna no válidos');
+          },
 
           '/patients-list': (context) => const PatientsListPage(),
           '/patient-history': (context) {
             final args = ModalRoute.of(context)?.settings.arguments;
-            if (args is Map<String, dynamic>) {
+            if (args is PetModel) {
               return PatientHistoryPage(patient: args);
             }
             return _buildErrorScreen('Datos de paciente no válidos');
