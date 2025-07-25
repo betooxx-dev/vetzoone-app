@@ -190,6 +190,19 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
       print('Status: ${response.statusCode}');
       print('Data: ${response.data}');
       
+      // Log específico para medical records
+      final appointmentData = response.data['data'];
+      final petData = appointmentData['pet'];
+      print('🐕 PET DATA FROM API: $petData');
+      
+      if (petData != null && petData['medical_records'] != null) {
+        print('🏥 MEDICAL RECORDS FROM API: ${petData['medical_records']}');
+        print('🏥 MEDICAL RECORDS COUNT FROM API: ${(petData['medical_records'] as List).length}');
+      } else {
+        print('⚠️ NO MEDICAL RECORDS EN RESPUESTA DE API');
+        print('🔍 Pet data keys: ${petData?.keys}');
+      }
+      
       if (response.statusCode == 200) {
         final appointmentData = response.data['data'];
         return AppointmentModel.fromJson(appointmentData);

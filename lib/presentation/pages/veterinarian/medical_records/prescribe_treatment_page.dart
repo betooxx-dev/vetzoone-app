@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/medical_constants.dart';
+import '../../../../core/constants/api_endpoints.dart';
+import '../../../../core/storage/shared_preferences_helper.dart';
+import '../../../../domain/entities/appointment.dart' as domain;
 
 class PrescribeTreatmentPage extends StatefulWidget {
   const PrescribeTreatmentPage({super.key});
@@ -19,7 +26,10 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
+  // Datos de la cita y mascota
+  domain.Appointment? appointment;
   Map<String, dynamic> patientInfo = {};
+  Map<String, dynamic> ownerInfo = {};
   List<Map<String, dynamic>> prescribedMedications = [];
 
   final _medicationNameController = TextEditingController();
@@ -27,34 +37,13 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
   final _frequencyController = TextEditingController();
   final _instructionsController = TextEditingController();
 
-  String selectedStatus = 'ACTIVE';
+  TreatmentStatus selectedStatus = TreatmentStatus.ACTIVE;
   int durationDays = 7;
   DateTime startDate = DateTime.now();
   String? selectedMedicalRecordId;
-
-  final List<String> statusOptions = ['ACTIVE', 'COMPLETED', 'DISCONTINUED'];
   final List<int> durationOptions = [1, 3, 5, 7, 10, 14, 21, 30, 60, 90];
 
-  final List<Map<String, dynamic>> medicalRecords = [
-    {
-      'id': '59e7514d-48ad-48cf-a1db-0aa1605f6b84',
-      'date': '22/07/2025',
-      'diagnosis': 'Infección respiratoria',
-      'chief_complaint': 'Tos persistente y fiebre',
-    },
-    {
-      'id': '86da60b5-3861-49fa-834c-653c39fcfcd6',
-      'date': '18/07/2025',
-      'diagnosis': 'Otitis crónica',
-      'chief_complaint': 'Rascado excesivo de orejas',
-    },
-    {
-      'id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-      'date': '15/07/2025',
-      'diagnosis': 'Control de rutina',
-      'chief_complaint': 'Revisión general',
-    },
-  ];
+  List<Map<String, dynamic>> medicalRecords = [];
 
   @override
   void initState() {
@@ -73,21 +62,108 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
 
-    _loadPatientInfo();
     _animationController.forward();
+    _loadAppointmentData();
   }
 
-  void _loadPatientInfo() {
-    setState(() {
-      patientInfo = {
-        'petName': 'Max',
-        'species': 'Perro',
-        'breed': 'Labrador Retriever',
-        'age': '3 años',
-        'weight': '25 kg',
-        'ownerName': 'Juan Pérez',
-        'diagnosis': 'Infección respiratoria',
-      };
+  void _loadAppointmentData() {
+    // Recibir argumentos pasados desde appointment_detail_vet_page
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final arguments = ModalRoute.of(context)?.settings.arguments;
+      
+      if (arguments != null && arguments is Map<String, dynamic>) {
+        print('🔧 PRESCRIBE TREATMENT: Argumentos recibidos');
+        print('🔍 Arguments keys: ${arguments.keys}');
+        print('🔍 Arguments: $arguments');
+        
+        setState(() {
+          appointment = arguments['appointment'] as domain.Appointment?;
+          patientInfo = arguments['petInfo'] as Map<String, dynamic>? ?? {};
+          ownerInfo = arguments['ownerInfo'] as Map<String, dynamic>? ?? {};
+          
+          print('📋 APPOINTMENT: ${appointment?.id}');
+          print('🐕 PET INFO: $patientInfo');
+          print('👤 OWNER INFO: $ownerInfo');
+          
+          // Poblar medical records reales
+          final rawMedicalRecords = arguments['medicalRecords'];
+          print('🏥 RAW MEDICAL RECORDS: $rawMedicalRecords');
+          print('🏥 RAW MEDICAL RECORDS TYPE: ${rawMedicalRecords.runtimeType}');
+          
+          final realMedicalRecords = arguments['medicalRecords'] as List? ?? [];
+          print('📝 REAL MEDICAL RECORDS COUNT: ${realMedicalRecords.length}');
+          print('📝 REAL MEDICAL RECORDS: $realMedicalRecords');
+          
+          if (realMedicalRecords.isNotEmpty) {
+            print('🔄 Procesando ${realMedicalRecords.length} medical records...');
+            try {
+              medicalRecords = realMedicalRecords.map((record) {
+                print('🔍 Procesando record: $record');
+                print('🔍 Record type: ${record.runtimeType}');
+                
+                final visitDate = DateTime.parse(record['visit_date']);
+                final processedRecord = {
+                  'id': record['id'],
+                  'date': '${visitDate.day.toString().padLeft(2, '0')}/${visitDate.month.toString().padLeft(2, '0')}/${visitDate.year}',
+                  'diagnosis': record['diagnosis'] ?? 'Sin diagnóstico',
+                  'chief_complaint': record['chief_complaint'] ?? 'Sin motivo especificado',
+                };
+                print('✅ Record procesado: $processedRecord');
+                return processedRecord;
+              }).toList();
+              print('✅ TODOS LOS MEDICAL RECORDS PROCESADOS: ${medicalRecords.length}');
+              print('✅ MEDICAL RECORDS FINALES: $medicalRecords');
+            } catch (e) {
+              print('❌ ERROR procesando medical records: $e');
+              medicalRecords = [];
+            }
+          } else {
+            print('⚠️ No hay medical records disponibles');
+            medicalRecords = [];
+          }
+          
+          print('📊 MEDICAL RECORDS COUNT FINAL: ${medicalRecords.length}');
+          print('📊 RESUMEN FINAL:');
+          print('   - Appointment ID: ${appointment?.id}');
+          print('   - Pet: ${patientInfo['name']}');
+          print('   - Owner: ${ownerInfo['name']}');
+          print('   - Medical Records disponibles: ${medicalRecords.length}');
+          if (medicalRecords.isNotEmpty) {
+            print('   - Primer medical record: ${medicalRecords.first}');
+          }
+          
+          // Si tenemos una cita, usar su fecha como fecha de inicio
+          if (appointment != null) {
+            startDate = appointment!.appointmentDate;
+            print('📅 Fecha de inicio establecida: $startDate');
+          }
+        });
+      } else {
+        // Datos de ejemplo si no se pasan argumentos
+        setState(() {
+          patientInfo = {
+            'name': 'Paciente de ejemplo',
+            'type': 'Perro',
+            'breed': 'Sin especificar',
+            'age': 'Sin especificar',
+            'diagnosis': 'Sin diagnóstico',
+          };
+          ownerInfo = {
+            'name': 'Propietario de ejemplo',
+          };
+          
+          // Medical records de ejemplo
+          medicalRecords = [
+            {
+              'id': 'example-1',
+              'date': '20/01/2025',
+              'diagnosis': 'Revisión general (Ejemplo)',
+              'chief_complaint': 'Control de rutina (Ejemplo)',
+            },
+          ];
+          print('📝 USANDO MEDICAL RECORDS DE EJEMPLO: ${medicalRecords.length}');
+        });
+      }
     });
   }
 
@@ -288,7 +364,7 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  patientInfo['petName'] ?? '',
+                  patientInfo['name'] ?? 'Sin nombre',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -296,14 +372,14 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
                   ),
                 ),
                 Text(
-                  '${patientInfo['breed']} • ${patientInfo['age']}',
+                  '${patientInfo['breed'] ?? 'Sin raza'} • ${patientInfo['age'] ?? 'Sin edad'}',
                   style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondary,
                   ),
                 ),
                 Text(
-                  'Diagnóstico: ${patientInfo['diagnosis']}',
+                  'Propietario: ${ownerInfo['name'] ?? 'Sin propietario'}',
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -379,12 +455,46 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
             _buildFormSection(
               'Registro Médico Asociado',
               Icons.assignment,
-              child: DropdownButtonFormField<String>(
-                value: selectedMedicalRecordId,
-                style: const TextStyle(color: AppColors.textPrimary),
-                isExpanded: true,
-                items:
-                    medicalRecords.map<DropdownMenuItem<String>>((record) {
+              child: Builder(
+                builder: (context) {
+                  print('🔨 CONSTRUYENDO DROPDOWN');
+                  print('📋 Medical Records disponibles: ${medicalRecords.length}');
+                  print('📋 Medical Records: $medicalRecords');
+                  print('📋 Selected Medical Record ID: $selectedMedicalRecordId');
+                  
+                  if (medicalRecords.isEmpty) {
+                    print('⚠️ DROPDOWN: No hay medical records para mostrar');
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: AppColors.warning),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'No hay registros médicos disponibles para esta mascota. Cree un registro médico primero.',
+                              style: TextStyle(
+                                color: AppColors.warning,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  
+                  return DropdownButtonFormField<String>(
+                    value: selectedMedicalRecordId,
+                    style: const TextStyle(color: AppColors.textPrimary),
+                    isExpanded: true,
+                    items: medicalRecords.map<DropdownMenuItem<String>>((record) {
+                      print('📝 Creando item para record: $record');
                       return DropdownMenuItem<String>(
                         value: record['id'],
                         child: Container(
@@ -419,19 +529,22 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
                         ),
                       );
                     }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedMedicalRecordId = value;
-                  });
-                },
-                decoration: _buildInputDecoration(
-                  'Selecciona un registro médico',
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Debes seleccionar un registro médico';
-                  }
-                  return null;
+                    onChanged: (value) {
+                      print('📝 Medical Record seleccionado: $value');
+                      setState(() {
+                        selectedMedicalRecordId = value;
+                      });
+                    },
+                    decoration: _buildInputDecoration(
+                      'Selecciona un registro médico',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Debes seleccionar un registro médico';
+                      }
+                      return null;
+                    },
+                  );
                 },
               ),
             ),
@@ -444,6 +557,24 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
                 style: const TextStyle(color: AppColors.textPrimary),
                 decoration: _buildInputDecoration(
                   'Ej: Omeprazol, Amoxicilina, Meloxicam...',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Este campo es obligatorio';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+            _buildFormSection(
+              'Dosificación',
+              Icons.local_pharmacy,
+              child: TextFormField(
+                controller: _dosageController,
+                style: const TextStyle(color: AppColors.textPrimary),
+                decoration: _buildInputDecoration(
+                  'Ej: 10mg, 2 tabletas, 5ml...',
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -516,16 +647,15 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
             _buildFormSection(
               'Estado',
               Icons.assignment_turned_in,
-              child: DropdownButtonFormField<String>(
+              child: DropdownButtonFormField<TreatmentStatus>(
                 value: selectedStatus,
                 style: const TextStyle(color: AppColors.textPrimary),
-                items:
-                    statusOptions.map((status) {
-                      return DropdownMenuItem(
-                        value: status,
-                        child: Text(_getStatusDisplayName(status)),
-                      );
-                    }).toList(),
+                items: MedicalConstants.treatmentStatusOptions.map((status) {
+                  return DropdownMenuItem(
+                    value: status,
+                    child: Text(MedicalConstants.getTreatmentStatusDisplayName(status)),
+                  );
+                }).toList(),
                 onChanged: (value) {
                   setState(() {
                     selectedStatus = value!;
@@ -922,30 +1052,21 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
     );
   }
 
-  Color _getStatusColor(String status) {
+  Color _getStatusColor(String statusString) {
+    final status = MedicalConstants.treatmentStatusFromString(statusString);
     switch (status) {
-      case 'ACTIVE':
+      case TreatmentStatus.ACTIVE:
         return AppColors.success;
-      case 'COMPLETED':
+      case TreatmentStatus.COMPLETED:
         return AppColors.primary;
-      case 'DISCONTINUED':
+      case TreatmentStatus.SUSPENDED:
         return AppColors.error;
-      default:
-        return AppColors.textSecondary;
     }
   }
 
-  String _getStatusDisplayName(String status) {
-    switch (status) {
-      case 'ACTIVE':
-        return 'Activo';
-      case 'COMPLETED':
-        return 'Completado';
-      case 'DISCONTINUED':
-        return 'Descontinuado';
-      default:
-        return status;
-    }
+  String _getStatusDisplayName(String statusString) {
+    final status = MedicalConstants.treatmentStatusFromString(statusString);
+    return MedicalConstants.getTreatmentStatusDisplayName(status);
   }
 
   void _selectStartDate() async {
@@ -974,7 +1095,7 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
           'start_date': startDate.toIso8601String().split('T')[0],
           'end_date': endDate.toIso8601String().split('T')[0],
           'instructions': _instructionsController.text.trim(),
-          'status': selectedStatus,
+          'status': MedicalConstants.treatmentStatusToString(selectedStatus),
         });
       });
 
@@ -1063,7 +1184,7 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
     _frequencyController.clear();
     _instructionsController.clear();
     setState(() {
-      selectedStatus = 'ACTIVE';
+      selectedStatus = TreatmentStatus.ACTIVE;
       durationDays = 7;
       startDate = DateTime.now();
     });
@@ -1148,33 +1269,65 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
 
     setState(() => _isLoading = true);
 
-    final prescriptionData =
-        prescribedMedications
-            .map(
-              (medication) => {
-                'pet_id': '82756d69-b1ea-48c8-8cb8-bb1c01047f6f',
-                'medical_record_id':
-                    selectedMedicalRecordId ??
-                    '59e7514d-48ad-48cf-a1db-0aa1605f6b84',
-                'vet_id': 'c608e323-3bc8-46dc-9847-a5e19bbfc0b4',
-                'medication_name': medication['name'],
-                'dosage': medication['dosage'],
-                'frequency': medication['frequency'],
-                'duration_days': medication['duration_days'],
-                'start_date': medication['start_date'],
-                'end_date': medication['end_date'],
-                'instructions': medication['instructions'],
-                'status': medication['status'],
-              },
-            )
-            .toList();
+    try {
+      // Obtener datos necesarios
+      final token = await SharedPreferencesHelper.getToken();
+      final vetId = await SharedPreferencesHelper.getUserId();
 
-    await Future.delayed(const Duration(seconds: 2));
+      if (token == null || vetId == null) {
+        throw Exception('No se encontraron credenciales de autenticación');
+      }
 
-    setState(() => _isLoading = false);
+      // Enviar cada medicamento como un tratamiento separado
+      for (final medication in prescribedMedications) {
+        final treatmentData = {
+          'pet_id': appointment?.petId ?? '',
+          'medical_record_id': selectedMedicalRecordId ?? '',
+          'vet_id': vetId,
+          'medication_name': medication['name'],
+          'dosage': medication['dosage'] ?? '',
+          'frequency': medication['frequency'],
+          'duration_days': medication['duration_days'],
+          'start_date': medication['start_date'],
+          'end_date': medication['end_date'],
+          'instructions': medication['instructions'],
+          'status': medication['status'],
+        };
 
-    if (mounted) {
-      _showSuccessDialog();
+        // Realizar POST al endpoint
+        final response = await http.post(
+          Uri.parse(ApiEndpoints.createTreatmentUrl),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: json.encode(treatmentData),
+        );
+
+        if (response.statusCode != 200 && response.statusCode != 201) {
+          throw Exception('Error del servidor: ${response.statusCode}');
+        }
+      }
+
+      if (mounted) {
+        _showSuccessDialog();
+      }
+    } catch (e) {
+      print('❌ Error al guardar tratamientos: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al guardar tratamientos: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -1298,6 +1451,7 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
   void _createNewPrescription() {
     setState(() {
       prescribedMedications.clear();
+      selectedMedicalRecordId = null;
     });
     _clearMedicationForm();
 

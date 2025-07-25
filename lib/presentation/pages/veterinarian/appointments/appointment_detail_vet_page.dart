@@ -88,13 +88,31 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
       final arguments = ModalRoute.of(context)?.settings.arguments;
 
       if (arguments != null && arguments is domain.Appointment) {
+        print('🔧 APPOINTMENT RECIBIDA COMO ENTIDAD');
         realAppointment = arguments;
+        print('🏥 Medical Records de appointment recibida: ${realAppointment?.pet?.medicalRecords?.length ?? 0}');
         _mapAppointmentData();
       } else if (arguments != null && arguments is String) {
+        print('🔧 CARGANDO APPOINTMENT POR ID: $arguments');
         final getAppointmentUseCase = sl<GetAppointmentByIdUseCase>();
         realAppointment = await getAppointmentUseCase.call(arguments);
+        print('✅ APPOINTMENT CARGADA POR ID');
+        print('🏥 Medical Records de appointment cargada: ${realAppointment?.pet?.medicalRecords?.length ?? 0}');
+        
+        // Log detallado de los medical records parseados
+        if (realAppointment?.pet?.medicalRecords != null && realAppointment!.pet!.medicalRecords!.isNotEmpty) {
+          print('📋 MEDICAL RECORDS PARSEADOS CORRECTAMENTE:');
+          for (int i = 0; i < realAppointment!.pet!.medicalRecords!.length; i++) {
+            final record = realAppointment!.pet!.medicalRecords![i];
+            print('  $i: ID=${record.id}, Diagnosis=${record.diagnosis}, Date=${record.visitDate}');
+          }
+        } else {
+          print('❌ NO SE PARSEARON MEDICAL RECORDS O ESTÁN VACÍOS');
+        }
+        
         _mapAppointmentData();
       } else {
+        print('⚠️ NO HAY ARGUMENTOS VÁLIDOS, USANDO DATOS DEFAULT');
         _initializeDefaultData();
       }
 
@@ -115,6 +133,21 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     if (realAppointment == null) return;
 
     final app = realAppointment!;
+    
+    print('🔍 MAPEANDO APPOINTMENT DATA');
+    print('📋 Appointment ID: ${app.id}');
+    print('🐕 Pet: ${app.pet?.name}');
+    print('🏥 Pet Medical Records: ${app.pet?.medicalRecords}');
+    print('🏥 Medical Records Count: ${app.pet?.medicalRecords?.length ?? 0}');
+    
+    if (app.pet?.medicalRecords != null) {
+      for (int i = 0; i < app.pet!.medicalRecords!.length; i++) {
+        final record = app.pet!.medicalRecords![i];
+        print('📋 Medical Record $i: ID=${record.id}, Diagnosis=${record.diagnosis}, Date=${record.visitDate}');
+      }
+    } else {
+      print('⚠️ PET MEDICAL RECORDS ES NULL');
+    }
 
     appointment = {
       'id': app.id,
@@ -998,7 +1031,15 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                   subtitle: 'Nuevo expediente',
                   color: AppColors.primary,
                   onTap: () {
-                    Navigator.pushNamed(context, '/create-medical-record');
+                    Navigator.pushNamed(
+                      context, 
+                      '/create-medical-record',
+                      arguments: {
+                        'appointment': realAppointment,
+                        'petInfo': appointment['petDetails'],
+                        'ownerInfo': appointment['ownerDetails'],
+                      },
+                    );
                   },
                 ),
               ),
@@ -1010,7 +1051,59 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                   subtitle: 'Nueva receta',
                   color: AppColors.secondary,
                   onTap: () {
-                    Navigator.pushNamed(context, '/prescribe-treatment');
+                    print('🔧 NAVEGANDO A PRESCRIBE TREATMENT');
+                    print('🏥 Real Appointment: ${realAppointment?.id}');
+                    print('🐕 Pet: ${realAppointment?.pet?.name}');
+                    print('🏥 Pet Medical Records: ${realAppointment?.pet?.medicalRecords}');
+                    print('🏥 Medical Records Count: ${realAppointment?.pet?.medicalRecords?.length ?? 0}');
+                    
+                                         final medicalRecordsEntities = realAppointment?.pet?.medicalRecords ?? [];
+                     print('📝 MEDICAL RECORDS ENTITIES: $medicalRecordsEntities');
+                     print('📝 MEDICAL RECORDS ENTITIES COUNT: ${medicalRecordsEntities.length}');
+                     
+                     // Convertir entidades a Maps
+                     final medicalRecords = medicalRecordsEntities.map((record) {
+                       print('🔄 Convirtiendo entity a Map: ${record.id}');
+                       final recordMap = {
+                         'id': record.id,
+                         'visit_date': record.visitDate.toIso8601String(),
+                         'diagnosis': record.diagnosis,
+                         'chief_complaint': record.chiefComplaint,
+                         'notes': record.notes,
+                         'urgency_level': record.urgencyLevel,
+                         'status': record.status,
+                       };
+                       print('✅ Record convertido: $recordMap');
+                       return recordMap;
+                     }).toList();
+                     
+                     print('📝 MEDICAL RECORDS CONVERTIDOS PARA ENVIAR: $medicalRecords');
+                     print('📝 MEDICAL RECORDS CONVERTIDOS COUNT: ${medicalRecords.length}');
+                     
+                     if (medicalRecords.isNotEmpty) {
+                       for (int i = 0; i < medicalRecords.length; i++) {
+                         print('📋 Medical Record Map $i: ${medicalRecords[i]}');
+                       }
+                     } else {
+                       print('⚠️ NO HAY MEDICAL RECORDS PARA ENVIAR');
+                     }
+                     
+                     final arguments = {
+                       'appointment': realAppointment,
+                       'petInfo': appointment['petDetails'],
+                       'ownerInfo': appointment['ownerDetails'],
+                       'medicalRecords': medicalRecords,
+                     };
+                    
+                    print('🔗 ARGUMENTOS FINALES PARA PRESCRIBE TREATMENT:');
+                    print('🔗 Arguments keys: ${arguments.keys}');
+                    print('🔗 Medical Records en arguments: ${arguments['medicalRecords']}');
+                    
+                    Navigator.pushNamed(
+                      context, 
+                      '/prescribe-treatment',
+                      arguments: arguments,
+                    );
                   },
                 ),
               ),
@@ -1022,9 +1115,66 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
             title: 'Registrar Vacuna',
             subtitle: 'Aplicar nueva vacuna',
             color: AppColors.accent,
-            onTap: () {
-              Navigator.pushNamed(context, '/register-vaccination');
-            },
+                            onTap: () {
+                  print('💉 NAVEGANDO A REGISTER VACCINATION');
+                  print('🏥 Real Appointment: ${realAppointment?.id}');
+                  print('🐕 Pet: ${realAppointment?.pet?.name}');
+                  print('👤 Owner: ${realAppointment?.user?.fullName}');
+                  
+                  // Convertir pet entity a Map
+                  final petInfo = realAppointment?.pet != null ? {
+                    'id': realAppointment!.pet!.id,
+                    'name': realAppointment!.pet!.name,
+                    'type': realAppointment!.pet!.type.toString().split('.').last.toLowerCase(),
+                    'breed': realAppointment!.pet!.breed,
+                    'gender': realAppointment!.pet!.gender.toString().split('.').last.toLowerCase(),
+                    'birthDate': realAppointment!.pet!.birthDate.toIso8601String(),
+                    'status': realAppointment!.pet!.status?.toString().split('.').last.toLowerCase(),
+                    'description': realAppointment!.pet!.description,
+                    'imageUrl': realAppointment!.pet!.imageUrl,
+                  } : {};
+                  
+                  // Convertir user entity a Map
+                  final ownerInfo = realAppointment?.user != null ? {
+                    'id': realAppointment!.user!.id,
+                    'name': realAppointment!.user!.fullName,
+                    'firstName': realAppointment!.user!.firstName,
+                    'lastName': realAppointment!.user!.lastName,
+                    'phone': realAppointment!.user!.phone,
+                    'email': realAppointment!.user!.email,
+                    'profile_photo': realAppointment!.user!.profilePhoto,
+                  } : {};
+                  
+                  print('🐕 PET INFO CONVERTIDA PARA VACCINATION:');
+                  print('   - ID: ${petInfo['id']}');
+                  print('   - Name: ${petInfo['name']}');
+                  print('   - Type: ${petInfo['type']}');
+                  print('   - Breed: ${petInfo['breed']}');
+                  print('   - Birth Date: ${petInfo['birthDate']}');
+                  
+                  print('👤 OWNER INFO CONVERTIDA PARA VACCINATION:');
+                  print('   - ID: ${ownerInfo['id']}');
+                  print('   - Name: ${ownerInfo['name']}');
+                  print('   - Phone: ${ownerInfo['phone']}');
+                  print('   - Email: ${ownerInfo['email']}');
+                  
+                  final arguments = {
+                    'appointment': realAppointment,
+                    'petInfo': petInfo,
+                    'ownerInfo': ownerInfo,
+                  };
+                  
+                  print('🔗 ARGUMENTOS FINALES PARA REGISTER VACCINATION:');
+                  print('🔗 Arguments keys: ${arguments.keys}');
+                  print('🔗 Pet info keys: ${petInfo.keys}');
+                  print('🔗 Owner info keys: ${ownerInfo.keys}');
+                  
+                  Navigator.pushNamed(
+                    context, 
+                    '/register-vaccination',
+                    arguments: arguments,
+                  );
+                },
             isFullWidth: true,
           ),
         ],
@@ -1465,7 +1615,15 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
   }
 
   void _createMedicalRecord() {
-    Navigator.pushNamed(context, '/create-medical-record');
+    Navigator.pushNamed(
+      context, 
+      '/create-medical-record',
+      arguments: {
+        'appointment': realAppointment,
+        'petInfo': appointment['petDetails'],
+        'ownerInfo': appointment['ownerDetails'],
+      },
+    );
   }
 
   Future<void> _rescheduleAppointment() async {

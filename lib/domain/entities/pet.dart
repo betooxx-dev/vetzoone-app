@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'medical_record.dart';
 
 enum PetType { 
   DOG, 
@@ -36,6 +37,7 @@ class Pet extends Equatable {
   final String userId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final List<MedicalRecord>? medicalRecords;
 
   const Pet({
     required this.id,
@@ -50,6 +52,7 @@ class Pet extends Equatable {
     this.imageUrl,
     this.createdAt,
     this.updatedAt,
+    this.medicalRecords,
   });
 
   @override
@@ -66,6 +69,7 @@ class Pet extends Equatable {
         userId,
         createdAt,
         updatedAt,
+        medicalRecords,
       ];
 
   Pet copyWith({
@@ -81,6 +85,7 @@ class Pet extends Equatable {
     String? userId,
     DateTime? createdAt,
     DateTime? updatedAt,
+    List<MedicalRecord>? medicalRecords,
   }) {
     return Pet(
       id: id ?? this.id,
@@ -95,6 +100,7 @@ class Pet extends Equatable {
       userId: userId ?? this.userId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      medicalRecords: medicalRecords ?? this.medicalRecords,
     );
   }
 }

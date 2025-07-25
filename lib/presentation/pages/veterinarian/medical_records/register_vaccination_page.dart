@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/api_endpoints.dart';
+import '../../../../core/storage/shared_preferences_helper.dart';
+import '../../../../domain/entities/appointment.dart' as domain;
 
 class RegisterVaccinationPage extends StatefulWidget {
   const RegisterVaccinationPage({super.key});
@@ -21,6 +26,8 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
   bool _isLoading = false;
 
   Map<String, dynamic> patientInfo = {};
+  Map<String, dynamic> ownerInfo = {};
+  domain.Appointment? appointment;
 
   final _vaccineNameController = TextEditingController();
   final _manufacturerController = TextEditingController();
@@ -47,22 +54,92 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
 
-    _loadPatientInfo();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadAppointmentData();
+    });
     _animationController.forward();
   }
 
-  void _loadPatientInfo() {
-    setState(() {
-      patientInfo = {
-        'petName': 'Max',
-        'species': 'Perro',
-        'breed': 'Labrador Retriever',
-        'age': '3 años',
-        'weight': '25 kg',
-        'ownerName': 'Juan Pérez',
-        'lastVaccination': '15 Oct 2023',
-      };
-    });
+  void _loadAppointmentData() {
+    print('🏥 CARGANDO DATOS DE APPOINTMENT PARA VACUNA');
+    
+    final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    
+    if (arguments != null) {
+      print('✅ ARGUMENTOS RECIBIDOS: ${arguments.keys}');
+      
+      appointment = arguments['appointment'] as domain.Appointment?;
+      final petInfo = arguments['petInfo'] as Map<String, dynamic>?;
+      final ownerData = arguments['ownerInfo'] as Map<String, dynamic>?;
+      
+      print('🐕 Pet Info: $petInfo');
+      print('👤 Owner Info: $ownerData');
+      print('🏥 Appointment: ${appointment?.id}');
+      
+      setState(() {
+        if (petInfo != null) {
+          patientInfo = {
+            'name': petInfo['name'] ?? '',
+            'breed': petInfo['breed'] ?? '',
+            'age': _calculateAge(petInfo['birthDate']),
+            'type': petInfo['type'] ?? '',
+          };
+        }
+        
+        if (ownerData != null) {
+          ownerInfo = {
+            'name': ownerData['name'] ?? '',
+            'phone': ownerData['phone'] ?? '',
+            'email': ownerData['email'] ?? '',
+          };
+        }
+      });
+      
+      print('📊 DATOS FINALES CARGADOS:');
+      print('   - Pet: ${patientInfo['name']}');
+      print('   - Owner: ${ownerInfo['name']}');
+      print('   - Appointment ID: ${appointment?.id}');
+    } else {
+      print('⚠️ NO SE RECIBIERON ARGUMENTOS - USANDO DATOS DE EJEMPLO');
+      
+      setState(() {
+        patientInfo = {
+          'name': 'Max',
+          'breed': 'Labrador Retriever',
+          'age': '3 años',
+          'type': 'Perro',
+        };
+        ownerInfo = {
+          'name': 'Juan Pérez',
+          'phone': '5551234567',
+          'email': 'juan@correo.com',
+        };
+      });
+    }
+  }
+  
+  String _calculateAge(String? birthDateStr) {
+    if (birthDateStr == null) return 'N/A';
+    
+    try {
+      final birthDate = DateTime.parse(birthDateStr);
+      final now = DateTime.now();
+      final difference = now.difference(birthDate);
+      final years = (difference.inDays / 365).floor();
+      final months = ((difference.inDays % 365) / 30).floor();
+      
+      if (years > 0) {
+        return '$years año${years > 1 ? 's' : ''}';
+      } else if (months > 0) {
+        return '$months mes${months > 1 ? 'es' : ''}';
+      } else {
+        final days = difference.inDays;
+        return '$days día${days > 1 ? 's' : ''}';
+      }
+    } catch (e) {
+      print('❌ Error calculando edad: $e');
+      return 'N/A';
+    }
   }
 
   @override
@@ -242,7 +319,7 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  patientInfo['petName'] ?? '',
+                  patientInfo['name'] ?? '',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -257,7 +334,7 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
                   ),
                 ),
                 Text(
-                  'Dueño: ${patientInfo['ownerName']}',
+                  'Dueño: ${ownerInfo['name']}',
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -743,26 +820,87 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
 
     setState(() => _isLoading = true);
 
-    final vaccinationData = {
-      'pet_id': '82756d69-b1ea-48c8-8cb8-bb1c01047f6f',
-      'vet_id': 'c608e323-3bc8-46dc-9847-a5e19bbfc0b4',
-      'vaccine_name': _vaccineNameController.text.trim(),
-      'manufacturer': _manufacturerController.text.trim(),
-      'batch_number': _batchNumberController.text.trim(),
-      'administered_date': administeredDate.toIso8601String().split('T')[0],
-      'next_due_date': nextDueDate.toIso8601String().split('T')[0],
-      'notes':
-          _notesController.text.trim().isEmpty
-              ? null
-              : _notesController.text.trim(),
-    };
+    try {
+      print('💉 INICIANDO CREACIÓN DE VACUNA');
+      
+      // Obtener token y vet_id del almacenamiento local
+      final token = await SharedPreferencesHelper.getToken();
+      final vetId = await SharedPreferencesHelper.getUserId();
+      
+      if (token == null || vetId == null) {
+        throw Exception('No se encontró token de autenticación o ID de veterinario');
+      }
+      
+      print('🔑 Token obtenido: ${token.substring(0, 10)}...');
+      print('👨‍⚕️ Vet ID: $vetId');
+      print('🐕 Pet ID: ${appointment?.petId}');
 
-    await Future.delayed(const Duration(seconds: 2));
+      final vaccinationData = {
+        'pet_id': appointment?.petId ?? '',
+        'vet_id': vetId,
+        'vaccine_name': _vaccineNameController.text.trim(),
+        'manufacturer': _manufacturerController.text.trim(),
+        'batch_number': _batchNumberController.text.trim(),
+        'administered_date': administeredDate.toIso8601String().split('T')[0],
+        'next_due_date': nextDueDate.toIso8601String().split('T')[0],
+        'notes': _notesController.text.trim().isEmpty 
+            ? null 
+            : _notesController.text.trim(),
+      };
 
-    setState(() => _isLoading = false);
+      print('📋 DATOS DE VACUNA A ENVIAR:');
+      print('Pet ID: ${vaccinationData['pet_id']}');
+      print('Vet ID: ${vaccinationData['vet_id']}');
+      print('Vaccine Name: ${vaccinationData['vaccine_name']}');
+      print('Manufacturer: ${vaccinationData['manufacturer']}');
+      print('Batch Number: ${vaccinationData['batch_number']}');
+      print('Administered Date: ${vaccinationData['administered_date']}');
+      print('Next Due Date: ${vaccinationData['next_due_date']}');
+      print('Notes: ${vaccinationData['notes']}');
 
-    if (mounted) {
-      _showSuccessDialog();
+      // Realizar petición POST
+      final response = await http.post(
+        Uri.parse(ApiEndpoints.createVaccinationUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(vaccinationData),
+      );
+
+      print('📡 RESPUESTA DEL SERVIDOR:');
+      print('Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print('✅ VACUNA CREADA EXITOSAMENTE');
+        
+        if (mounted) {
+          setState(() => _isLoading = false);
+          _showSuccessDialog();
+        }
+      } else {
+        print('❌ ERROR EN LA RESPUESTA DEL SERVIDOR');
+        throw Exception('Error del servidor: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('❌ ERROR CREANDO VACUNA: $e');
+      
+      if (mounted) {
+        setState(() => _isLoading = false);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al registrar la vacuna: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 

@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/medical_constants.dart';
+import '../../../../core/constants/api_endpoints.dart';
+import '../../../../core/storage/shared_preferences_helper.dart';
+import '../../../../domain/entities/appointment.dart' as domain;
 
 class CreateMedicalRecordPage extends StatefulWidget {
   const CreateMedicalRecordPage({super.key});
@@ -25,13 +32,14 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
   final _diagnosisController = TextEditingController();
   final _notesController = TextEditingController();
 
+  // Datos de la cita y mascota
+  domain.Appointment? appointment;
   Map<String, dynamic> patientInfo = {};
-  String selectedUrgencyLevel = 'LOW';
-  String selectedStatus = 'DRAFT';
+  Map<String, dynamic> ownerInfo = {};
+  
+  UrgencyLevel selectedUrgencyLevel = UrgencyLevel.LOW;
+  MedicalRecordStatus selectedStatus = MedicalRecordStatus.DRAFT;
   DateTime visitDate = DateTime.now();
-
-  final List<String> urgencyLevels = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
-  final List<String> statusOptions = ['DRAFT', 'FINAL', 'REVIEWED'];
 
   @override
   void initState() {
@@ -50,21 +58,40 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
 
-    _loadPatientInfo();
     _animationController.forward();
+    _loadAppointmentData();
   }
 
-  void _loadPatientInfo() {
-    setState(() {
-      patientInfo = {
-        'petName': 'Max',
-        'species': 'Perro',
-        'breed': 'Labrador Retriever',
-        'age': '3 años',
-        'weight': '25 kg',
-        'ownerName': 'Juan Pérez',
-        'lastVisit': '15 Oct 2024',
-      };
+  void _loadAppointmentData() {
+    // Recibir argumentos pasados desde appointment_detail_vet_page
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final arguments = ModalRoute.of(context)?.settings.arguments;
+      
+      if (arguments != null && arguments is Map<String, dynamic>) {
+        setState(() {
+          appointment = arguments['appointment'] as domain.Appointment?;
+          patientInfo = arguments['petInfo'] as Map<String, dynamic>? ?? {};
+          ownerInfo = arguments['ownerInfo'] as Map<String, dynamic>? ?? {};
+          
+          // Si tenemos una cita, usar su fecha como fecha de visita
+          if (appointment != null) {
+            visitDate = appointment!.appointmentDate;
+          }
+        });
+      } else {
+        // Datos de ejemplo si no se pasan argumentos
+        setState(() {
+          patientInfo = {
+            'name': 'Paciente de ejemplo',
+            'type': 'Perro',
+            'breed': 'Sin especificar',
+            'age': 'Sin especificar',
+          };
+          ownerInfo = {
+            'name': 'Propietario de ejemplo',
+          };
+        });
+      }
     });
   }
 
@@ -244,7 +271,7 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  patientInfo['petName'] ?? '',
+                  patientInfo['name'] ?? 'Sin nombre',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -252,14 +279,14 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
                   ),
                 ),
                 Text(
-                  '${patientInfo['breed']} • ${patientInfo['age']}',
+                  '${patientInfo['breed'] ?? 'Sin raza'} • ${patientInfo['age'] ?? 'Sin edad'}',
                   style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondary,
                   ),
                 ),
                 Text(
-                  'Dueño: ${patientInfo['ownerName']}',
+                  'Dueño: ${ownerInfo['name'] ?? 'Sin propietario'}',
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -352,16 +379,15 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
             _buildFormSection(
               'Nivel de Urgencia',
               Icons.priority_high,
-              child: DropdownButtonFormField<String>(
+              child: DropdownButtonFormField<UrgencyLevel>(
                 value: selectedUrgencyLevel,
                 style: const TextStyle(color: AppColors.textPrimary),
-                items:
-                    urgencyLevels.map((level) {
-                      return DropdownMenuItem(
-                        value: level,
-                        child: Text(_getUrgencyDisplayName(level)),
-                      );
-                    }).toList(),
+                items: MedicalConstants.urgencyLevels.map((level) {
+                  return DropdownMenuItem(
+                    value: level,
+                    child: Text(MedicalConstants.getUrgencyDisplayName(level)),
+                  );
+                }).toList(),
                 onChanged: (value) {
                   setState(() {
                     selectedUrgencyLevel = value!;
@@ -374,16 +400,15 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
             _buildFormSection(
               'Estado',
               Icons.assignment_turned_in,
-              child: DropdownButtonFormField<String>(
+              child: DropdownButtonFormField<MedicalRecordStatus>(
                 value: selectedStatus,
                 style: const TextStyle(color: AppColors.textPrimary),
-                items:
-                    statusOptions.map((status) {
-                      return DropdownMenuItem(
-                        value: status,
-                        child: Text(_getStatusDisplayName(status)),
-                      );
-                    }).toList(),
+                items: MedicalConstants.statusOptions.map((status) {
+                  return DropdownMenuItem(
+                    value: status,
+                    child: Text(MedicalConstants.getStatusDisplayName(status)),
+                  );
+                }).toList(),
                 onChanged: (value) {
                   setState(() {
                     selectedStatus = value!;
@@ -507,33 +532,7 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
     );
   }
 
-  String _getUrgencyDisplayName(String level) {
-    switch (level) {
-      case 'LOW':
-        return 'Baja';
-      case 'MEDIUM':
-        return 'Media';
-      case 'HIGH':
-        return 'Alta';
-      case 'CRITICAL':
-        return 'Crítica';
-      default:
-        return level;
-    }
-  }
 
-  String _getStatusDisplayName(String status) {
-    switch (status) {
-      case 'DRAFT':
-        return 'Borrador';
-      case 'FINAL':
-        return 'Final';
-      case 'REVIEWED':
-        return 'Revisado';
-      default:
-        return status;
-    }
-  }
 
   void _saveRecord() async {
     if (!_formKey.currentState!.validate()) {
@@ -554,27 +553,63 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
 
     setState(() => _isLoading = true);
 
-    final medicalRecordData = {
-      'pet_id': '82756d69-b1ea-48c8-8cb8-bb1c01047f6f',
-      'vet_id': 'c608e323-3bc8-46dc-9847-a5e19bbfc0b4',
-      'appointment_id': 'e573c0c0-251f-4a8a-984c-4a39ce4536c0',
-      'visit_date': visitDate.toIso8601String(),
-      'chief_complaint': _chiefComplaintController.text.trim(),
-      'diagnosis': _diagnosisController.text.trim(),
-      'notes':
-          _notesController.text.trim().isEmpty
-              ? null
-              : _notesController.text.trim(),
-      'urgency_level': selectedUrgencyLevel,
-      'status': selectedStatus,
-    };
+    try {
+      // Obtener datos necesarios
+      final token = await SharedPreferencesHelper.getToken();
+      final vetId = await SharedPreferencesHelper.getUserId();
 
-    await Future.delayed(const Duration(seconds: 2));
+      if (token == null || vetId == null) {
+        throw Exception('No se encontraron credenciales de autenticación');
+      }
 
-    setState(() => _isLoading = false);
+      // Preparar datos según el DTO
+      final medicalRecordData = {
+        'pet_id': appointment?.petId ?? '',
+        'vet_id': vetId,
+        'appointment_id': appointment?.id,
+        'visit_date': visitDate.toIso8601String(),
+        'chief_complaint': _chiefComplaintController.text.trim(),
+        'diagnosis': _diagnosisController.text.trim(),
+        'notes': _notesController.text.trim().isEmpty 
+            ? null 
+            : _notesController.text.trim(),
+        'urgency_level': MedicalConstants.urgencyLevelToString(selectedUrgencyLevel),
+        'status': MedicalConstants.statusToString(selectedStatus),
+      };
 
-    if (mounted) {
-      _showSuccessDialog();
+      // Realizar POST al endpoint
+      final response = await http.post(
+        Uri.parse(ApiEndpoints.createMedicalRecordUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(medicalRecordData),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (mounted) {
+          _showSuccessDialog();
+        }
+      } else {
+        throw Exception('Error del servidor: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error al guardar registro médico: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al guardar registro médico: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -697,8 +732,8 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
 
   void _createNewRecord() {
     setState(() {
-      selectedUrgencyLevel = 'LOW';
-      selectedStatus = 'DRAFT';
+      selectedUrgencyLevel = UrgencyLevel.LOW;
+      selectedStatus = MedicalRecordStatus.DRAFT;
       visitDate = DateTime.now();
     });
 

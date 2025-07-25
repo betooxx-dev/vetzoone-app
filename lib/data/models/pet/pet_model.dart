@@ -1,4 +1,6 @@
 import '../../../domain/entities/pet.dart';
+import '../../../domain/entities/medical_record.dart';
+import '../medical_records/medical_record_model.dart';
 
 class PetModel extends Pet {
   const PetModel({
@@ -14,9 +16,34 @@ class PetModel extends Pet {
     super.imageUrl,
     super.createdAt,
     super.updatedAt,
+    super.medicalRecords,
   });
 
   factory PetModel.fromJson(Map<String, dynamic> json) {
+    print('🐕 PARSEANDO PET JSON: ${json.keys}');
+    print('🏥 Medical Records en JSON: ${json['medical_records']}');
+    
+    // Parsear medical records si existen
+    List<MedicalRecord>? medicalRecords;
+    if (json['medical_records'] != null) {
+      print('📝 Parseando ${(json['medical_records'] as List).length} medical records...');
+      try {
+        medicalRecords = (json['medical_records'] as List)
+            .map((recordJson) {
+              print('📋 Parseando record: $recordJson');
+              return MedicalRecordModel.fromJson(recordJson as Map<String, dynamic>);
+            })
+            .toList();
+        print('✅ Medical records parseados exitosamente: ${medicalRecords.length}');
+      } catch (e) {
+        print('❌ Error parseando medical records: $e');
+        medicalRecords = [];
+      }
+    } else {
+      print('⚠️ No hay medical_records en el JSON del pet');
+      medicalRecords = null;
+    }
+
     return PetModel(
       id: json['id'] ?? '',
       name: json['name'] ?? '',
@@ -39,6 +66,7 @@ class PetModel extends Pet {
           json['updated_at'] != null
               ? DateTime.parse(json['updated_at'])
               : null,
+      medicalRecords: medicalRecords,
     );
   }
 
