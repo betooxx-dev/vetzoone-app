@@ -8,6 +8,7 @@ import '../../../../data/datasources/pet/pet_remote_datasource.dart';
 import '../../../../data/models/pet/pet_model.dart';
 import '../../../../data/models/appointment/appointment_model.dart';
 import '../../../../data/models/medical_records/medical_record_with_treatments_model.dart';
+import '../../../../data/models/medical_records/treatment_model.dart';
 import '../../../../data/models/medical_records/vaccination_model.dart';
 import '../../../../core/injection/injection.dart';
 
@@ -23,7 +24,7 @@ class PatientHistoryPage extends StatefulWidget {
 class _PatientHistoryPageState extends State<PatientHistoryPage>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  
+
   bool _isLoading = true;
   PetModel? _pet;
   List<AppointmentModel> _appointments = [];
@@ -39,7 +40,9 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
   }
 
   Future<void> _loadPatientData() async {
+    print('🔄 INICIANDO CARGA DE DATOS DEL PACIENTE');
     if (widget.patient == null) {
+      print('⚠️ Widget.patient es null');
       setState(() {
         _isLoading = false;
       });
@@ -51,11 +54,20 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
         _isLoading = true;
       });
 
+      print('🏥 Obteniendo ID del veterinario...');
       // Obtener ID del veterinario actual
       _currentVetId = await SharedPreferencesHelper.getVetId();
+      print('👨‍⚕️ Vet ID: $_currentVetId');
 
+      print('📡 Obteniendo datos completos de la mascota...');
       final petDataSource = sl<PetRemoteDataSource>();
       final petDetails = await petDataSource.getPetCompleteById(widget.patient!.id);
+
+      print('📊 DATOS OBTENIDOS:');
+      print('   - Pet: ${petDetails.pet.name}');
+      print('   - Appointments: ${petDetails.appointments.length}');
+      print('   - Medical Records: ${petDetails.medicalRecords.length}');
+      print('   - Vaccinations: ${petDetails.vaccinations.length}');
 
       if (mounted) {
         setState(() {
@@ -65,6 +77,7 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
           _vaccinations = petDetails.vaccinations;
           _isLoading = false;
         });
+        print('✅ DATOS ACTUALIZADOS EXITOSAMENTE');
       }
     } catch (e) {
       print('❌ Error cargando datos del paciente: $e');
@@ -104,13 +117,13 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
             child: _isLoading
                 ? _buildLoadingState()
                 : Column(
-                    children: [
+              children: [
                       _buildModernAppBar(),
                       _buildPatientHeader(),
-                      _buildTabBar(),
-                      Expanded(child: _buildTabBarView()),
-                    ],
-                  ),
+                _buildTabBar(),
+                Expanded(child: _buildTabBarView()),
+              ],
+            ),
           ),
         ],
       ),
@@ -246,19 +259,19 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
           padding: const EdgeInsets.all(AppSizes.paddingL),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
+                        children: [
+                          Container(
                 width: 40,
                 height: 4,
-                decoration: BoxDecoration(
+                            decoration: BoxDecoration(
                   color: AppColors.textSecondary.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: AppSizes.spaceL),
-              const Text(
+                          const Text(
                 'Agregar nuevo registro',
-                style: TextStyle(
+                            style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -266,32 +279,13 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
               ),
               const SizedBox(height: AppSizes.spaceL),
               _buildAddOptionTile(
-                icon: Icons.note_add_rounded,
-                title: 'Crear Registro Médico',
-                subtitle: 'Agregar nueva consulta médica',
-                color: AppColors.primary,
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(
-                    context,
-                    '/create-medical-record',
-                    arguments: widget.patient,
-                  );
-                },
-              ),
-              const SizedBox(height: AppSizes.spaceM),
-              _buildAddOptionTile(
                 icon: Icons.vaccines_rounded,
                 title: 'Registrar Vacuna',
                 subtitle: 'Agregar nueva vacuna aplicada',
                 color: AppColors.accent,
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.pushNamed(
-                    context,
-                    '/register-vaccination',
-                    arguments: widget.patient,
-                  );
+                  _navigateToCreateVaccination();
                 },
               ),
               const SizedBox(height: AppSizes.spaceL),
@@ -318,21 +312,21 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
           border: Border.all(color: color.withOpacity(0.2)),
           borderRadius: BorderRadius.circular(AppSizes.radiusL),
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSizes.paddingS),
-              decoration: BoxDecoration(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(AppSizes.paddingS),
+                            decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(AppSizes.radiusM),
               ),
               child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(width: AppSizes.spaceM),
+                          ),
+                          const SizedBox(width: AppSizes.spaceM),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                        children: [
                   Text(
                     title,
                     style: const TextStyle(
@@ -345,13 +339,13 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
                   Text(
                     subtitle,
                     style: const TextStyle(
-                      fontSize: 14,
+                              fontSize: 14,
                       color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
             Icon(
               Icons.arrow_forward_ios_rounded,
               size: 16,
@@ -394,25 +388,25 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppSizes.radiusXL),
               image: _pet?.imageUrl != null && _pet!.imageUrl!.isNotEmpty
-                  ? DecorationImage(
+                      ? DecorationImage(
                       image: NetworkImage(_pet!.imageUrl!),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
+                        fit: BoxFit.cover,
+                      )
+                      : null,
             ),
             child: _pet?.imageUrl == null || _pet!.imageUrl!.isEmpty
-                ? Container(
-                    decoration: BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusXL),
-                    ),
-                    child: const Icon(
-                      Icons.pets_rounded,
-                      size: 40,
-                      color: AppColors.white,
-                    ),
-                  )
-                : null,
+                    ? Container(
+                      decoration: BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+                      ),
+                      child: const Icon(
+                        Icons.pets_rounded,
+                        size: 40,
+                        color: AppColors.white,
+                      ),
+                    )
+                    : null,
           ),
           const SizedBox(width: AppSizes.spaceM),
           Expanded(
@@ -688,22 +682,22 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
               ),
             ),
             if (appointment.veterinarian != null) ...[
-              const SizedBox(height: AppSizes.spaceS),
+            const SizedBox(height: AppSizes.spaceS),
               Row(
-                children: [
+              children: [
                   const Icon(Icons.person_rounded, size: 16, color: AppColors.textSecondary),
-                  const SizedBox(width: AppSizes.spaceXS),
+                      const SizedBox(width: AppSizes.spaceXS),
                   Expanded(
-                    child: Text(
+                  child: Text(
                       'Dr. ${appointment.veterinarian!.user.firstName} ${appointment.veterinarian!.user.lastName}',
-                      style: const TextStyle(
+                    style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.textPrimary,
-                      ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
             ],
           ],
         ),
@@ -805,12 +799,38 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
     return age;
   }
 
+  Map<String, dynamic> _getOwnerInfo() {
+    // Buscar el primer appointment que tenga información del user
+    for (final appointment in _appointments) {
+      if (appointment.user != null) {
+        return {
+          'name': '${appointment.user!.firstName} ${appointment.user!.lastName}',
+          'phone': appointment.user!.phone,
+          'email': appointment.user!.email,
+          'profilePhoto': appointment.user!.profilePhoto,
+        };
+      }
+    }
+    
+    // Si no se encuentra información del user, devolver información por defecto
+    return {
+      'name': 'Propietario',
+      'phone': null,
+      'email': null,
+      'profilePhoto': null,
+    };
+  }
+
   bool _canEditMedicalRecord(MedicalRecordWithTreatmentsModel record) {
     return _currentVetId != null && _currentVetId == record.vetId;
   }
 
   bool _canEditVaccination(VaccinationModel vaccination) {
     return _currentVetId != null && _currentVetId == vaccination.vetId;
+  }
+
+  bool _canEditTreatment(TreatmentModel treatment) {
+    return _currentVetId != null && _currentVetId == treatment.vetId;
   }
 
   String _getAppointmentStatusText(dynamic status) {
@@ -876,24 +896,24 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSizes.paddingS,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.paddingS,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
                         color: _getMedicalRecordStatusColor(medicalRecord.status).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                        border: Border.all(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                    border: Border.all(
                           color: _getMedicalRecordStatusColor(medicalRecord.status).withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
                         _getMedicalRecordStatusText(medicalRecord.status),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
                           color: _getMedicalRecordStatusColor(medicalRecord.status),
                         ),
                       ),
@@ -928,49 +948,60 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
               ),
             ],
             if (medicalRecord.treatments.isNotEmpty) ...[
-              const SizedBox(height: AppSizes.spaceM),
-              Container(
-                padding: const EdgeInsets.all(AppSizes.paddingM),
-                decoration: BoxDecoration(
-                  color: AppColors.secondary.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                  border: Border.all(color: AppColors.secondary.withOpacity(0.2)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
+            const SizedBox(height: AppSizes.spaceM),
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingM),
+              decoration: BoxDecoration(
+                color: AppColors.secondary.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                border: Border.all(color: AppColors.secondary.withOpacity(0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
                           Icons.medication_rounded,
-                          size: 16,
-                          color: AppColors.secondary,
-                        ),
-                        const SizedBox(width: AppSizes.spaceS),
-                        const Text(
+                        size: 16,
+                        color: AppColors.secondary,
+                      ),
+                      const SizedBox(width: AppSizes.spaceS),
+                      const Text(
                           'Tratamientos:',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSizes.spaceS),
-                    ...medicalRecord.treatments.map((treatment) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: AppSizes.spaceXS),
-                        child: Text(
-                          '• ${treatment.medicationName} - ${treatment.dosage} (${treatment.frequency})',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textPrimary,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSizes.spaceS),
+                  ...medicalRecord.treatments.map((treatment) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: AppSizes.spaceXS),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '• ${treatment.medicationName} - ${treatment.dosage} (${treatment.frequency})',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
                           ),
-                        ),
-                      );
-                    }).toList(),
-                  ],
+                          if (_canEditTreatment(treatment))
+                            _buildRecordActionsMenu(
+                              onEdit: () => _editTreatment(treatment),
+                              onDelete: () => _deleteTreatment(treatment),
+                            ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ],
                 ),
               ),
             ],
@@ -1012,20 +1043,20 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.paddingM),
-        child: Column(
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              children: [
-                Container(
+        children: [
+          Container(
                   padding: const EdgeInsets.all(AppSizes.paddingS),
-                  decoration: BoxDecoration(
-                    gradient: AppColors.purpleGradient,
+            decoration: BoxDecoration(
+              gradient: AppColors.purpleGradient,
                     borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                  ),
-                  child: const Icon(
-                    Icons.vaccines_rounded,
-                    color: AppColors.white,
+            ),
+            child: const Icon(
+              Icons.vaccines_rounded,
+              color: AppColors.white,
                     size: 20,
                   ),
                 ),
@@ -1035,9 +1066,9 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
                     vaccination.vaccineName,
                     style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
                   ),
                 ),
                 if (_canEditVaccination(vaccination))
@@ -1060,8 +1091,8 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: AppSizes.spaceS),
+          ),
+          const SizedBox(height: AppSizes.spaceS),
             Row(
               children: [
                 Icon(Icons.qr_code_rounded, size: 16, color: AppColors.textSecondary),
@@ -1196,14 +1227,50 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
     );
   }
 
-  void _editMedicalRecord(MedicalRecordWithTreatmentsModel record) {
-    // TODO: Implementar edición de registro médico
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Editar registro médico: ${record.id}'),
-        backgroundColor: AppColors.primary,
-      ),
+  void _editMedicalRecord(MedicalRecordWithTreatmentsModel record) async {
+    print('🔧 EDITANDO MEDICAL RECORD');
+    print('🐕 Pet data: $_pet');
+    print('📋 Record: ${record.id}');
+    
+    final ownerInfo = _getOwnerInfo();
+    final petInfo = {
+      'id': _pet?.id ?? '',
+      'name': _pet?.name ?? 'Paciente',
+      'type': _getTypeText(_pet?.type),
+      'breed': _pet?.breed ?? 'Sin especificar',
+      'age': _pet?.birthDate != null ? '${_getAge(_pet!.birthDate)} años' : 'Sin especificar',
+      'gender': _pet?.gender ?? 'Sin especificar',
+      'status': _getStatusText(_pet?.status),
+      'imageUrl': _pet?.imageUrl, // ← Agregando imagen
+      'birthDate': _pet?.birthDate.toIso8601String(), // ← Agregando fecha de nacimiento
+      'description': _pet?.description, // ← Agregando descripción
+    };
+    
+    print('🔍 DATOS A ENVIAR:');
+    print('🐕 Pet Info: $petInfo');
+    print('👤 Owner Info: $ownerInfo');
+    print('🖼️ Image URL específica: ${_pet?.imageUrl}');
+    
+    final result = await Navigator.pushNamed(
+      context,
+      '/create-medical-record',
+      arguments: {
+        'medicalRecord': record,
+        'petInfo': petInfo,
+        'ownerInfo': ownerInfo,
+      },
     );
+    
+    // Si se editó exitosamente, recargar los datos
+    if (result == true) {
+      _loadPatientData();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Expediente médico actualizado exitosamente'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
   }
 
   void _deleteMedicalRecord(MedicalRecordWithTreatmentsModel record) {
@@ -1214,8 +1281,63 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusL),
           ),
-          title: const Text('Eliminar registro médico'),
-          content: const Text('¿Estás seguro de que deseas eliminar este registro médico? Esta acción no se puede deshacer.'),
+          title: Row(
+            children: [
+              Icon(Icons.warning_rounded, color: AppColors.error, size: 24),
+              const SizedBox(width: AppSizes.spaceS),
+              const Text('Eliminar expediente médico'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '¿Estás seguro de que deseas eliminar este expediente médico?',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: AppSizes.spaceM),
+              Container(
+                padding: const EdgeInsets.all(AppSizes.paddingM),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Diagnóstico: ${record.diagnosis}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      'Motivo: ${record.chiefComplaint}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    Text(
+                      'Fecha: ${record.visitDate.day}/${record.visitDate.month}/${record.visitDate.year}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSizes.spaceM),
+              const Text(
+                'Esta acción no se puede deshacer.',
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -1224,16 +1346,11 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                // TODO: Implementar eliminación de registro médico
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Registro médico eliminado: ${record.id}'),
-                    backgroundColor: AppColors.error,
-                  ),
-                );
+                _performDeleteMedicalRecord(record);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,
+                foregroundColor: AppColors.white,
               ),
               child: const Text('Eliminar'),
             ),
@@ -1241,6 +1358,552 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
         );
       },
     );
+  }
+
+  void _performDeleteMedicalRecord(MedicalRecordWithTreatmentsModel record) async {
+    try {
+      print('🏥 INICIANDO ELIMINACIÓN DE EXPEDIENTE MÉDICO');
+      
+      final token = await SharedPreferencesHelper.getToken();
+      
+      if (token == null) {
+        throw Exception('No se encontró token de autenticación');
+      }
+      
+      print('🔑 Token obtenido: ${token.substring(0, 10)}...');
+      print('🏥 Medical Record ID: ${record.id}');
+
+      // Mostrar indicador de carga
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                ),
+              ),
+              const SizedBox(width: AppSizes.spaceM),
+              const Text('Eliminando expediente médico...'),
+            ],
+          ),
+          backgroundColor: AppColors.primary,
+          duration: const Duration(seconds: 30),
+        ),
+      );
+
+      final response = await http.delete(
+        Uri.parse(ApiEndpoints.deleteMedicalRecordUrl(record.id)),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('📡 RESPUESTA DEL SERVIDOR:');
+      print('Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      // Ocultar indicador de carga
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        print('✅ EXPEDIENTE MÉDICO ELIMINADO EXITOSAMENTE');
+        
+        // Recargar datos del paciente
+        _loadPatientData();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: AppColors.white, size: 20),
+                const SizedBox(width: AppSizes.spaceS),
+                const Text('Expediente médico eliminado exitosamente'),
+              ],
+            ),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+          ),
+        );
+      } else {
+        print('❌ ERROR EN LA RESPUESTA DEL SERVIDOR');
+        throw Exception('Error del servidor: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('❌ ERROR ELIMINANDO EXPEDIENTE MÉDICO: $e');
+      
+      // Ocultar indicador de carga
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.error, color: AppColors.white, size: 20),
+              const SizedBox(width: AppSizes.spaceS),
+              Expanded(
+                child: Text('Error al eliminar el expediente médico: ${e.toString()}'),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  }
+
+  void _navigateToCreateMedicalRecord() async {
+    print('🔧 NAVEGANDO A CREAR NUEVO REGISTRO MÉDICO');
+    print('🐕 Pet data: $_pet');
+    print('👤 Current vet ID: $_currentVetId');
+    
+    final ownerInfo = _getOwnerInfo();
+    final petInfo = {
+      'id': _pet?.id ?? '',
+      'name': _pet?.name ?? 'Paciente',
+      'type': _getTypeText(_pet?.type),
+      'breed': _pet?.breed ?? 'Sin especificar',
+      'age': _pet?.birthDate != null ? '${_getAge(_pet!.birthDate)} años' : 'Sin especificar',
+      'gender': _pet?.gender ?? 'Sin especificar',
+      'status': _getStatusText(_pet?.status),
+      'imageUrl': _pet?.imageUrl,
+      'birthDate': _pet?.birthDate.toIso8601String(),
+      'description': _pet?.description,
+    };
+
+    print('🔍 DATOS A ENVIAR PARA NUEVO REGISTRO MÉDICO:');
+    print('🐕 Pet Info: $petInfo');
+    print('👤 Owner Info: $ownerInfo');
+    print('� Vet ID: $_currentVetId');
+    print('�🖼️ Image URL específica: ${_pet?.imageUrl}');
+    
+    final result = await Navigator.pushNamed(
+      context,
+      '/create-medical-record',
+      arguments: {
+        'petInfo': petInfo,
+        'ownerInfo': ownerInfo,
+        'vetId': _currentVetId,
+        // No incluimos 'appointment' porque estamos creando desde el historial
+        // En este caso, appointment será null y se usará petInfo['id'] para pet_id
+      },
+    );
+    
+    // Si se creó exitosamente, recargar los datos
+    if (result == true || (result is Map && result['success'] == true)) {
+      print('🔄 RECARGANDO DATOS DESPUÉS DE CREAR REGISTRO MÉDICO');
+      if (result is Map) {
+        print('📊 Resultado detallado: $result');
+      }
+      _loadPatientData();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Registro médico creado exitosamente'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
+  }
+
+  void _navigateToCreateTreatment() async {
+    print('🔧 NAVEGANDO A CREAR NUEVO TRATAMIENTO');
+    print('🐕 Pet data: $_pet');
+    print('📋 Medical Records disponibles: ${_medicalRecords.length}');
+    
+    final ownerInfo = _getOwnerInfo();
+    final petInfo = {
+      'id': _pet?.id ?? '',
+      'name': _pet?.name ?? 'Paciente',
+      'type': _getTypeText(_pet?.type),
+      'breed': _pet?.breed ?? 'Sin especificar',
+      'age': _pet?.birthDate != null ? '${_getAge(_pet!.birthDate)} años' : 'Sin especificar',
+      'gender': _pet?.gender ?? 'Sin especificar',
+      'status': _getStatusText(_pet?.status),
+      'imageUrl': _pet?.imageUrl,
+      'birthDate': _pet?.birthDate.toIso8601String(),
+      'description': _pet?.description,
+    };
+    
+    // Convertir medical records a formato compatible
+    final medicalRecords = _medicalRecords.map((record) {
+      final recordMap = {
+        'id': record.id,
+        'visit_date': record.visitDate.toIso8601String(),
+        'diagnosis': record.diagnosis,
+        'chief_complaint': record.chiefComplaint,
+        'notes': record.notes ?? '',
+        'urgency_level': record.urgencyLevel,
+        'status': record.status,
+      };
+      print('✅ Medical Record convertido: $recordMap');
+      return recordMap;
+    }).toList();
+    
+    print('🔍 DATOS A ENVIAR PARA NUEVO TRATAMIENTO:');
+    print('🐕 Pet Info: $petInfo');
+    print('👤 Owner Info: $ownerInfo');
+    print('📋 Medical Records: ${medicalRecords.length} registros');
+    print('🖼️ Image URL específica: ${_pet?.imageUrl}');
+    
+    final result = await Navigator.pushNamed(
+      context,
+      '/prescribe-treatment',
+      arguments: {
+        'petInfo': petInfo,
+        'ownerInfo': ownerInfo,
+        'medicalRecords': medicalRecords,
+      },
+    );
+    
+    // Si se creó exitosamente, recargar los datos
+    if (result == true || (result is Map && result['success'] == true)) {
+      print('🔄 RECARGANDO DATOS DESPUÉS DE CREAR TRATAMIENTO');
+      if (result is Map) {
+        print('📊 Resultado detallado: $result');
+      }
+      _loadPatientData();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Tratamiento creado exitosamente'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
+  }
+
+  void _editTreatment(TreatmentModel treatment) async {
+    print('🔧 EDITANDO TREATMENT');
+    print('🐕 Pet data: $_pet');
+    print('💊 Treatment: ${treatment.id}');
+    
+    final ownerInfo = _getOwnerInfo();
+    final petInfo = {
+      'id': _pet?.id ?? '',
+      'name': _pet?.name ?? 'Paciente',
+      'type': _getTypeText(_pet?.type),
+      'breed': _pet?.breed ?? 'Sin especificar',
+      'age': _pet?.birthDate != null ? '${_getAge(_pet!.birthDate)} años' : 'Sin especificar',
+      'gender': _pet?.gender ?? 'Sin especificar',
+      'status': _getStatusText(_pet?.status),
+      'imageUrl': _pet?.imageUrl, // ← Agregando imagen
+      'birthDate': _pet?.birthDate.toIso8601String(), // ← Agregando fecha de nacimiento
+      'description': _pet?.description, // ← Agregando descripción
+    };
+    
+    print('🔍 DATOS A ENVIAR PARA TREATMENT:');
+    print('🐕 Pet Info: $petInfo');
+    print('👤 Owner Info: $ownerInfo');
+    print('🖼️ Image URL específica: ${_pet?.imageUrl}');
+    
+    final result = await Navigator.pushNamed(
+      context,
+      '/prescribe-treatment',
+      arguments: {
+        'treatmentToEdit': treatment,
+        'petInfo': petInfo,
+        'ownerInfo': ownerInfo,
+      },
+    );
+    
+    // Si se editó exitosamente, recargar los datos
+    if (result == true || (result is Map && result['success'] == true)) {
+      print('🔄 RECARGANDO DATOS DESPUÉS DE EDITAR TRATAMIENTO');
+      if (result is Map) {
+        print('📊 Resultado detallado: $result');
+      }
+      _loadPatientData();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Tratamiento actualizado exitosamente'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
+  }
+
+  void _deleteTreatment(TreatmentModel treatment) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.warning_rounded, color: AppColors.error, size: 24),
+              const SizedBox(width: AppSizes.spaceS),
+              const Text('Eliminar tratamiento'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '¿Estás seguro de que deseas eliminar este tratamiento?',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: AppSizes.spaceM),
+              Container(
+                padding: const EdgeInsets.all(AppSizes.paddingM),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      treatment.medicationName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      'Dosis: ${treatment.dosage}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    Text(
+                      'Frecuencia: ${treatment.frequency}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSizes.spaceM),
+              const Text(
+                'Esta acción no se puede deshacer.',
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _performDeleteTreatment(treatment);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: AppColors.white,
+              ),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _performDeleteTreatment(TreatmentModel treatment) async {
+    try {
+      print('💊 INICIANDO ELIMINACIÓN DE TRATAMIENTO');
+      
+      final token = await SharedPreferencesHelper.getToken();
+      
+      if (token == null) {
+        throw Exception('No se encontró token de autenticación');
+      }
+      
+      print('🔑 Token obtenido: ${token.substring(0, 10)}...');
+      print('💊 Treatment ID: ${treatment.id}');
+
+      // Mostrar indicador de carga
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                ),
+              ),
+              const SizedBox(width: AppSizes.spaceM),
+              const Text('Eliminando tratamiento...'),
+            ],
+          ),
+          backgroundColor: AppColors.primary,
+          duration: const Duration(seconds: 30),
+        ),
+      );
+
+      final response = await http.delete(
+        Uri.parse(ApiEndpoints.deleteTreatmentUrl(treatment.id)),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('📡 RESPUESTA DEL SERVIDOR:');
+      print('Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      // Ocultar indicador de carga
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        print('✅ TRATAMIENTO ELIMINADO EXITOSAMENTE');
+        
+        // Recargar datos del paciente
+        _loadPatientData();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: AppColors.white, size: 20),
+                const SizedBox(width: AppSizes.spaceS),
+                const Text('Tratamiento eliminado exitosamente'),
+              ],
+            ),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+          ),
+        );
+      } else {
+        print('❌ ERROR EN LA RESPUESTA DEL SERVIDOR');
+        throw Exception('Error del servidor: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('❌ ERROR ELIMINANDO TRATAMIENTO: $e');
+      
+      // Ocultar indicador de carga
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.error, color: AppColors.white, size: 20),
+              const SizedBox(width: AppSizes.spaceS),
+              Expanded(
+                child: Text('Error al eliminar el tratamiento: ${e.toString()}'),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  }
+
+  void _navigateToCreateVaccination() async {
+    print('🔧 NAVEGANDO A CREAR NUEVA VACUNA');
+    print('🐕 Pet data: $_pet');
+    print('👤 Current vet ID: $_currentVetId');
+    
+    final ownerInfo = _getOwnerInfo();
+    final petInfo = {
+      'id': _pet?.id ?? '',
+      'name': _pet?.name ?? 'Paciente',
+      'type': _getTypeText(_pet?.type),
+      'breed': _pet?.breed ?? 'Sin especificar',
+      'age': _pet?.birthDate != null ? '${_getAge(_pet!.birthDate)} años' : 'Sin especificar',
+      'gender': _pet?.gender ?? 'Sin especificar',
+      'status': _getStatusText(_pet?.status),
+      'imageUrl': _pet?.imageUrl,
+      'birthDate': _pet?.birthDate.toIso8601String(),
+      'description': _pet?.description,
+    };
+
+    print('🔍 DATOS A ENVIAR PARA NUEVA VACUNA:');
+    print('🐕 Pet Info: $petInfo');
+    print('👤 Owner Info: $ownerInfo');
+    print('🏥 Vet ID: $_currentVetId');
+    print('🖼️ Image URL específica: ${_pet?.imageUrl}');
+    
+    final result = await Navigator.pushNamed(
+      context,
+      '/register-vaccination',
+      arguments: {
+        'petInfo': petInfo,
+        'ownerInfo': ownerInfo,
+        'vetId': _currentVetId,
+        // Crear un appointment mock para que el formulario funcione correctamente
+        'appointment': {
+          'id': '',
+          'petId': _pet?.id ?? '',
+          'vetId': _currentVetId,
+          'userId': ownerInfo['id'] ?? '',
+          'appointmentDate': DateTime.now().toIso8601String(),
+          'status': 'completed',
+          'pet': _pet?.toJson() ?? {},
+          'user': ownerInfo,
+        },
+      },
+    );
+    
+    print('🔄 RESULTADO DE NAVEGACIÓN RECIBIDO: $result');
+    print('🔄 Tipo de resultado: ${result.runtimeType}');
+    
+    // Si se creó exitosamente, recargar los datos
+    if (result == true || (result is Map && result['success'] == true)) {
+      print('✅ CONDICIÓN DE ÉXITO CUMPLIDA - RECARGANDO DATOS');
+      if (result is Map) {
+        print('📊 Resultado detallado: $result');
+      }
+      _loadPatientData();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: AppColors.white, size: 20),
+              const SizedBox(width: AppSizes.spaceS),
+              const Text('Vacuna registrada exitosamente'),
+            ],
+          ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          ),
+        ),
+      );
+    } else {
+      print('❌ CONDICIÓN DE ÉXITO NO CUMPLIDA');
+      print('   - result == true: ${result == true}');
+      print('   - result is Map: ${result is Map}');
+      if (result is Map) {
+        print('   - result[\'success\']: ${result['success']}');
+      }
+    }
   }
 
   void _editVaccination(VaccinationModel vaccination) async {

@@ -47,6 +47,8 @@ import 'presentation/pages/veterinarian/analytics/statistics_page.dart';
 import 'domain/entities/pet.dart';
 import 'data/models/pet/pet_model.dart';
 import 'data/models/medical_records/vaccination_model.dart';
+import 'data/models/medical_records/medical_record_with_treatments_model.dart';
+import 'data/models/medical_records/treatment_model.dart';
 import 'dart:async';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -185,9 +187,28 @@ class MyApp extends StatelessWidget {
           '/appointment-detail-vet':
               (context) => const AppointmentDetailVetPage(),
 
-          '/create-medical-record':
-              (context) => const CreateMedicalRecordPage(),
-          '/prescribe-treatment': (context) => const PrescribeTreatmentPage(),
+          '/create-medical-record': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is MedicalRecordWithTreatmentsModel) {
+              return CreateMedicalRecordPage(medicalRecordToEdit: args);
+            } else if (args is Map<String, dynamic>) {
+              if (args.containsKey('medicalRecord')) {
+                return CreateMedicalRecordPage(medicalRecordToEdit: args['medicalRecord']);
+              }
+            }
+            return const CreateMedicalRecordPage();
+          },
+          '/prescribe-treatment': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is TreatmentModel) {
+              return PrescribeTreatmentPage(treatmentToEdit: args);
+            } else if (args is Map<String, dynamic>) {
+              if (args.containsKey('treatmentToEdit')) {
+                return PrescribeTreatmentPage(treatmentToEdit: args['treatmentToEdit']);
+              }
+            }
+            return const PrescribeTreatmentPage();
+          },
           '/register-vaccination': (context) => const RegisterVaccinationPage(),
           '/edit-vaccination': (context) {
             final args = ModalRoute.of(context)?.settings.arguments;

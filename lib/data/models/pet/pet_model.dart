@@ -22,6 +22,7 @@ class PetModel extends Pet {
   factory PetModel.fromJson(Map<String, dynamic> json) {
     print('🐕 PARSEANDO PET JSON: ${json.keys}');
     print('🏥 Medical Records en JSON: ${json['medical_records']}');
+    print('🗓️ Birth date fields: birthDate=${json['birthDate']}, birth_date=${json['birth_date']}');
     
     // Parsear medical records si existen
     List<MedicalRecord>? medicalRecords;
@@ -52,10 +53,7 @@ class PetModel extends Pet {
       gender: _parsePetGender(json['gender'] ?? 'UNKNOWN'),
       status: _parsePetStatus(json['status']),
       description: json['description'],
-      birthDate:
-          json['birthDate'] != null
-              ? DateTime.parse(json['birthDate'])
-              : DateTime.now(),
+      birthDate: _parseBirthDate(json),
       imageUrl: json['image_url'],
       userId: json['user_id'] ?? '',
       createdAt:
@@ -234,5 +232,25 @@ class PetModel extends Pet {
       default:
         return PetStatus.HEALTHY;
     }
+  }
+
+  static DateTime _parseBirthDate(Map<String, dynamic> json) {
+    // Try different possible field names for birth date
+    final possibleFields = ['birthDate', 'birth_date', 'dateOfBirth', 'date_of_birth'];
+    
+    for (final field in possibleFields) {
+      if (json[field] != null) {
+        try {
+          return DateTime.parse(json[field]);
+        } catch (e) {
+          print('⚠️ Error parsing date from field $field: ${json[field]}');
+          continue;
+        }
+      }
+    }
+    
+    // Fallback to current date if no valid birth date found
+    print('⚠️ No valid birth date found in JSON, using current date');
+    return DateTime.now();
   }
 }

@@ -163,6 +163,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
               : '',
 
       'petDetails': {
+        'id': app.pet?.id ?? '',
         'name': app.pet?.name ?? '',
         'type': _mapPetTypeToSpecies(app.pet?.type.toString()),
         'breed': app.pet?.breed ?? '',
@@ -170,18 +171,21 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
         'gender': _mapPetGender(app.pet?.gender.toString()),
         'status': _mapPetStatus(app.pet?.status.toString()),
         'description': app.pet?.description ?? '',
-        'image_url': app.pet?.imageUrl ?? '',
+        'imageUrl': app.pet?.imageUrl ?? '', // Cambiar de image_url a imageUrl
         'birthDate': app.pet?.birthDate,
       },
 
       'ownerDetails': {
+        'id': app.user?.id ?? '',
         'name':
             app.user?.firstName != null && app.user?.lastName != null
                 ? '${app.user!.firstName} ${app.user!.lastName}'
                 : '',
+        'firstName': app.user?.firstName ?? '',
+        'lastName': app.user?.lastName ?? '',
         'phone': app.user?.phone ?? '',
         'email': app.user?.email ?? '',
-        'profile_photo': app.user?.profilePhoto ?? '',
+        'profilePhoto': app.user?.profilePhoto ?? '', // Cambiar de profile_photo a profilePhoto
       },
     };
 

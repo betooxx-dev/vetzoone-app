@@ -68,7 +68,16 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
     if (arguments != null) {
       print('✅ ARGUMENTOS RECIBIDOS: ${arguments.keys}');
       
-      appointment = arguments['appointment'] as domain.Appointment?;
+      // Manejar appointment tanto como Map como domain.Appointment
+      final appointmentData = arguments['appointment'];
+      if (appointmentData is domain.Appointment) {
+        appointment = appointmentData;
+      } else if (appointmentData is Map<String, dynamic>) {
+        print('🏥 Appointment recibido como Map, extrayendo datos necesarios');
+        // Crear un appointment mock si es necesario, pero principalmente usaremos petInfo directamente
+        appointment = null; // Lo mantenemos como null y obtendremos los datos directamente
+      }
+      
       final petInfo = arguments['petInfo'] as Map<String, dynamic>?;
       final ownerData = arguments['ownerInfo'] as Map<String, dynamic>?;
       
@@ -78,19 +87,33 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
       
       setState(() {
         if (petInfo != null) {
+          // Normalizar petInfo - manejar tanto formato nuevo como legado
           patientInfo = {
+            'id': petInfo['id'] ?? '',
             'name': petInfo['name'] ?? '',
             'breed': petInfo['breed'] ?? '',
             'age': _calculateAge(petInfo['birthDate']),
             'type': petInfo['type'] ?? '',
+            'gender': petInfo['gender'] ?? '',
+            'status': petInfo['status'] ?? '',
+            // Manejar tanto imageUrl como image_url
+            'imageUrl': petInfo['imageUrl'] ?? petInfo['image_url'] ?? '',
+            'birthDate': petInfo['birthDate'],
+            'description': petInfo['description'] ?? '',
           };
         }
         
         if (ownerData != null) {
+          // Normalizar ownerInfo - manejar tanto formato nuevo como legado
           ownerInfo = {
+            'id': ownerData['id'] ?? '',
             'name': ownerData['name'] ?? '',
+            'firstName': ownerData['firstName'] ?? '',
+            'lastName': ownerData['lastName'] ?? '',
             'phone': ownerData['phone'] ?? '',
             'email': ownerData['email'] ?? '',
+            // Manejar tanto profilePhoto como profile_photo
+            'profilePhoto': ownerData['profilePhoto'] ?? ownerData['profile_photo'] ?? '',
           };
         }
       });
@@ -304,14 +327,43 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
       ),
       child: Row(
         children: [
+          // Avatar de la mascota o icono por defecto
           Container(
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
               borderRadius: BorderRadius.circular(AppSizes.radiusRound),
+              border: Border.all(
+                color: AppColors.primary.withOpacity(0.2),
+                width: 2,
+              ),
             ),
-            child: const Icon(Icons.vaccines, color: AppColors.white, size: 30),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppSizes.radiusRound),
+              child: patientInfo['imageUrl'] != null && patientInfo['imageUrl'].toString().isNotEmpty
+                  ? Image.network(
+                      patientInfo['imageUrl'],
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            gradient: AppColors.primaryGradient,
+                            borderRadius: BorderRadius.circular(AppSizes.radiusRound),
+                          ),
+                          child: const Icon(Icons.pets, color: AppColors.white, size: 30),
+                        );
+                      },
+                    )
+                  : Container(
+                      decoration: BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(AppSizes.radiusRound),
+                      ),
+                      child: const Icon(Icons.pets, color: AppColors.white, size: 30),
+                    ),
+            ),
           ),
           const SizedBox(width: AppSizes.spaceM),
           Expanded(
@@ -825,7 +877,7 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
       
       // Obtener token y vet_id del almacenamiento local
       final token = await SharedPreferencesHelper.getToken();
-      final vetId = await SharedPreferencesHelper.getUserId();
+      final vetId = await SharedPreferencesHelper.getVetId();
       
       if (token == null || vetId == null) {
         throw Exception('No se encontró token de autenticación o ID de veterinario');
@@ -833,10 +885,20 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
       
       print('🔑 Token obtenido: ${token.substring(0, 10)}...');
       print('👨‍⚕️ Vet ID: $vetId');
-      print('🐕 Pet ID: ${appointment?.petId}');
+      print('🐕 Pet ID from appointment: ${appointment?.petId}');
+      print('🐕 Pet ID from patientInfo: ${patientInfo['id']}');
+
+      // Obtener pet_id del appointment o de patientInfo directamente
+      String petId = appointment?.petId ?? patientInfo['id'] ?? '';
+      
+      if (petId.isEmpty) {
+        throw Exception('No se pudo obtener el ID de la mascota');
+      }
+      
+      print('🎯 Pet ID final utilizado: $petId');
 
       final vaccinationData = {
-        'pet_id': appointment?.petId ?? '',
+        'pet_id': petId,
         'vet_id': vetId,
         'vaccine_name': _vaccineNameController.text.trim(),
         'manufacturer': _manufacturerController.text.trim(),
@@ -996,8 +1058,9 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
                         ),
                         child: ElevatedButton(
                           onPressed: () {
-                            Navigator.pop(context);
-                            Navigator.pop(context);
+                            print('✅ BOTÓN FINALIZAR PRESIONADO - REGRESANDO CON ÉXITO');
+                            Navigator.pop(context); // Cerrar el diálogo
+                            Navigator.pop(context, true); // Regresar a la página anterior con éxito
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,

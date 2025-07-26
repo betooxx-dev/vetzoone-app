@@ -70,6 +70,20 @@ class ApiEndpoints {
   static String deleteVaccinationUrl(String vaccinationId) =>
       '$gatewayBaseUrl$vaccination/$vaccinationId';
 
+  // Medical Records endpoints
+  static String updateMedicalRecordUrl(String medicalRecordId) =>
+      '$gatewayBaseUrl$medicalRecord/$medicalRecordId';
+
+  static String deleteMedicalRecordUrl(String medicalRecordId) =>
+      '$gatewayBaseUrl$medicalRecord/$medicalRecordId';
+
+  // Treatment endpoints
+  static String updateTreatmentUrl(String treatmentId) =>
+      '$gatewayBaseUrl$treatment/$treatmentId';
+
+  static String deleteTreatmentUrl(String treatmentId) =>
+      '$gatewayBaseUrl$treatment/$treatmentId';
+
   static String get searchVeterinariansUrl => '$gatewayBaseUrl$vetSearch';
   static String getVeterinarianByIdUrl(String vetId) =>
       '$gatewayBaseUrl$vetById/$vetId';

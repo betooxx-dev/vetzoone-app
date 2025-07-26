@@ -8,10 +8,13 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/medical_constants.dart';
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/storage/shared_preferences_helper.dart';
+import '../../../../data/models/medical_records/medical_record_with_treatments_model.dart';
 import '../../../../domain/entities/appointment.dart' as domain;
 
 class CreateMedicalRecordPage extends StatefulWidget {
-  const CreateMedicalRecordPage({super.key});
+  final MedicalRecordWithTreatmentsModel? medicalRecordToEdit;
+
+  const CreateMedicalRecordPage({super.key, this.medicalRecordToEdit});
 
   @override
   State<CreateMedicalRecordPage> createState() =>
@@ -27,6 +30,7 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
   final _formKey = GlobalKey<FormState>();
 
   bool _isLoading = false;
+  bool get _isEditMode => widget.medicalRecordToEdit != null;
 
   final _chiefComplaintController = TextEditingController();
   final _diagnosisController = TextEditingController();
@@ -59,33 +63,132 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
     );
 
     _animationController.forward();
+    
+    // Siempre cargar datos de argumentos (para mascota y propietario)
     _loadAppointmentData();
+    
+    // Si es modo edición, también cargar datos del registro médico
+    if (_isEditMode) {
+      _loadMedicalRecordData();
+    }
+  }
+
+  void _loadMedicalRecordData() {
+    if (widget.medicalRecordToEdit != null) {
+      final record = widget.medicalRecordToEdit!;
+      
+      setState(() {
+        _chiefComplaintController.text = record.chiefComplaint;
+        _diagnosisController.text = record.diagnosis;
+        _notesController.text = record.notes ?? '';
+        visitDate = record.visitDate;
+        selectedUrgencyLevel = MedicalConstants.urgencyLevelFromString(record.urgencyLevel);
+        selectedStatus = MedicalConstants.statusFromString(record.status);
+      });
+    }
   }
 
   void _loadAppointmentData() {
-    // Recibir argumentos pasados desde appointment_detail_vet_page
+    // Recibir argumentos pasados desde appointment_detail_vet_page o patient_history_page
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final arguments = ModalRoute.of(context)?.settings.arguments;
       
-      if (arguments != null && arguments is Map<String, dynamic>) {
-        setState(() {
-          appointment = arguments['appointment'] as domain.Appointment?;
-          patientInfo = arguments['petInfo'] as Map<String, dynamic>? ?? {};
-          ownerInfo = arguments['ownerInfo'] as Map<String, dynamic>? ?? {};
+      print('🔧 CREATE MEDICAL RECORD: Iniciando carga de datos');
+      print('🔍 Arguments: $arguments');
+      print('🔍 Arguments type: ${arguments.runtimeType}');
+      
+      if (arguments != null) {
+        if (arguments is Map<String, dynamic>) {
+          print('🔧 CREATE MEDICAL RECORD: Argumentos como mapa recibidos');
+          print('🔍 Arguments keys: ${arguments.keys}');
           
-          // Si tenemos una cita, usar su fecha como fecha de visita
-          if (appointment != null) {
-            visitDate = appointment!.appointmentDate;
-          }
-        });
+          setState(() {
+            if (arguments.containsKey('medicalRecord')) {
+              print('🔧 MODO EDICIÓN: Cargando datos del registro médico');
+              final record = arguments['medicalRecord'] as MedicalRecordWithTreatmentsModel;
+              _chiefComplaintController.text = record.chiefComplaint;
+              _diagnosisController.text = record.diagnosis;
+              _notesController.text = record.notes ?? '';
+              visitDate = record.visitDate;
+              selectedUrgencyLevel = MedicalConstants.urgencyLevelFromString(record.urgencyLevel);
+              selectedStatus = MedicalConstants.statusFromString(record.status);
+            } else {
+              print('🔧 MODO CREACIÓN: Cargando datos de la cita');
+              appointment = arguments['appointment'] as domain.Appointment?;
+            }
+            
+            // Cargar información del paciente y propietario
+            final rawPetInfo = arguments['petInfo'];
+            final rawOwnerInfo = arguments['ownerInfo'];
+            
+            print('🔍 RAW PET INFO RECIBIDO: $rawPetInfo');
+            print('🔍 RAW OWNER INFO RECIBIDO: $rawOwnerInfo');
+            
+            // Normalizar petInfo - manejar tanto formato nuevo como legado
+            final Map<String, dynamic> receivedPetInfo = arguments['petInfo'] as Map<String, dynamic>? ?? {};
+            patientInfo = {
+              'id': receivedPetInfo['id'] ?? '',
+              'name': receivedPetInfo['name'] ?? 'Paciente',
+              'type': receivedPetInfo['type'] ?? 'Mascota',
+              'breed': receivedPetInfo['breed'] ?? 'N/A',
+              'age': receivedPetInfo['age'] ?? 'N/A',
+              'gender': receivedPetInfo['gender'] ?? 'Sin especificar',
+              'status': receivedPetInfo['status'] ?? 'Sin especificar',
+              // Manejar tanto imageUrl como image_url
+              'imageUrl': receivedPetInfo['imageUrl'] ?? receivedPetInfo['image_url'] ?? '',
+              'birthDate': receivedPetInfo['birthDate'],
+              'description': receivedPetInfo['description'] ?? '',
+            };
+            
+            // Normalizar ownerInfo - manejar tanto formato nuevo como legado
+            final Map<String, dynamic> receivedOwnerInfo = arguments['ownerInfo'] as Map<String, dynamic>? ?? {};
+            ownerInfo = {
+              'id': receivedOwnerInfo['id'] ?? '',
+              'name': receivedOwnerInfo['name'] ?? 'Propietario',
+              'firstName': receivedOwnerInfo['firstName'] ?? '',
+              'lastName': receivedOwnerInfo['lastName'] ?? '',
+              'phone': receivedOwnerInfo['phone'],
+              'email': receivedOwnerInfo['email'],
+              // Manejar tanto profilePhoto como profile_photo
+              'profilePhoto': receivedOwnerInfo['profilePhoto'] ?? receivedOwnerInfo['profile_photo'] ?? '',
+            };
+            
+            print('🔍 DATOS FINALES ASIGNADOS EN MEDICAL RECORD:');
+            print('🐕 Patient Info final: $patientInfo');
+            print('👤 Owner Info final: $ownerInfo');
+            print('🖼️ Image URL final: ${patientInfo['imageUrl']}');
+          });
+        } else if (arguments is MedicalRecordWithTreatmentsModel) {
+          print('🔧 MODO LEGACY: Argumentos como MedicalRecordWithTreatmentsModel');
+          final record = arguments;
+          setState(() {
+            _chiefComplaintController.text = record.chiefComplaint;
+            _diagnosisController.text = record.diagnosis;
+            _notesController.text = record.notes ?? '';
+            visitDate = record.visitDate;
+            selectedUrgencyLevel = MedicalConstants.urgencyLevelFromString(record.urgencyLevel);
+            selectedStatus = MedicalConstants.statusFromString(record.status);
+            
+            patientInfo = {
+              'name': 'Paciente',
+              'type': 'Mascota',
+              'breed': 'N/A',
+              'age': 'N/A',
+            };
+            ownerInfo = {
+              'name': 'Propietario',
+            };
+          });
+        }
       } else {
-        // Datos de ejemplo si no se pasan argumentos
+        print('🔧 SIN ARGUMENTOS: Usando datos de ejemplo');
         setState(() {
           patientInfo = {
             'name': 'Paciente de ejemplo',
             'type': 'Perro',
             'breed': 'Sin especificar',
             'age': 'Sin especificar',
+            'diagnosis': 'Sin diagnóstico',
           };
           ownerInfo = {
             'name': 'Propietario de ejemplo',
@@ -206,16 +309,16 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
             ),
           ),
           const SizedBox(width: AppSizes.spaceM),
-          const Expanded(
-            child: Text(
-              'Nuevo Registro Médico',
-              style: TextStyle(
-                color: AppColors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+                      Expanded(
+              child: Text(
+                _isEditMode ? 'Editar Registro Médico' : 'Nuevo Registro Médico',
+                style: const TextStyle(
+                  color: AppColors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
           Container(
             decoration: BoxDecoration(
               color: AppColors.white.withOpacity(0.2),
@@ -232,6 +335,12 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
   }
 
   Widget _buildPatientInfo() {
+    // Log de debug para ver qué datos tiene la UI disponibles
+    print('🎨 RENDERIZANDO UI CREATE MEDICAL RECORD:');
+    print('🐕 patientInfo en UI: $patientInfo');
+    print('👤 ownerInfo en UI: $ownerInfo');
+    print('🖼️ imageUrl en UI: ${patientInfo['imageUrl']}');
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
       padding: const EdgeInsets.all(AppSizes.paddingL),
@@ -260,10 +369,20 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
+              gradient: patientInfo['imageUrl'] != null && patientInfo['imageUrl'].toString().isNotEmpty
+                  ? null
+                  : AppColors.primaryGradient,
               borderRadius: BorderRadius.circular(AppSizes.radiusRound),
+              image: patientInfo['imageUrl'] != null && patientInfo['imageUrl'].toString().isNotEmpty
+                  ? DecorationImage(
+                      image: NetworkImage(patientInfo['imageUrl'].toString()),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-            child: const Icon(Icons.pets, color: AppColors.white, size: 30),
+            child: patientInfo['imageUrl'] == null || patientInfo['imageUrl'].toString().isEmpty
+                ? const Icon(Icons.pets, color: AppColors.white, size: 30)
+                : null,
           ),
           const SizedBox(width: AppSizes.spaceM),
           Expanded(
@@ -286,12 +405,27 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
                   ),
                 ),
                 Text(
+                  '${patientInfo['type'] ?? 'Mascota'} • ${patientInfo['gender'] ?? 'Sin especificar'}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                Text(
                   'Dueño: ${ownerInfo['name'] ?? 'Sin propietario'}',
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
                   ),
                 ),
+                if (ownerInfo['phone'] != null && ownerInfo['phone'].toString().isNotEmpty)
+                  Text(
+                    'Tel: ${ownerInfo['phone']}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -517,7 +651,7 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
                     ),
                   )
                   : const Icon(Icons.save),
-          label: Text(_isLoading ? 'Guardando...' : 'Guardar Registro'),
+          label: Text(_isLoading ? 'Guardando...' : (_isEditMode ? 'Actualizar Registro' : 'Guardar Registro')),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
@@ -562,30 +696,64 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
         throw Exception('No se encontraron credenciales de autenticación');
       }
 
-      // Preparar datos según el DTO
-      final medicalRecordData = {
-        'pet_id': appointment?.petId ?? '',
-        'vet_id': vetId,
-        'appointment_id': appointment?.id,
-        'visit_date': visitDate.toIso8601String(),
-        'chief_complaint': _chiefComplaintController.text.trim(),
-        'diagnosis': _diagnosisController.text.trim(),
-        'notes': _notesController.text.trim().isEmpty 
+      // Preparar datos según el DTO (todos los campos son opcionales en edición)
+      final medicalRecordData = <String, dynamic>{};
+      
+      if (_isEditMode) {
+        // En modo edición, solo enviar campos que han cambiado o que no estén vacíos
+        if (_chiefComplaintController.text.trim().isNotEmpty) {
+          medicalRecordData['chief_complaint'] = _chiefComplaintController.text.trim();
+        }
+        if (_diagnosisController.text.trim().isNotEmpty) {
+          medicalRecordData['diagnosis'] = _diagnosisController.text.trim();
+        }
+        if (_notesController.text.trim().isNotEmpty) {
+          medicalRecordData['notes'] = _notesController.text.trim();
+        }
+        medicalRecordData['visit_date'] = visitDate.toIso8601String();
+        medicalRecordData['urgency_level'] = MedicalConstants.urgencyLevelToString(selectedUrgencyLevel);
+        medicalRecordData['status'] = MedicalConstants.statusToString(selectedStatus);
+      } else {
+        // En modo creación, todos los campos obligatorios
+        medicalRecordData['pet_id'] = appointment?.petId ?? patientInfo['id'] ?? '';
+        medicalRecordData['vet_id'] = vetId;
+        medicalRecordData['appointment_id'] = appointment?.id; // Puede ser null si no hay cita específica
+        medicalRecordData['visit_date'] = visitDate.toIso8601String();
+        medicalRecordData['chief_complaint'] = _chiefComplaintController.text.trim();
+        medicalRecordData['diagnosis'] = _diagnosisController.text.trim();
+        medicalRecordData['notes'] = _notesController.text.trim().isEmpty 
             ? null 
-            : _notesController.text.trim(),
-        'urgency_level': MedicalConstants.urgencyLevelToString(selectedUrgencyLevel),
-        'status': MedicalConstants.statusToString(selectedStatus),
-      };
+            : _notesController.text.trim();
+        medicalRecordData['urgency_level'] = MedicalConstants.urgencyLevelToString(selectedUrgencyLevel);
+        medicalRecordData['status'] = MedicalConstants.statusToString(selectedStatus);
+      }
 
-      // Realizar POST al endpoint
-      final response = await http.post(
-        Uri.parse(ApiEndpoints.createMedicalRecordUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode(medicalRecordData),
-      );
+      print('🔧 ENVIANDO PETICIÓN ${_isEditMode ? "PATCH" : "POST"}');
+      print('🎯 URL: ${_isEditMode ? ApiEndpoints.updateMedicalRecordUrl(widget.medicalRecordToEdit!.id) : ApiEndpoints.createMedicalRecordUrl}');
+      print('💾 Data: ${json.encode(medicalRecordData)}');
+      
+      // Realizar request según el modo
+      final response = _isEditMode 
+          ? await http.patch(
+              Uri.parse(ApiEndpoints.updateMedicalRecordUrl(widget.medicalRecordToEdit!.id)),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $token',
+              },
+              body: json.encode(medicalRecordData),
+            )
+          : await http.post(
+              Uri.parse(ApiEndpoints.createMedicalRecordUrl),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $token',
+              },
+              body: json.encode(medicalRecordData),
+            );
+
+      print('📡 RESPUESTA DEL SERVIDOR:');
+      print('Status: ${response.statusCode}');
+      print('Body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (mounted) {
@@ -595,11 +763,11 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
         throw Exception('Error del servidor: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error al guardar registro médico: $e');
+      print('❌ Error al ${_isEditMode ? 'actualizar' : 'guardar'} registro médico: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al guardar registro médico: ${e.toString()}'),
+            content: Text('Error al ${_isEditMode ? 'actualizar' : 'guardar'} registro médico: ${e.toString()}'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -645,9 +813,9 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
                   ),
                 ),
                 const SizedBox(height: AppSizes.spaceL),
-                const Text(
-                  '¡Registro Guardado!',
-                  style: TextStyle(
+                Text(
+                  _isEditMode ? '¡Registro Actualizado!' : '¡Registro Guardado!',
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
@@ -656,8 +824,10 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
                 ),
                 const SizedBox(height: AppSizes.spaceS),
                 Text(
-                  'El registro médico ha sido guardado exitosamente.',
-                  style: TextStyle(
+                  _isEditMode 
+                      ? 'El registro médico ha sido actualizado exitosamente.'
+                      : 'El registro médico ha sido guardado exitosamente.',
+                  style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondary,
                     height: 1.4,
@@ -687,7 +857,7 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
                               ),
                             ),
                           ),
-                          child: const Text('Nuevo Registro'),
+                          child: Text(_isEditMode ? 'Editar Otro' : 'Nuevo Registro'),
                         ),
                       ),
                     ),
@@ -706,7 +876,7 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
                         child: ElevatedButton(
                           onPressed: () {
                             Navigator.pop(context);
-                            Navigator.pop(context);
+                            Navigator.pop(context, true); // Devolver true para indicar éxito
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,

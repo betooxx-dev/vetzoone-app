@@ -8,10 +8,13 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/medical_constants.dart';
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/storage/shared_preferences_helper.dart';
+import '../../../../data/models/medical_records/treatment_model.dart';
 import '../../../../domain/entities/appointment.dart' as domain;
 
 class PrescribeTreatmentPage extends StatefulWidget {
-  const PrescribeTreatmentPage({super.key});
+  final TreatmentModel? treatmentToEdit;
+
+  const PrescribeTreatmentPage({super.key, this.treatmentToEdit});
 
   @override
   State<PrescribeTreatmentPage> createState() => _PrescribeTreatmentPageState();
@@ -25,6 +28,7 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
 
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  bool get _isEditMode => widget.treatmentToEdit != null;
 
   // Datos de la cita y mascota
   domain.Appointment? appointment;
@@ -63,83 +67,220 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
     );
 
     _animationController.forward();
+    
+    // Siempre cargar datos de argumentos (para mascota y propietario)
     _loadAppointmentData();
+    
+    // Si es modo edición, también cargar datos del tratamiento
+    if (_isEditMode) {
+      _loadTreatmentData();
+    }
+  }
+
+  void _loadTreatmentData() {
+    if (widget.treatmentToEdit != null) {
+      final treatment = widget.treatmentToEdit!;
+      
+      print('🔧 CARGANDO DATOS DEL TRATAMIENTO PARA EDICIÓN');
+      print('💊 Treatment ID: ${treatment.id}');
+      print('📋 Medical Record ID: ${treatment.medicalRecordId}');
+      print('💊 Medication: ${treatment.medicationName}');
+      
+      setState(() {
+        _medicationNameController.text = treatment.medicationName;
+        _dosageController.text = treatment.dosage;
+        _frequencyController.text = treatment.frequency;
+        _instructionsController.text = treatment.instructions;
+        durationDays = treatment.durationDays;
+        startDate = treatment.startDate;
+        selectedStatus = MedicalConstants.treatmentStatusFromString(treatment.status);
+        selectedMedicalRecordId = treatment.medicalRecordId;
+        
+        // Crear un medical record básico para el dropdown
+        medicalRecords = [
+          {
+            'id': treatment.medicalRecordId,
+            'date': '${treatment.startDate.day.toString().padLeft(2, '0')}/${treatment.startDate.month.toString().padLeft(2, '0')}/${treatment.startDate.year}',
+            'diagnosis': 'Registro médico asociado',
+            'chief_complaint': 'Tratamiento en edición',
+          },
+        ];
+      });
+      
+      print('✅ DATOS DEL TRATAMIENTO CARGADOS CORRECTAMENTE');
+      print('📋 Selected Medical Record ID: $selectedMedicalRecordId');
+    }
   }
 
   void _loadAppointmentData() {
-    // Recibir argumentos pasados desde appointment_detail_vet_page
+    // Recibir argumentos pasados desde appointment_detail_vet_page o patient_history_page
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final arguments = ModalRoute.of(context)?.settings.arguments;
       
-      if (arguments != null && arguments is Map<String, dynamic>) {
-        print('🔧 PRESCRIBE TREATMENT: Argumentos recibidos');
-        print('🔍 Arguments keys: ${arguments.keys}');
-        print('🔍 Arguments: $arguments');
-        
-        setState(() {
-          appointment = arguments['appointment'] as domain.Appointment?;
-          patientInfo = arguments['petInfo'] as Map<String, dynamic>? ?? {};
-          ownerInfo = arguments['ownerInfo'] as Map<String, dynamic>? ?? {};
+      print('🔧 PRESCRIBE TREATMENT: Iniciando carga de datos');
+      print('🔍 Arguments: $arguments');
+      print('🔍 Arguments type: ${arguments.runtimeType}');
+      
+      if (arguments != null) {
+        if (arguments is Map<String, dynamic>) {
+          print('🔧 PRESCRIBE TREATMENT: Argumentos como mapa recibidos');
+          print('🔍 Arguments keys: ${arguments.keys}');
           
-          print('📋 APPOINTMENT: ${appointment?.id}');
-          print('🐕 PET INFO: $patientInfo');
-          print('👤 OWNER INFO: $ownerInfo');
-          
-          // Poblar medical records reales
-          final rawMedicalRecords = arguments['medicalRecords'];
-          print('🏥 RAW MEDICAL RECORDS: $rawMedicalRecords');
-          print('🏥 RAW MEDICAL RECORDS TYPE: ${rawMedicalRecords.runtimeType}');
-          
-          final realMedicalRecords = arguments['medicalRecords'] as List? ?? [];
-          print('📝 REAL MEDICAL RECORDS COUNT: ${realMedicalRecords.length}');
-          print('📝 REAL MEDICAL RECORDS: $realMedicalRecords');
-          
-          if (realMedicalRecords.isNotEmpty) {
-            print('🔄 Procesando ${realMedicalRecords.length} medical records...');
-            try {
-              medicalRecords = realMedicalRecords.map((record) {
-                print('🔍 Procesando record: $record');
-                print('🔍 Record type: ${record.runtimeType}');
-                
-                final visitDate = DateTime.parse(record['visit_date']);
-                final processedRecord = {
-                  'id': record['id'],
-                  'date': '${visitDate.day.toString().padLeft(2, '0')}/${visitDate.month.toString().padLeft(2, '0')}/${visitDate.year}',
-                  'diagnosis': record['diagnosis'] ?? 'Sin diagnóstico',
-                  'chief_complaint': record['chief_complaint'] ?? 'Sin motivo especificado',
-                };
-                print('✅ Record procesado: $processedRecord');
-                return processedRecord;
-              }).toList();
-              print('✅ TODOS LOS MEDICAL RECORDS PROCESADOS: ${medicalRecords.length}');
-              print('✅ MEDICAL RECORDS FINALES: $medicalRecords');
-            } catch (e) {
-              print('❌ ERROR procesando medical records: $e');
-              medicalRecords = [];
+          setState(() {
+            if (arguments.containsKey('treatmentToEdit')) {
+              print('🔧 MODO EDICIÓN: Cargando datos del tratamiento');
+              final treatment = arguments['treatmentToEdit'] as TreatmentModel;
+              
+              print('💊 TREATMENT A EDITAR:');
+              print('  - ID: ${treatment.id}');
+              print('  - Medical Record ID: ${treatment.medicalRecordId}');
+              print('  - Medication: ${treatment.medicationName}');
+              print('  - Dosage: ${treatment.dosage}');
+              print('  - Frequency: ${treatment.frequency}');
+              
+              _medicationNameController.text = treatment.medicationName;
+              _dosageController.text = treatment.dosage;
+              _frequencyController.text = treatment.frequency;
+              _instructionsController.text = treatment.instructions;
+              durationDays = treatment.durationDays;
+              startDate = treatment.startDate;
+              selectedStatus = MedicalConstants.treatmentStatusFromString(treatment.status);
+              selectedMedicalRecordId = treatment.medicalRecordId;
+              
+              // Crear un medical record básico para el dropdown en modo edición
+              medicalRecords = [
+                {
+                  'id': treatment.medicalRecordId,
+                  'date': '${treatment.startDate.day.toString().padLeft(2, '0')}/${treatment.startDate.month.toString().padLeft(2, '0')}/${treatment.startDate.year}',
+                  'diagnosis': 'Registro médico asociado',
+                  'chief_complaint': 'Tratamiento en edición',
+                },
+              ];
+              
+              print('📋 MEDICAL RECORDS PARA EDICIÓN: $medicalRecords');
+            } else {
+              print('🔧 MODO CREACIÓN: Cargando datos para nuevo tratamiento');
+              appointment = arguments['appointment'] as domain.Appointment?;
+              
+              // Poblar medical records reales
+              final rawMedicalRecords = arguments['medicalRecords'];
+              print('🏥 RAW MEDICAL RECORDS RECIBIDOS: $rawMedicalRecords');
+              print('🏥 RAW MEDICAL RECORDS TYPE: ${rawMedicalRecords.runtimeType}');
+              
+              final realMedicalRecords = arguments['medicalRecords'] as List? ?? [];
+              print('📋 MEDICAL RECORDS COUNT: ${realMedicalRecords.length}');
+              
+              if (realMedicalRecords.isNotEmpty) {
+                try {
+                  medicalRecords = realMedicalRecords.map((record) {
+                    print('🔍 Procesando record: $record');
+                    final visitDate = DateTime.parse(record['visit_date']);
+                    final processedRecord = {
+                      'id': record['id'],
+                      'date': '${visitDate.day.toString().padLeft(2, '0')}/${visitDate.month.toString().padLeft(2, '0')}/${visitDate.year}',
+                      'diagnosis': record['diagnosis'] ?? 'Sin diagnóstico',
+                      'chief_complaint': record['chief_complaint'] ?? 'Sin motivo especificado',
+                    };
+                    print('✅ Record procesado: $processedRecord');
+                    return processedRecord;
+                  }).toList();
+                  
+                  print('✅ TODOS LOS MEDICAL RECORDS PROCESADOS:');
+                  for (int i = 0; i < medicalRecords.length; i++) {
+                    print('  [$i]: ${medicalRecords[i]}');
+                  }
+                } catch (e) {
+                  print('❌ ERROR procesando medical records: $e');
+                  medicalRecords = [];
+                }
+              } else {
+                print('⚠️ NO HAY MEDICAL RECORDS DISPONIBLES');
+                medicalRecords = [];
+              }
+              
+              // Si tenemos una cita, usar su fecha como fecha de inicio
+              if (appointment != null) {
+                startDate = appointment!.appointmentDate;
+                print('📅 Fecha de inicio desde appointment: $startDate');
+              }
             }
-          } else {
-            print('⚠️ No hay medical records disponibles');
-            medicalRecords = [];
-          }
-          
-          print('📊 MEDICAL RECORDS COUNT FINAL: ${medicalRecords.length}');
-          print('📊 RESUMEN FINAL:');
-          print('   - Appointment ID: ${appointment?.id}');
-          print('   - Pet: ${patientInfo['name']}');
-          print('   - Owner: ${ownerInfo['name']}');
-          print('   - Medical Records disponibles: ${medicalRecords.length}');
-          if (medicalRecords.isNotEmpty) {
-            print('   - Primer medical record: ${medicalRecords.first}');
-          }
-          
-          // Si tenemos una cita, usar su fecha como fecha de inicio
-          if (appointment != null) {
-            startDate = appointment!.appointmentDate;
-            print('📅 Fecha de inicio establecida: $startDate');
-          }
-        });
+            
+            // Cargar información del paciente y propietario
+            final rawPetInfo = arguments['petInfo'];
+            final rawOwnerInfo = arguments['ownerInfo'];
+            
+            print('🔍 RAW PET INFO RECIBIDO: $rawPetInfo');
+            print('🔍 RAW OWNER INFO RECIBIDO: $rawOwnerInfo');
+            
+            // Normalizar petInfo - manejar tanto formato nuevo como legado
+            final Map<String, dynamic> receivedPetInfo = arguments['petInfo'] as Map<String, dynamic>? ?? {};
+            patientInfo = {
+              'id': receivedPetInfo['id'] ?? '',
+              'name': receivedPetInfo['name'] ?? 'Paciente',
+              'type': receivedPetInfo['type'] ?? 'Mascota',
+              'breed': receivedPetInfo['breed'] ?? 'N/A',
+              'age': receivedPetInfo['age'] ?? 'N/A',
+              'gender': receivedPetInfo['gender'] ?? 'Sin especificar',
+              'status': receivedPetInfo['status'] ?? 'Sin especificar',
+              // Manejar tanto imageUrl como image_url
+              'imageUrl': receivedPetInfo['imageUrl'] ?? receivedPetInfo['image_url'] ?? '',
+              'birthDate': receivedPetInfo['birthDate'],
+              'description': receivedPetInfo['description'] ?? '',
+            };
+            
+            // Normalizar ownerInfo - manejar tanto formato nuevo como legado
+            final Map<String, dynamic> receivedOwnerInfo = arguments['ownerInfo'] as Map<String, dynamic>? ?? {};
+            ownerInfo = {
+              'id': receivedOwnerInfo['id'] ?? '',
+              'name': receivedOwnerInfo['name'] ?? 'Propietario',
+              'firstName': receivedOwnerInfo['firstName'] ?? '',
+              'lastName': receivedOwnerInfo['lastName'] ?? '',
+              'phone': receivedOwnerInfo['phone'],
+              'email': receivedOwnerInfo['email'],
+              // Manejar tanto profilePhoto como profile_photo
+              'profilePhoto': receivedOwnerInfo['profilePhoto'] ?? receivedOwnerInfo['profile_photo'] ?? '',
+            };
+            
+            print('🔍 DATOS FINALES ASIGNADOS EN PRESCRIBE TREATMENT:');
+            print('🐕 Patient Info final: $patientInfo');
+            print('👤 Owner Info final: $ownerInfo');
+            print('🖼️ Image URL final: ${patientInfo['imageUrl']}');
+          });
+        } else if (arguments is TreatmentModel) {
+          print('🔧 MODO LEGACY: Argumentos como TreatmentModel');
+          final treatment = arguments;
+          setState(() {
+            _medicationNameController.text = treatment.medicationName;
+            _dosageController.text = treatment.dosage;
+            _frequencyController.text = treatment.frequency;
+            _instructionsController.text = treatment.instructions;
+            durationDays = treatment.durationDays;
+            startDate = treatment.startDate;
+            selectedStatus = MedicalConstants.treatmentStatusFromString(treatment.status);
+            selectedMedicalRecordId = treatment.medicalRecordId;
+            
+            patientInfo = {
+              'name': 'Paciente',
+              'type': 'Mascota',
+              'breed': 'N/A',
+              'age': 'N/A',
+            };
+            ownerInfo = {
+              'name': 'Propietario',
+            };
+            
+            medicalRecords = [
+              {
+                'id': treatment.medicalRecordId,
+                'date': '${treatment.startDate.day}/${treatment.startDate.month}/${treatment.startDate.year}',
+                'diagnosis': 'Tratamiento asociado',
+                'chief_complaint': 'Edición de tratamiento',
+              },
+            ];
+          });
+        }
       } else {
-        // Datos de ejemplo si no se pasan argumentos
+        print('🔧 SIN ARGUMENTOS: Usando datos de ejemplo');
         setState(() {
           patientInfo = {
             'name': 'Paciente de ejemplo',
@@ -152,7 +293,6 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
             'name': 'Propietario de ejemplo',
           };
           
-          // Medical records de ejemplo
           medicalRecords = [
             {
               'id': 'example-1',
@@ -161,7 +301,6 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
               'chief_complaint': 'Control de rutina (Ejemplo)',
             },
           ];
-          print('📝 USANDO MEDICAL RECORDS DE EJEMPLO: ${medicalRecords.length}');
         });
       }
     });
@@ -295,16 +434,16 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
             ),
           ),
           const SizedBox(width: AppSizes.spaceM),
-          const Expanded(
-            child: Text(
-              'Prescribir Tratamiento',
-              style: TextStyle(
-                color: AppColors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+                      Expanded(
+              child: Text(
+                _isEditMode ? 'Editar Tratamiento' : 'Prescribir Tratamiento',
+                style: const TextStyle(
+                  color: AppColors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
           Container(
             decoration: BoxDecoration(
               color: AppColors.white.withOpacity(0.2),
@@ -321,6 +460,12 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
   }
 
   Widget _buildPatientInfo() {
+    // Log de debug para ver qué datos tiene la UI disponibles
+    print('🎨 RENDERIZANDO UI PRESCRIBE TREATMENT:');
+    print('🐕 patientInfo en UI: $patientInfo');
+    print('👤 ownerInfo en UI: $ownerInfo');
+    print('🖼️ imageUrl en UI: ${patientInfo['imageUrl']}');
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
       padding: const EdgeInsets.all(AppSizes.paddingL),
@@ -349,14 +494,24 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
+              gradient: patientInfo['imageUrl'] != null && patientInfo['imageUrl'].toString().isNotEmpty
+                  ? null
+                  : AppColors.primaryGradient,
               borderRadius: BorderRadius.circular(AppSizes.radiusRound),
+              image: patientInfo['imageUrl'] != null && patientInfo['imageUrl'].toString().isNotEmpty
+                  ? DecorationImage(
+                      image: NetworkImage(patientInfo['imageUrl'].toString()),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-            child: const Icon(
-              Icons.medication,
-              color: AppColors.white,
-              size: 30,
-            ),
+            child: patientInfo['imageUrl'] == null || patientInfo['imageUrl'].toString().isEmpty
+                ? const Icon(
+                    Icons.medication,
+                    color: AppColors.white,
+                    size: 30,
+                  )
+                : null,
           ),
           const SizedBox(width: AppSizes.spaceM),
           Expanded(
@@ -379,12 +534,27 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
                   ),
                 ),
                 Text(
+                  '${patientInfo['type'] ?? 'Mascota'} • ${patientInfo['gender'] ?? 'Sin especificar'}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                Text(
                   'Propietario: ${ownerInfo['name'] ?? 'Sin propietario'}',
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
                   ),
                 ),
+                if (ownerInfo['phone'] != null && ownerInfo['phone'].toString().isNotEmpty)
+                  Text(
+                    'Tel: ${ownerInfo['phone']}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -447,9 +617,9 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildStepHeader(
-              'Agregar Medicamento',
-              'Completa la información del medicamento',
-              Icons.add_circle,
+              _isEditMode ? 'Editar Medicamento' : 'Agregar Medicamento',
+              _isEditMode ? 'Modifica la información del medicamento' : 'Completa la información del medicamento',
+              _isEditMode ? Icons.edit : Icons.add_circle,
             ),
             const SizedBox(height: AppSizes.spaceL),
             _buildFormSection(
@@ -711,9 +881,9 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
                 ],
               ),
               child: ElevatedButton.icon(
-                onPressed: _addMedication,
-                icon: const Icon(Icons.add),
-                label: const Text('Agregar Medicamento'),
+                onPressed: _isEditMode ? _updateMedication : _addMedication,
+                icon: Icon(_isEditMode ? Icons.save : Icons.add),
+                label: Text(_isEditMode ? 'Actualizar Medicamento' : 'Agregar Medicamento'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,
@@ -1086,6 +1256,27 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
 
   void _addMedication() {
     if (_formKey.currentState!.validate()) {
+      // Validar que se haya seleccionado un medical record
+      if (selectedMedicalRecordId == null || selectedMedicalRecordId!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Debe seleccionar un registro médico antes de agregar medicamentos'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+          ),
+        );
+        return;
+      }
+
+      print('💊 AGREGANDO MEDICAMENTO A LA LISTA:');
+      print('  - Nombre: ${_medicationNameController.text.trim()}');
+      print('  - Dosificación: ${_dosageController.text.trim()}');
+      print('  - Frecuencia: ${_frequencyController.text.trim()}');
+      print('  - Medical Record ID: $selectedMedicalRecordId');
+
       setState(() {
         prescribedMedications.add({
           'name': _medicationNameController.text.trim(),
@@ -1101,6 +1292,8 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
 
       _clearMedicationForm();
 
+      print('✅ MEDICAMENTO AGREGADO. Total medicamentos: ${prescribedMedications.length}');
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -1113,6 +1306,147 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
           ),
         ),
       );
+    }
+  }
+
+  void _updateMedication() async {
+    if (_formKey.currentState!.validate()) {
+      // Validar que se haya seleccionado un medical record
+      if (selectedMedicalRecordId == null || selectedMedicalRecordId!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Debe seleccionar un registro médico'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+          ),
+        );
+        return;
+      }
+
+      print('🔧 INICIANDO ACTUALIZACIÓN DE TRATAMIENTO');
+      print('📝 DATOS ACTUALES EN EL FORMULARIO:');
+      print('  - Medication Name Controller: "${_medicationNameController.text}"');
+      print('  - Dosage Controller: "${_dosageController.text}"');
+      print('  - Frequency Controller: "${_frequencyController.text}"');
+      print('  - Instructions Controller: "${_instructionsController.text}"');
+      print('  - Duration Days: $durationDays');
+      print('  - Start Date: $startDate');
+      print('  - Selected Status: $selectedStatus');
+      print('  - Selected Medical Record ID: $selectedMedicalRecordId');
+
+      setState(() => _isLoading = true);
+
+      try {
+        final token = await SharedPreferencesHelper.getToken();
+        
+        if (token == null) {
+          throw Exception('No se encontró token de autenticación');
+        }
+
+        // En modo edición, enviar todos los campos necesarios
+        final treatmentData = {
+          'pet_id': patientInfo['id'],
+          'medical_record_id': selectedMedicalRecordId!,
+          'medication_name': _medicationNameController.text.trim(),
+          'dosage': _dosageController.text.trim(),
+          'frequency': _frequencyController.text.trim(),
+          'duration_days': durationDays,
+          'start_date': startDate.toIso8601String().split('T')[0],
+          'end_date': endDate.toIso8601String().split('T')[0],
+          'instructions': _instructionsController.text.trim(),
+          'status': MedicalConstants.treatmentStatusToString(selectedStatus),
+        };
+
+        print('🔧 ACTUALIZANDO TRATAMIENTO EXISTENTE');
+        print('🎯 Treatment ID: ${widget.treatmentToEdit!.id}');
+        print('🎯 URL: ${ApiEndpoints.updateTreatmentUrl(widget.treatmentToEdit!.id)}');
+        print('💾 Data completa: ${json.encode(treatmentData)}');
+
+        final response = await http.patch(
+          Uri.parse(ApiEndpoints.updateTreatmentUrl(widget.treatmentToEdit!.id)),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: json.encode(treatmentData),
+        );
+
+        print('📡 RESPUESTA DEL SERVIDOR PARA PATCH:');
+        print('Status: ${response.statusCode}');
+        print('Body: ${response.body}');
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          print('✅ TRATAMIENTO ACTUALIZADO EXITOSAMENTE');
+          
+          // Parsear la respuesta para obtener los datos actualizados
+          final responseData = json.decode(response.body);
+          final updatedTreatment = responseData['data'];
+          
+          print('🔄 ACTUALIZANDO CAMPOS DEL FORMULARIO CON DATOS DEL SERVIDOR');
+          print('📝 Nombre enviado: ${_medicationNameController.text.trim()}');
+          print('📝 Nombre recibido del servidor: ${updatedTreatment['medication_name']}');
+          print('📝 Dosage enviado: ${_dosageController.text.trim()}');
+          print('📝 Dosage recibido del servidor: ${updatedTreatment['dosage']}');
+          
+          // Forzar la actualización de los campos del formulario con los datos del servidor
+          // Esto asegura que la UI refleje exactamente lo que hay en la base de datos
+          setState(() {
+            _medicationNameController.text = updatedTreatment['medication_name']?.toString() ?? _medicationNameController.text;
+            _dosageController.text = updatedTreatment['dosage']?.toString() ?? _dosageController.text;
+            _frequencyController.text = updatedTreatment['frequency']?.toString() ?? _frequencyController.text;
+            _instructionsController.text = updatedTreatment['instructions']?.toString() ?? _instructionsController.text;
+            
+            // Actualizar otros campos si están disponibles
+            if (updatedTreatment['duration_days'] != null) {
+              durationDays = int.tryParse(updatedTreatment['duration_days'].toString()) ?? durationDays;
+            }
+            
+            if (updatedTreatment['start_date'] != null) {
+              try {
+                startDate = DateTime.parse(updatedTreatment['start_date'].toString());
+              } catch (e) {
+                print('⚠️ Error parsing start_date: $e');
+              }
+            }
+            
+            if (updatedTreatment['status'] != null) {
+              selectedStatus = MedicalConstants.treatmentStatusFromString(updatedTreatment['status'].toString());
+            }
+            
+            print('✅ CAMPOS DEL FORMULARIO ACTUALIZADOS:');
+            print('  - Medication Name: ${_medicationNameController.text}');
+            print('  - Dosage: ${_dosageController.text}');
+            print('  - Frequency: ${_frequencyController.text}');
+            print('  - Instructions: ${_instructionsController.text}');
+          });
+          
+          if (mounted) {
+            _showSuccessDialog();
+          }
+        } else {
+          final errorBody = response.body.isNotEmpty ? response.body : 'Sin detalles del error';
+          throw Exception('Error del servidor: ${response.statusCode} - $errorBody');
+        }
+      } catch (e) {
+        print('❌ ERROR AL ACTUALIZAR TRATAMIENTO: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al actualizar tratamiento: ${e.toString()}'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+            ),
+          );
+        }
+      } finally {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -1251,6 +1585,13 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
   }
 
   void _savePrescription() async {
+    // En modo edición, usar la función de actualización
+    if (_isEditMode) {
+      _updateMedication();
+      return;
+    }
+
+    // Validar que haya medicamentos agregados
     if (prescribedMedications.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1272,18 +1613,22 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
     try {
       // Obtener datos necesarios
       final token = await SharedPreferencesHelper.getToken();
-      final vetId = await SharedPreferencesHelper.getUserId();
 
-      if (token == null || vetId == null) {
+      if (token == null) {
         throw Exception('No se encontraron credenciales de autenticación');
       }
 
+      print('🔧 CREANDO NUEVOS TRATAMIENTOS');
+      print('💊 Medicamentos a crear: ${prescribedMedications.length}');
+      print('🐕 Pet ID: ${patientInfo['id']}');
+
       // Enviar cada medicamento como un tratamiento separado
-      for (final medication in prescribedMedications) {
+      for (int i = 0; i < prescribedMedications.length; i++) {
+        final medication = prescribedMedications[i];
+        
         final treatmentData = {
-          'pet_id': appointment?.petId ?? '',
+          'pet_id': patientInfo['id'] ?? '',
           'medical_record_id': selectedMedicalRecordId ?? '',
-          'vet_id': vetId,
           'medication_name': medication['name'],
           'dosage': medication['dosage'] ?? '',
           'frequency': medication['frequency'],
@@ -1293,6 +1638,10 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
           'instructions': medication['instructions'],
           'status': medication['status'],
         };
+
+        print('🔧 ENVIANDO TRATAMIENTO ${i + 1}/${prescribedMedications.length}');
+        print('🎯 URL: ${ApiEndpoints.createTreatmentUrl}');
+        print('💾 Data: ${json.encode(treatmentData)}');
 
         // Realizar POST al endpoint
         final response = await http.post(
@@ -1304,16 +1653,24 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
           body: json.encode(treatmentData),
         );
 
+        print('📡 RESPUESTA DEL SERVIDOR PARA TRATAMIENTO ${i + 1}:');
+        print('Status: ${response.statusCode}');
+        print('Body: ${response.body}');
+
         if (response.statusCode != 200 && response.statusCode != 201) {
-          throw Exception('Error del servidor: ${response.statusCode}');
+          final errorBody = response.body.isNotEmpty ? response.body : 'Sin detalles del error';
+          throw Exception('Error del servidor para tratamiento ${i + 1}: ${response.statusCode} - $errorBody');
         }
+        
+        print('✅ TRATAMIENTO ${i + 1} CREADO EXITOSAMENTE');
       }
 
+      print('✅ TODOS LOS TRATAMIENTOS CREADOS EXITOSAMENTE');
       if (mounted) {
         _showSuccessDialog();
       }
     } catch (e) {
-      print('❌ Error al guardar tratamientos: $e');
+      print('❌ ERROR AL GUARDAR TRATAMIENTOS: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1363,9 +1720,9 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
                   ),
                 ),
                 const SizedBox(height: AppSizes.spaceL),
-                const Text(
-                  '¡Prescripción Guardada!',
-                  style: TextStyle(
+                Text(
+                  _isEditMode ? '¡Tratamiento Actualizado!' : '¡Prescripción Guardada!',
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
@@ -1374,8 +1731,10 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
                 ),
                 const SizedBox(height: AppSizes.spaceS),
                 Text(
-                  'La prescripción ha sido guardada exitosamente y estará disponible en el expediente del paciente.',
-                  style: TextStyle(
+                  _isEditMode 
+                      ? 'El tratamiento ha sido actualizado exitosamente y estará disponible en el expediente del paciente.'
+                      : 'La prescripción ha sido guardada exitosamente y estará disponible en el expediente del paciente.',
+                  style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondary,
                     height: 1.4,
@@ -1394,7 +1753,13 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
                         child: OutlinedButton(
                           onPressed: () {
                             Navigator.pop(context);
-                            _createNewPrescription();
+                            if (_isEditMode) {
+                              // En modo edición, volver con información de éxito pero continuar editando
+                              _createNewPrescription();
+                            } else {
+                              // En modo creación, limpiar para nueva prescripción
+                              _createNewPrescription();
+                            }
                           },
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.primary,
@@ -1405,7 +1770,7 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
                               ),
                             ),
                           ),
-                          child: const Text('Nueva Prescripción'),
+                          child: Text(_isEditMode ? 'Editar Otro' : 'Nueva Prescripción'),
                         ),
                       ),
                     ),
@@ -1424,7 +1789,13 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
                         child: ElevatedButton(
                           onPressed: () {
                             Navigator.pop(context);
-                            Navigator.pop(context);
+                            // Devolver información completa sobre la actualización
+                            Navigator.pop(context, {
+                              'success': true,
+                              'action': _isEditMode ? 'updated' : 'created',
+                              'treatmentId': widget.treatmentToEdit?.id,
+                              'timestamp': DateTime.now().toIso8601String(),
+                            });
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,

@@ -263,28 +263,85 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
   Future<PetCompleteDetailDTO> getPetCompleteById(String petId) async {
     try {
       final url = ApiEndpoints.getPetByIdUrl(petId);
+      
+      print('🐕 SOLICITANDO DETALLES COMPLETOS DEL PET:');
+      print('URL: $url');
+      print('Pet ID: $petId');
+      
       final response = await _dio.get(url);
+      
+      print('📡 RESPUESTA DEL SERVIDOR:');
+      print('Status Code: ${response.statusCode}');
+      print('Response Data: ${response.data}');
       
       if (response.statusCode == 200) {
         final data = response.data['data'];
         
-        // Parse pet
-        final pet = PetModel.fromJson(data['pet']);
+        print('🔍 ANALIZANDO DATOS RECIBIDOS:');
+        print('Data keys: ${data?.keys}');
+        print('Pet data: ${data?['pet']}');
+        print('Appointments data: ${data?['appointments']}');
+        print('Medical Records data: ${data?['medical_records']}');
+        print('Vaccinations data: ${data?['vaccinations']}');
+        
+        // Parse pet data first
+        final petData = data['pet'] as Map<String, dynamic>;
+        print('🐕 PET DATA RECIBIDA: ${petData.keys}');
+        
+        // Inyectar medical_records y vaccinations en el pet data si están separados
+        if (data['medical_records'] != null && petData['medical_records'] == null) {
+          petData['medical_records'] = data['medical_records'];
+          print('� Injecting medical_records into pet data');
+        }
+        
+        if (data['vaccinations'] != null && petData['vaccinations'] == null) {
+          petData['vaccinations'] = data['vaccinations'];
+          print('🔄 Injecting vaccinations into pet data');
+        }
+        
+        // Parse pet with injected data
+        final pet = PetModel.fromJson(petData);
+        print('🐕 Pet parseado exitosamente: ${pet.name}');
         
         // Parse appointments
         final appointments = (data['appointments'] as List<dynamic>? ?? [])
             .map((json) => AppointmentModel.fromJson(json))
             .toList();
+        print('📅 Appointments parseadas: ${appointments.length}');
         
-        // Parse medical records with treatments
-        final medicalRecords = (data['medical_records'] as List<dynamic>? ?? [])
-            .map((json) => MedicalRecordWithTreatmentsModel.fromJson(json))
-            .toList();
+        // Parse medical records with treatments (from separate data)
+        final medicalRecordsData = data['medical_records'];
+        print('🏥 Medical Records en JSON: $medicalRecordsData');
         
-        // Parse vaccinations
-        final vaccinations = (data['vaccinations'] as List<dynamic>? ?? [])
-            .map((json) => VaccinationModel.fromJson(json))
-            .toList();
+        List<MedicalRecordWithTreatmentsModel> medicalRecords = [];
+        if (medicalRecordsData != null && medicalRecordsData is List) {
+          medicalRecords = medicalRecordsData
+              .map((json) => MedicalRecordWithTreatmentsModel.fromJson(json))
+              .toList();
+          print('✅ Medical Records parseados: ${medicalRecords.length}');
+        } else {
+          print('⚠️ No hay medical_records en el JSON del pet o no es una lista válida');
+        }
+        
+        // Parse vaccinations (from separate data)
+        final vaccinationsData = data['vaccinations'];
+        print('💉 Vaccinations en JSON: $vaccinationsData');
+        
+        List<VaccinationModel> vaccinations = [];
+        if (vaccinationsData != null && vaccinationsData is List) {
+          vaccinations = vaccinationsData
+              .map((json) => VaccinationModel.fromJson(json))
+              .toList();
+          print('✅ Vaccinations parseadas: ${vaccinations.length}');
+        } else {
+          print('⚠️ No hay vaccinations en el JSON del pet o no es una lista válida');
+        }
+        
+        print('📊 RESUMEN FINAL DE PARSEO:');
+        print('   - Pet: ${pet.name}');
+        print('   - Appointments: ${appointments.length}');
+        print('   - Medical Records: ${medicalRecords.length}');
+        print('   - Vaccinations: ${vaccinations.length}');
         
         return PetCompleteDetailDTO(
           pet: pet,
