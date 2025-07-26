@@ -15,11 +15,8 @@ import '../../../blocs/appointment/appointment_state.dart';
 
 class ScheduleAppointmentPage extends StatefulWidget {
   final Map<String, dynamic>? selectedVeterinarian;
-  
-  const ScheduleAppointmentPage({
-    super.key,
-    this.selectedVeterinarian,
-  });
+
+  const ScheduleAppointmentPage({super.key, this.selectedVeterinarian});
 
   @override
   State<ScheduleAppointmentPage> createState() =>
@@ -36,8 +33,6 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
   String? selectedTimeSlot;
   bool _isLoading = false;
   String? _userId;
-
-
 
   void _selectVeterinarian() async {
     final result = await Navigator.pushNamed(context, '/search-veterinarians');
@@ -109,11 +104,9 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
   void initState() {
     super.initState();
     _loadUserAndPets();
-    
-    // Recibir veterinario seleccionado como parámetro
+
     selectedVeterinarian = widget.selectedVeterinarian;
-    
-    // Si llega por navigation arguments, también tomarlo en cuenta
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final arguments = ModalRoute.of(context)?.settings.arguments;
       if (arguments != null && arguments is Map<String, dynamic>) {
@@ -122,7 +115,6 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
             selectedVeterinarian = arguments['selectedVeterinarian'];
           }
           if (arguments.containsKey('vetId')) {
-            // Si llega un vetId, crear un veterinario mock
             selectedVeterinarian = {
               'id': arguments['vetId'],
               'name': 'Veterinario Seleccionado',
@@ -140,9 +132,8 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
     setState(() {
       _userId = user['id'];
     });
-    
+
     if (_userId != null) {
-      // Cargar mascotas del usuario
       context.read<PetBloc>().add(LoadPetsEvent(userId: _userId!));
     }
   }
@@ -161,7 +152,7 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
           setState(() {
             _isLoading = false;
           });
-          
+
           Navigator.pop(context, true);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -177,7 +168,7 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
           setState(() {
             _isLoading = false;
           });
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error al agendar la cita: ${state.message}'),
@@ -298,7 +289,12 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
           decoration: BoxDecoration(
             color: AppColors.white.withOpacity(0.9),
             borderRadius: BorderRadius.circular(AppSizes.radiusL),
-            border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+            border: Border.all(
+              color:
+                  selectedVeterinarian == null
+                      ? AppColors.error.withOpacity(0.5)
+                      : AppColors.primary.withOpacity(0.2),
+            ),
             boxShadow: [
               BoxShadow(
                 color: AppColors.black.withOpacity(0.05),
@@ -415,15 +411,20 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
               ),
             );
           }
-          
+
           if (state is PetsLoaded) {
             final pets = state.pets;
-            
+
             return Container(
               decoration: BoxDecoration(
                 color: AppColors.white.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(AppSizes.radiusL),
-                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                border: Border.all(
+                  color:
+                      selectedPet == null
+                          ? AppColors.error.withOpacity(0.5)
+                          : AppColors.primary.withOpacity(0.2),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.black.withOpacity(0.05),
@@ -448,12 +449,15 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
                     vertical: AppSizes.paddingM,
                   ),
                 ),
-                items: pets.map((pet) {
-                  return DropdownMenuItem<Pet>(
-                    value: pet,
-                    child: Text('${pet.name} - ${_getPetTypeString(pet.type)}'),
-                  );
-                }).toList(),
+                items:
+                    pets.map((pet) {
+                      return DropdownMenuItem<Pet>(
+                        value: pet,
+                        child: Text(
+                          '${pet.name} - ${_getPetTypeString(pet.type)}',
+                        ),
+                      );
+                    }).toList(),
                 onChanged: (value) {
                   setState(() {
                     selectedPet = value;
@@ -468,24 +472,25 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
               ),
             );
           }
-          
+
           return Container(
             decoration: BoxDecoration(
               color: AppColors.white.withOpacity(0.9),
               borderRadius: BorderRadius.circular(AppSizes.radiusL),
-              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+              border: Border.all(color: AppColors.error.withOpacity(0.5)),
             ),
             child: const Padding(
               padding: EdgeInsets.all(AppSizes.paddingL),
-              child: Text('No se pudieron cargar las mascotas'),
+              child: Text(
+                'No se pudieron cargar las mascotas',
+                style: TextStyle(color: AppColors.error),
+              ),
             ),
           );
         },
       ),
     );
   }
-
-
 
   Widget _buildDateSelection() {
     return _buildFormSection(
@@ -497,7 +502,12 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
           decoration: BoxDecoration(
             color: AppColors.white.withOpacity(0.9),
             borderRadius: BorderRadius.circular(AppSizes.radiusL),
-            border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+            border: Border.all(
+              color:
+                  selectedDate == null
+                      ? AppColors.error.withOpacity(0.5)
+                      : AppColors.primary.withOpacity(0.2),
+            ),
             boxShadow: [
               BoxShadow(
                 color: AppColors.black.withOpacity(0.05),
@@ -584,6 +594,12 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
         decoration: BoxDecoration(
           color: AppColors.white.withOpacity(0.9),
           borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          border: Border.all(
+            color:
+                selectedTimeSlot == null
+                    ? AppColors.error.withOpacity(0.5)
+                    : AppColors.primary.withOpacity(0.2),
+          ),
           boxShadow: [
             BoxShadow(
               color: AppColors.black.withOpacity(0.05),
@@ -676,6 +692,20 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
             border: InputBorder.none,
             contentPadding: const EdgeInsets.all(AppSizes.paddingM),
           ),
+          validator: (value) {
+            if (value != null && value.trim().isNotEmpty) {
+              if (value.trim().length < 10) {
+                return 'Las notas deben tener al menos 10 caracteres';
+              }
+              if (value.trim().length > 500) {
+                return 'Las notas no pueden exceder 500 caracteres';
+              }
+              if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                return 'Las notas no pueden contener caracteres especiales';
+              }
+            }
+            return null;
+          },
         ),
       ),
     );
@@ -824,16 +854,17 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
   }
 
   Map<String, dynamic> _buildAppointmentPayload() {
-    // Combinar fecha y hora seleccionadas
     final timeSlot = selectedTimeSlot!;
-    final hourMinute = timeSlot.replaceAll(RegExp(r'[APMapm\s]'), '').split(':');
+    final hourMinute = timeSlot
+        .replaceAll(RegExp(r'[APMapm\s]'), '')
+        .split(':');
     final hour = int.parse(hourMinute[0]);
     final minute = int.parse(hourMinute[1]);
-    
-    // Ajustar para formato AM/PM
+
     final isPM = timeSlot.toUpperCase().contains('PM');
-    final adjustedHour = isPM && hour != 12 ? hour + 12 : (hour == 12 && !isPM ? 0 : hour);
-    
+    final adjustedHour =
+        isPM && hour != 12 ? hour + 12 : (hour == 12 && !isPM ? 0 : hour);
+
     final appointmentDateTime = DateTime(
       selectedDate!.year,
       selectedDate!.month,
@@ -844,7 +875,10 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
 
     return {
       'appointment_date': appointmentDateTime.toUtc().toIso8601String(),
-      'notes': _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
+      'notes':
+          _notesController.text.trim().isNotEmpty
+              ? _notesController.text.trim()
+              : null,
       'pet_id': selectedPet!.id,
       'vet_id': selectedVeterinarian!['id'],
       'user_id': _userId!,
@@ -852,8 +886,61 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
   }
 
   Future<void> _scheduleAppointment() async {
-    if (!_formKey.currentState!.validate()) return;
-    
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor completa todos los campos obligatorios'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (selectedVeterinarian == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor selecciona un veterinario'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (selectedPet == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor selecciona una mascota'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor selecciona una fecha'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (selectedTimeSlot == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor selecciona un horario'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     if (_userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -881,12 +968,10 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
     if (confirmed != true) return;
 
     final payload = _buildAppointmentPayload();
-    
-    // Debug: mostrar el payload
+
     print('📋 Payload de la cita:');
     print(payload);
-    
-    // Usar el Bloc para crear la cita
+
     context.read<AppointmentBloc>().add(
       CreateAppointmentEvent(appointmentData: payload),
     );
@@ -924,4 +1009,3 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
     return '$weekday, ${date.day} de $month';
   }
 }
-

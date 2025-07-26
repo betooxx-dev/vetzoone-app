@@ -247,8 +247,23 @@ class _EditPetPageState extends State<EditPetPage> {
               label: 'Nombre de la mascota',
               icon: Icons.pets,
               validator: (value) {
-                if (value == null || value.isEmpty) {
+                if (value == null || value.trim().isEmpty) {
                   return 'Por favor ingresa el nombre';
+                }
+                if (value.trim().length < 2) {
+                  return 'El nombre debe tener al menos 2 caracteres';
+                }
+                if (value.trim().length > 30) {
+                  return 'El nombre no puede exceder 30 caracteres';
+                }
+                if (RegExp(r'[0-9]').hasMatch(value)) {
+                  return 'El nombre no puede contener números';
+                }
+                if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                  return 'El nombre no puede contener caracteres especiales';
+                }
+                if (RegExp(r'^\s|\s$').hasMatch(value)) {
+                  return 'El nombre no puede empezar o terminar con espacios';
                 }
                 return null;
               },
@@ -275,8 +290,23 @@ class _EditPetPageState extends State<EditPetPage> {
               label: 'Raza',
               icon: Icons.info_outline,
               validator: (value) {
-                if (value == null || value.isEmpty) {
+                if (value == null || value.trim().isEmpty) {
                   return 'Por favor ingresa la raza';
+                }
+                if (value.trim().length < 2) {
+                  return 'La raza debe tener al menos 2 caracteres';
+                }
+                if (value.trim().length > 50) {
+                  return 'La raza no puede exceder 50 caracteres';
+                }
+                if (RegExp(r'[0-9]').hasMatch(value)) {
+                  return 'La raza no puede contener números';
+                }
+                if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                  return 'La raza no puede contener caracteres especiales';
+                }
+                if (RegExp(r'^\s|\s$').hasMatch(value)) {
+                  return 'La raza no puede empezar o terminar con espacios';
                 }
                 return null;
               },
@@ -321,6 +351,20 @@ class _EditPetPageState extends State<EditPetPage> {
               label: 'Descripción (opcional)',
               icon: Icons.description,
               maxLines: 3,
+              validator: (value) {
+                if (value != null && value.trim().isNotEmpty) {
+                  if (value.trim().length < 10) {
+                    return 'La descripción debe tener al menos 10 caracteres';
+                  }
+                  if (value.trim().length > 500) {
+                    return 'La descripción no puede exceder 500 caracteres';
+                  }
+                  if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                    return 'La descripción no puede contener caracteres especiales';
+                  }
+                }
+                return null;
+              },
             ),
           ],
         ),
