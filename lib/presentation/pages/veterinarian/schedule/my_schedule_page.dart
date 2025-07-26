@@ -7,6 +7,7 @@ import '../../../../core/injection/injection.dart';
 import '../../../../domain/usecases/appointment/get_upcoming_appointments_usecase.dart';
 import '../../../../domain/entities/appointment.dart' as domain;
 import '../../../widgets/cards/appointment_card.dart' show AppointmentStatus;
+import '../../../../data/datasources/appointment/appointment_remote_datasource.dart';
 
 
 
@@ -22,12 +23,15 @@ class _MySchedulePageState extends State<MySchedulePage> {
   String _viewMode = 'day';
   
   List<domain.Appointment> _allAppointments = [];
+  List<domain.Appointment> _pendingAppointments = [];
   bool _isLoading = false;
   String? _error;
+  late AppointmentRemoteDataSource _appointmentDataSource;
 
   @override
   void initState() {
     super.initState();
+    _appointmentDataSource = sl<AppointmentRemoteDataSource>();
     _loadVetAppointments();
   }
 
@@ -51,15 +55,30 @@ class _MySchedulePageState extends State<MySchedulePage> {
       final getVetAppointmentsUseCase = sl<GetVetAppointmentsUseCase>();
       final appointments = await getVetAppointmentsUseCase.call(vetId);
 
+      // Separar citas pendientes (incluir pending y rescheduled) de las demás
+      final pendingAppointments = appointments.where((appointment) => 
+        appointment.status == domain.AppointmentStatus.pending ||
+        appointment.status == domain.AppointmentStatus.rescheduled
+      ).toList();
+      
+      final nonPendingAppointments = appointments.where((appointment) => 
+        appointment.status != domain.AppointmentStatus.pending &&
+        appointment.status != domain.AppointmentStatus.rescheduled
+      ).toList();
+
       // Ordenar las citas por fecha
-      appointments.sort((a, b) => a.appointmentDate.compareTo(b.appointmentDate));
+      pendingAppointments.sort((a, b) => a.appointmentDate.compareTo(b.appointmentDate));
+      nonPendingAppointments.sort((a, b) => a.appointmentDate.compareTo(b.appointmentDate));
 
       setState(() {
-        _allAppointments = appointments;
+        _pendingAppointments = pendingAppointments;
+        _allAppointments = nonPendingAppointments; // Solo citas no pendientes para las vistas principales
         _isLoading = false;
       });
 
-      print('✅ Citas cargadas exitosamente: ${appointments.length}');
+      print('✅ Citas cargadas exitosamente:');
+      print('   - Pendientes: ${pendingAppointments.length}');
+      print('   - Confirmadas/Otras: ${nonPendingAppointments.length}');
     } catch (e) {
       print('❌ Error cargando citas: $e');
       setState(() {
@@ -190,20 +209,6 @@ class _MySchedulePageState extends State<MySchedulePage> {
       ),
       child: Row(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(AppSizes.radiusM),
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.arrow_back_ios_new,
-                color: AppColors.white,
-              ),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-          const SizedBox(width: AppSizes.spaceM),
           const Expanded(
             child: Text(
               'Mi Agenda',
@@ -214,16 +219,47 @@ class _MySchedulePageState extends State<MySchedulePage> {
               ),
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          if (_pendingAppointments.isNotEmpty) ...[
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+              child: Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications, color: AppColors.white),
+                    onPressed: () => _showPendingAppointmentsModal(),
+                  ),
+                  if (_pendingAppointments.isNotEmpty)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: AppColors.error,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '${_pendingAppointments.length}',
+                          style: const TextStyle(
+                            color: AppColors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
-            child: IconButton(
-              icon: const Icon(Icons.calendar_today, color: AppColors.white),
-              onPressed: () => _selectDate(),
-            ),
-          ),
+          ],
         ],
       ),
     );
@@ -296,6 +332,16 @@ class _MySchedulePageState extends State<MySchedulePage> {
   }
 
   Widget _buildCurrentView() {
+    // Mostrar error si existe
+    if (_error != null) {
+      return _buildErrorState(_error!);
+    }
+    
+    // Mostrar loading si está cargando
+    if (_isLoading) {
+      return _buildLoadingState();
+    }
+    
     switch (_viewMode) {
       case 'week':
         return _buildWeekView();
@@ -304,6 +350,77 @@ class _MySchedulePageState extends State<MySchedulePage> {
       default:
         return _buildDayView();
     }
+  }
+
+  Widget _buildErrorState(String error) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: AppColors.error,
+          ),
+          const SizedBox(height: AppSizes.spaceM),
+          const Text(
+            'Error al cargar las citas',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppSizes.spaceS),
+          Text(
+            error,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSizes.spaceL),
+          ElevatedButton.icon(
+            onPressed: () {
+              setState(() {
+                _error = null;
+              });
+              _loadVetAppointments();
+            },
+            icon: const Icon(Icons.refresh),
+            label: const Text('Reintentar'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+          ),
+          const SizedBox(height: AppSizes.spaceL),
+          const Text(
+            'Cargando citas...',
+            style: TextStyle(
+              fontSize: 16,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildDayView() {
@@ -316,26 +433,242 @@ class _MySchedulePageState extends State<MySchedulePage> {
         ...dayAppointments.map(
           (appointment) => Padding(
             padding: const EdgeInsets.only(bottom: AppSizes.spaceM),
-            child: AppointmentCard(
-              petName: _getPetName(appointment),
-              veterinarianName: 'Dr. María González',
-              appointmentType: _getAppointmentType(appointment),
-              dateTime: appointment.appointmentDate,
-              status: _mapAppointmentStatus(appointment),
-              notes: appointment.notes,
-              isOwnerView: false,
-              ownerName: _getOwnerName(appointment),
-              onTap: () => _navigateToAppointmentDetail(appointment),
-              onConfirm:
-                  _canConfirmAppointment(appointment.status)
-                      ? () => _confirmAppointment(appointment)
-                      : null,
-            ),
+            child: _buildCustomAppointmentCard(appointment),
           ),
         ),
         const SizedBox(height: 100), // Espacio adicional al final
       ],
     );
+  }
+
+  Widget _buildCustomAppointmentCard(domain.Appointment appointment) {
+    final isRescheduled = appointment.status == domain.AppointmentStatus.rescheduled;
+    
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.white, Colors.grey.shade50],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: _getStatusColor(_mapAppointmentStatus(appointment)).withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: () => _navigateToAppointmentDetail(appointment),
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSizes.paddingM),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Banner de reprogramación si es necesario
+              if (isRescheduled) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSizes.paddingS),
+                  margin: const EdgeInsets.only(bottom: AppSizes.spaceS),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                    border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: AppColors.warning,
+                      ),
+                      const SizedBox(width: AppSizes.spaceS),
+                      Expanded(
+                        child: Text(
+                          'Cita reprogramada - Pendiente de confirmación del propietario',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.warning,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(AppSizes.paddingS),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(_mapAppointmentStatus(appointment)).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                    ),
+                    child: Icon(
+                      _getStatusIcon(_mapAppointmentStatus(appointment)),
+                      color: _getStatusColor(_mapAppointmentStatus(appointment)),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: AppSizes.spaceM),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _getPetName(appointment),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          _getOwnerName(appointment),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _buildStatusChip(_mapAppointmentStatus(appointment)),
+                  const SizedBox(width: AppSizes.spaceS),
+                  // Solo mostrar menú de acciones si no está cancelada o completada
+                  if (appointment.status != domain.AppointmentStatus.cancelled &&
+                      appointment.status != domain.AppointmentStatus.completed)
+                    InkWell(
+                      onTap: () => _showAppointmentActionsMenu(appointment),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                      child: Container(
+                        padding: const EdgeInsets.all(AppSizes.paddingS),
+                        decoration: BoxDecoration(
+                          color: AppColors.textSecondary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                        ),
+                        child: const Icon(
+                          Icons.more_vert,
+                          color: AppColors.textSecondary,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppSizes.spaceM),
+              Row(
+                children: [
+                  Icon(
+                    Icons.access_time,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: AppSizes.spaceS),
+                  Text(
+                    '${appointment.appointmentDate.hour.toString().padLeft(2, '0')}:${appointment.appointmentDate.minute.toString().padLeft(2, '0')}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: AppSizes.spaceL),
+                  Icon(
+                    Icons.medical_services,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: AppSizes.spaceS),
+                  Expanded(
+                    child: Text(
+                      _getAppointmentType(appointment),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (appointment.notes != null && appointment.notes!.isNotEmpty) ...[
+                const SizedBox(height: AppSizes.spaceS),
+                Container(
+                  padding: const EdgeInsets.all(AppSizes.paddingS),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.note,
+                        size: 16,
+                        color: AppColors.accent,
+                      ),
+                      const SizedBox(width: AppSizes.spaceS),
+                      Expanded(
+                        child: Text(
+                          appointment.notes!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(AppointmentStatus status) {
+    switch (status) {
+      case AppointmentStatus.scheduled:
+        return AppColors.primary;
+      case AppointmentStatus.confirmed:
+        return AppColors.success;
+      case AppointmentStatus.inProgress:
+        return AppColors.warning;
+      case AppointmentStatus.completed:
+        return AppColors.secondary;
+      case AppointmentStatus.cancelled:
+        return AppColors.error;
+      case AppointmentStatus.rescheduled:
+        return AppColors.accent;
+    }
+  }
+
+  IconData _getStatusIcon(AppointmentStatus status) {
+    switch (status) {
+      case AppointmentStatus.scheduled:
+        return Icons.schedule;
+      case AppointmentStatus.confirmed:
+        return Icons.check_circle_outline;
+      case AppointmentStatus.inProgress:
+        return Icons.medical_services;
+      case AppointmentStatus.completed:
+        return Icons.check_circle;
+      case AppointmentStatus.cancelled:
+        return Icons.cancel_outlined;
+      case AppointmentStatus.rescheduled:
+        return Icons.update;
+    }
   }
 
   Widget _buildWeekView() {
@@ -1081,33 +1414,6 @@ class _MySchedulePageState extends State<MySchedulePage> {
     return monthNames[month - 1];
   }
 
-  void _selectDate() async {
-    final today = DateTime.now();
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: selectedDate.isBefore(today) ? today : selectedDate,
-      firstDate: today,
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: AppColors.white,
-              surface: AppColors.white,
-              onSurface: AppColors.textPrimary,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (pickedDate != null) {
-      setState(() => selectedDate = pickedDate);
-    }
-  }
-
   void _changeMonth(int direction) {
     final today = DateTime.now();
     final newDate = DateTime(
@@ -1133,21 +1439,769 @@ class _MySchedulePageState extends State<MySchedulePage> {
     );
   }
 
-  bool _canConfirmAppointment(domain.AppointmentStatus status) {
-    return status == domain.AppointmentStatus.pending;
+  // Métodos para manejar estados de citas
+  Future<void> _handleConfirmAppointment(domain.Appointment appointment) async {
+    try {
+      setState(() => _isLoading = true);
+      
+      await _appointmentDataSource.confirmAppointment(appointment.id);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cita confirmada para ${_getPetName(appointment)}'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      
+      // Recargar las citas
+      await _loadVetAppointments();
+    } catch (e) {
+      print('❌ Error confirmando cita: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al confirmar la cita: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
-  void _confirmAppointment(domain.Appointment appointment) {
-    // TODO: Implementar llamada al API para actualizar el status
-    // El status es immutable, necesitamos hacer una petición HTTP
+  Future<void> _handleCancelAppointment(domain.Appointment appointment, String? reason) async {
+    try {
+      setState(() => _isLoading = true);
+      
+      await _appointmentDataSource.cancelAppointment(appointment.id, reason);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cita cancelada para ${_getPetName(appointment)}'),
+          backgroundColor: AppColors.warning,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      
+      // Recargar las citas
+      await _loadVetAppointments();
+    } catch (e) {
+      print('❌ Error cancelando cita: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cancelar la cita: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleRescheduleAppointment(domain.Appointment appointment, DateTime newDate, String? notes) async {
+    try {
+      setState(() => _isLoading = true);
+      
+      await _appointmentDataSource.rescheduleAppointment(appointment.id, newDate, notes);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cita reprogramada para ${_getPetName(appointment)}'),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      
+      // Recargar las citas
+      await _loadVetAppointments();
+    } catch (e) {
+      print('❌ Error reprogramando cita: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al reprogramar la cita: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleStartAppointment(domain.Appointment appointment) async {
+    try {
+      setState(() => _isLoading = true);
+      
+      await _appointmentDataSource.startAppointment(appointment.id);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cita iniciada para ${_getPetName(appointment)}'),
+          backgroundColor: AppColors.secondary,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      
+      // Recargar las citas
+      await _loadVetAppointments();
+    } catch (e) {
+      print('❌ Error iniciando cita: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al iniciar la cita: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // Métodos para mostrar modales
+  void _showAppointmentActionsMenu(domain.Appointment appointment) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(AppSizes.radiusXL),
+            topRight: Radius.circular(AppSizes.radiusXL),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(top: AppSizes.paddingM),
+              decoration: BoxDecoration(
+                color: AppColors.textSecondary.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppSizes.paddingL),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Acciones para ${_getPetName(appointment)}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSizes.spaceM),
+                  ..._buildActionButtons(appointment),
+                  const SizedBox(height: AppSizes.paddingM),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildActionButtons(domain.Appointment appointment) {
+    List<Widget> buttons = [];
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Cita confirmada para ${_getPetName(appointment)}'),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
+    // Confirmar cita (solo si está pendiente)
+    if (appointment.status == domain.AppointmentStatus.pending) {
+      buttons.add(_buildActionButton(
+        icon: Icons.check_circle,
+        text: 'Confirmar Cita',
+        color: AppColors.success,
+        onTap: () {
+          Navigator.pop(context);
+          _handleConfirmAppointment(appointment);
+        },
+      ));
+    }
+    
+    // Iniciar cita (solo si está confirmada)
+    if (appointment.status == domain.AppointmentStatus.confirmed) {  
+      buttons.add(_buildActionButton(
+        icon: Icons.play_arrow,
+        text: 'Iniciar Cita',
+        color: AppColors.secondary,
+        onTap: () {
+          Navigator.pop(context);
+          _handleStartAppointment(appointment);
+        },
+      ));
+    }
+    
+    // Reprogramar cita (si no está completada o cancelada)
+    if (appointment.status != domain.AppointmentStatus.completed && 
+        appointment.status != domain.AppointmentStatus.cancelled) {
+      buttons.add(_buildActionButton(
+        icon: Icons.schedule,
+        text: 'Reprogramar',
+        color: AppColors.primary,
+        onTap: () {
+          Navigator.pop(context);
+          _showRescheduleModal(appointment);
+        },
+      ));
+    }
+    
+    // Cancelar cita (si no está completada o cancelada)
+    if (appointment.status != domain.AppointmentStatus.completed && 
+        appointment.status != domain.AppointmentStatus.cancelled) {
+      buttons.add(_buildActionButton(
+        icon: Icons.cancel,
+        text: 'Cancelar Cita',
+        color: AppColors.error,
+        onTap: () {
+          Navigator.pop(context);
+          _showCancelModal(appointment);
+        },
+      ));
+    }
+    
+    return buttons;
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String text,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.spaceS),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        child: Container(
+          padding: const EdgeInsets.all(AppSizes.paddingM),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            border: Border.all(color: color.withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(width: AppSizes.spaceM),
+              Text(
+                text,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCancelModal(domain.Appointment appointment) {
+    final reasonController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        ),
+        title: const Text('Cancelar Cita'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Cita con ${_getPetName(appointment)}',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+            const Text('Motivo de cancelación (opcional):'),
+            const SizedBox(height: AppSizes.spaceS),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                ),
+                hintText: 'Ingresa el motivo...',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _handleCancelAppointment(appointment, reasonController.text.trim().isEmpty ? null : reasonController.text.trim());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: AppColors.white,
+            ),
+            child: const Text('Confirmar Cancelación'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRescheduleModal(domain.Appointment appointment) {
+    DateTime selectedNewDate = appointment.appointmentDate;
+    final notesController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          ),
+          title: const Text('Reprogramar Cita'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Cita con ${_getPetName(appointment)}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: AppSizes.spaceM),
+              const Text('Nueva fecha y hora:'),
+              const SizedBox(height: AppSizes.spaceS),
+              InkWell(
+                onTap: () async {
+                  final pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: selectedNewDate,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  
+                  if (pickedDate != null) {
+                    final pickedTime = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.fromDateTime(selectedNewDate),
+                    );
+                    
+                    if (pickedTime != null) {
+                      setDialogState(() {
+                        selectedNewDate = DateTime(
+                          pickedDate.year,
+                          pickedDate.month,
+                          pickedDate.day,
+                          pickedTime.hour,
+                          pickedTime.minute,
+                        );
+                      });
+                    }
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(AppSizes.paddingM),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.primary),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today, color: AppColors.primary),
+                      const SizedBox(width: AppSizes.spaceS),
+                      Text(
+                        '${selectedNewDate.day}/${selectedNewDate.month}/${selectedNewDate.year} ${selectedNewDate.hour.toString().padLeft(2, '0')}:${selectedNewDate.minute.toString().padLeft(2, '0')}',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSizes.spaceM),
+              const Text('Notas adicionales (opcional):'),
+              const SizedBox(height: AppSizes.spaceS),
+              TextField(
+                controller: notesController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  ),
+                  hintText: 'Agregar notas...',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _handleRescheduleAppointment(
+                  appointment, 
+                  selectedNewDate, 
+                  notesController.text.trim().isEmpty ? null : notesController.text.trim()
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.white,
+              ),
+              child: const Text('Reprogramar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Modal para mostrar citas pendientes
+  void _showPendingAppointmentsModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(AppSizes.radiusXL),
+            topRight: Radius.circular(AppSizes.radiusXL),
+          ),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(top: AppSizes.paddingM),
+              decoration: BoxDecoration(
+                color: AppColors.textSecondary.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(AppSizes.paddingL),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(AppSizes.paddingS),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                    ),
+                    child: Icon(
+                      Icons.pending_actions,
+                      color: AppColors.warning,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: AppSizes.spaceM),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Citas Pendientes y Reprogramadas',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          '${_pendingAppointments.length} citas (pendientes y reprogramadas) requieren tu atención',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            
+            const Divider(height: 1),
+            
+            // Lista de citas pendientes
+            Expanded(
+              child: _pendingAppointments.isEmpty
+                  ? _buildEmptyPendingState()
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(AppSizes.paddingL),
+                      itemCount: _pendingAppointments.length,
+                      itemBuilder: (context, index) {
+                        final appointment = _pendingAppointments[index];
+                        return _buildPendingAppointmentCard(appointment);
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyPendingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.check_circle_outline,
+            size: 64,
+            color: AppColors.success,
+          ),
+          const SizedBox(height: AppSizes.spaceM),
+          const Text(
+            '¡Todo al día!',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppSizes.spaceS),
+          const Text(
+            'No tienes citas pendientes o reprogramadas por confirmar',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPendingAppointmentCard(domain.Appointment appointment) {
+    final isRescheduled = appointment.status == domain.AppointmentStatus.rescheduled;
+    final cardColor = isRescheduled ? AppColors.accent : AppColors.warning;
+    final statusText = isRescheduled ? 'Reprogramada' : 'Pendiente';
+    final statusIcon = isRescheduled ? Icons.update : Icons.schedule;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSizes.spaceM),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        boxShadow: [
+          BoxShadow(
+            color: cardColor.withOpacity(0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(
+          color: cardColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.paddingM),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Banner superior para citas reprogramadas
+            if (isRescheduled) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.paddingM,
+                  vertical: AppSizes.paddingS,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: AppColors.accent,
+                      size: 16,
+                    ),
+                    const SizedBox(width: AppSizes.spaceS),
+                    const Expanded(
+                      child: Text(
+                        'Esta cita fue reprogramada y necesita confirmación',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.accent,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSizes.spaceM),
+            ],
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSizes.paddingS),
+                  decoration: BoxDecoration(
+                    color: cardColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  ),
+                  child: Icon(
+                    statusIcon,
+                    color: cardColor,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: AppSizes.spaceM),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _getPetName(appointment),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        _getOwnerName(appointment),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+            
+            // Información de la cita
+            Row(
+              children: [
+                Icon(
+                  Icons.access_time,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: AppSizes.spaceS),
+                Text(
+                  '${appointment.appointmentDate.day}/${appointment.appointmentDate.month}/${appointment.appointmentDate.year} ${appointment.appointmentDate.hour.toString().padLeft(2, '0')}:${appointment.appointmentDate.minute.toString().padLeft(2, '0')}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: AppSizes.spaceS),
+            
+            // Estado de la cita
+            Row(
+              children: [
+                Icon(
+                  statusIcon,
+                  size: 16,
+                  color: cardColor,
+                ),
+                const SizedBox(width: AppSizes.spaceS),
+                Text(
+                  statusText,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: cardColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            
+            if (appointment.notes != null && appointment.notes!.isNotEmpty) ...[
+              const SizedBox(height: AppSizes.spaceS),
+              Text(
+                appointment.notes!,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+            
+            const SizedBox(height: AppSizes.spaceM),
+            
+            // Botones de acción
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : () {
+                      Navigator.pop(context);
+                      _handleConfirmAppointment(appointment);
+                    },
+                    icon: const Icon(Icons.check, size: 16),
+                    label: const Text('Confirmar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                      foregroundColor: AppColors.white,
+                      padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingS),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSizes.spaceS),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _isLoading ? null : () {
+                      Navigator.pop(context);
+                      _showCancelModal(appointment);
+                    },
+                    icon: const Icon(Icons.close, size: 16),
+                    label: const Text('Rechazar'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: const BorderSide(color: AppColors.error),
+                      padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingS),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

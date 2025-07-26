@@ -208,26 +208,7 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
                       ),
                     ],
                   ),
-                  child:
-                      veterinarian.profilePhoto != null
-                          ? ClipRRect(
-                            borderRadius: BorderRadius.circular(50),
-                            child: Image.network(
-                              veterinarian.profilePhoto!,
-                              fit: BoxFit.cover,
-                              errorBuilder:
-                                  (_, __, ___) => const Icon(
-                                    Icons.person_rounded,
-                                    size: 50,
-                                    color: AppColors.white,
-                                  ),
-                            ),
-                          )
-                          : const Icon(
-                            Icons.person_rounded,
-                            size: 50,
-                            color: AppColors.white,
-                          ),
+                  child: _buildProfileImage(veterinarian),
                 ),
               ),
               const SizedBox(height: AppSizes.spaceL),
@@ -243,11 +224,12 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
               Text(
                 veterinarian.specialties.isNotEmpty
                     ? veterinarian.specialties.join(', ')
-                    : 'Medicina General',
+                    : 'Especialidad no definida',
                 style: TextStyle(
                   fontSize: 16,
                   color: AppColors.white.withOpacity(0.9),
                   fontWeight: FontWeight.w500,
+                  fontStyle: veterinarian.specialties.isEmpty ? FontStyle.italic : FontStyle.normal,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -256,6 +238,65 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
         ),
       ),
     );
+  }
+
+  Widget _buildProfileImage(Veterinarian veterinarian) {
+    // Obtener la imagen prioritizando user.profilePhoto sobre profilePhoto del veterinario
+    String? profileImage;
+    if (veterinarian.user.profilePhoto != null && veterinarian.user.profilePhoto!.isNotEmpty) {
+      profileImage = veterinarian.user.profilePhoto;
+    } else if (veterinarian.profilePhoto != null && veterinarian.profilePhoto!.isNotEmpty) {
+      profileImage = veterinarian.profilePhoto;
+    }
+
+    if (profileImage != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(50),
+        child: Image.network(
+          profileImage,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const Icon(
+            Icons.person_rounded,
+            size: 50,
+            color: AppColors.white,
+          ),
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                color: AppColors.white,
+                strokeWidth: 2,
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded / 
+                      loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
+            );
+          },
+        ),
+      );
+    } else {
+      return const Icon(
+        Icons.person_rounded,
+        size: 50,
+        color: AppColors.white,
+      );
+    }
+  }
+
+  String _getConsultationFeeText(dynamic consultationFee) {
+    if (consultationFee == null) return 'No especificada';
+    
+    try {
+      final fee = double.tryParse(consultationFee.toString());
+      if (fee != null && fee > 0) {
+        return '\$${fee.toInt()}';
+      }
+    } catch (e) {
+      // Si hay error en la conversión, regresa el texto por defecto
+    }
+    
+    return 'No especificada';
   }
 
   Widget _buildVeterinarianInfo(Veterinarian veterinarian) {
@@ -285,9 +326,7 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
               ),
               _buildStatItem(
                 'Consulta',
-                veterinarian.consultationFee != null
-                    ? '\$${veterinarian.consultationFee!.toInt()}'
-                    : 'No especificado',
+                _getConsultationFeeText(veterinarian.consultationFee),
                 Icons.attach_money_outlined,
                 AppColors.accent,
               ),

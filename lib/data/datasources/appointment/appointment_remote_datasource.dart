@@ -14,6 +14,13 @@ abstract class AppointmentRemoteDataSource {
   Future<List<AppointmentModel>> getAppointmentsByVetId(String vetId);
   Future<AppointmentModel> getAppointmentById(String appointmentId);
   Future<AppointmentModel> createAppointment(Map<String, dynamic> appointmentData);
+  
+  // Nuevos métodos para manejar estados de citas
+  Future<void> confirmAppointment(String appointmentId);
+  Future<void> cancelAppointment(String appointmentId, String? reason);
+  Future<void> rescheduleAppointment(String appointmentId, DateTime newDate, String? notes);
+  Future<void> startAppointment(String appointmentId);
+  Future<void> updateAppointmentStatus(String appointmentId, String status);
 }
 
 class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
@@ -253,6 +260,174 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
       }
       
       throw Exception('Error creating appointment: $e');
+    }
+  }
+
+  @override
+  Future<void> confirmAppointment(String appointmentId) async {
+    try {
+      final url = '${ApiEndpoints.baseUrl}/appointments/$appointmentId/confirm';
+      
+      print('✅ CONFIRMANDO CITA:');
+      print('URL: $url');
+      print('Appointment ID: $appointmentId');
+      
+      final response = await apiClient.put(url);
+      
+      print('✅ CITA CONFIRMADA:');
+      print('Status: ${response.statusCode}');
+      print('Data: ${response.data}');
+      
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to confirm appointment - Status: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ ERROR CONFIRMANDO CITA:');
+      print('Error: $e');
+      
+      if (e is DioException) {
+        print('Status code: ${e.response?.statusCode}');
+        print('Response data: ${e.response?.data}');
+      }
+      
+      throw Exception('Error confirming appointment: $e');
+    }
+  }
+
+  @override
+  Future<void> cancelAppointment(String appointmentId, String? reason) async {
+    try {
+      final url = '${ApiEndpoints.baseUrl}/appointments/$appointmentId/cancel';
+      
+      final data = reason != null ? {'reason': reason} : <String, dynamic>{};
+      
+      print('❌ CANCELANDO CITA:');
+      print('URL: $url');
+      print('Appointment ID: $appointmentId');
+      print('Reason: $reason');
+      
+      final response = await apiClient.put(url, data: data);
+      
+      print('✅ CITA CANCELADA:');
+      print('Status: ${response.statusCode}');
+      print('Data: ${response.data}');
+      
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to cancel appointment - Status: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ ERROR CANCELANDO CITA:');
+      print('Error: $e');
+      
+      if (e is DioException) {
+        print('Status code: ${e.response?.statusCode}');
+        print('Response data: ${e.response?.data}');
+      }
+      
+      throw Exception('Error cancelling appointment: $e');
+    }
+  }
+
+  @override
+  Future<void> rescheduleAppointment(String appointmentId, DateTime newDate, String? notes) async {
+    try {
+      final url = '${ApiEndpoints.baseUrl}/appointments/$appointmentId/reschedule';
+      
+      final data = {
+        'appointment_date': newDate.toIso8601String(),
+        if (notes != null) 'notes': notes,
+      };
+      
+      print('🔄 REPROGRAMANDO CITA:');
+      print('URL: $url');
+      print('Appointment ID: $appointmentId');
+      print('New Date: ${newDate.toIso8601String()}');
+      print('Notes: $notes');
+      
+      final response = await apiClient.put(url, data: data);
+      
+      print('✅ CITA REPROGRAMADA:');
+      print('Status: ${response.statusCode}');
+      print('Data: ${response.data}');
+      
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to reschedule appointment - Status: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ ERROR REPROGRAMANDO CITA:');
+      print('Error: $e');
+      
+      if (e is DioException) {
+        print('Status code: ${e.response?.statusCode}');
+        print('Response data: ${e.response?.data}');
+      }
+      
+      throw Exception('Error rescheduling appointment: $e');
+    }
+  }
+
+  @override
+  Future<void> startAppointment(String appointmentId) async {
+    try {
+      final url = '${ApiEndpoints.baseUrl}/appointments/$appointmentId/start';
+      
+      print('▶️ INICIANDO CITA:');
+      print('URL: $url');
+      print('Appointment ID: $appointmentId');
+      
+      final response = await apiClient.put(url);
+      
+      print('✅ CITA INICIADA:');
+      print('Status: ${response.statusCode}');
+      print('Data: ${response.data}');
+      
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to start appointment - Status: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ ERROR INICIANDO CITA:');
+      print('Error: $e');
+      
+      if (e is DioException) {
+        print('Status code: ${e.response?.statusCode}');
+        print('Response data: ${e.response?.data}');
+      }
+      
+      throw Exception('Error starting appointment: $e');
+    }
+  }
+
+  @override
+  Future<void> updateAppointmentStatus(String appointmentId, String status) async {
+    try {
+      final url = '${ApiEndpoints.baseUrl}/appointments/$appointmentId/status';
+      
+      final data = {'status': status};
+      
+      print('🔄 ACTUALIZANDO ESTADO CITA:');
+      print('URL: $url');
+      print('Appointment ID: $appointmentId');
+      print('Status: $status');
+      
+      final response = await apiClient.put(url, data: data);
+      
+      print('✅ ESTADO ACTUALIZADO:');
+      print('Status: ${response.statusCode}');
+      print('Data: ${response.data}');
+      
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to update appointment status - Status: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ ERROR ACTUALIZANDO ESTADO:');
+      print('Error: $e');
+      
+      if (e is DioException) {
+        print('Status code: ${e.response?.statusCode}');
+        print('Response data: ${e.response?.data}');
+      }
+      
+      throw Exception('Error updating appointment status: $e');
     }
   }
 }

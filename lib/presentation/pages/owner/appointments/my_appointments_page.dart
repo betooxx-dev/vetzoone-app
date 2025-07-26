@@ -9,6 +9,8 @@ import '../../../../core/services/user_service.dart';
 import '../../../../domain/entities/appointment.dart' as domain;
 import '../../../widgets/common/veterinarian_avatar.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/injection/injection.dart';
+import '../../../../data/datasources/appointment/appointment_remote_datasource.dart';
 
 class MyAppointmentsPage extends StatefulWidget {
   const MyAppointmentsPage({super.key});
@@ -22,8 +24,10 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
   late TabController _tabController;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  late AppointmentRemoteDataSource _appointmentDataSource;
 
   String? _userId;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -37,6 +41,7 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
     _animationController.forward();
+    _appointmentDataSource = sl<AppointmentRemoteDataSource>();
     _loadUserIdAndAppointments();
   }
 
@@ -494,10 +499,26 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
                               ],
                             ),
                           ),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            color: AppColors.textSecondary,
-                            size: AppSizes.iconS,
+                          PopupMenuButton<String>(
+                            onSelected: (value) => _handleAppointmentAction(value, appointment),
+                            enabled: _canPerformActions(appointment.status),
+                            itemBuilder: (context) => _buildPopupMenuItems(appointment.status),
+                            child: Container(
+                              padding: const EdgeInsets.all(AppSizes.paddingS),
+                              decoration: BoxDecoration(
+                                color: _canPerformActions(appointment.status) 
+                                    ? AppColors.primary.withOpacity(0.1)
+                                    : AppColors.textSecondary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                              ),
+                              child: Icon(
+                                Icons.more_vert,
+                                color: _canPerformActions(appointment.status) 
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary,
+                                size: AppSizes.iconS,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -768,5 +789,326 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
         'appointmentId': appointment.id
       },
     );
+  }
+
+  // Métodos para manejo de citas
+
+  bool _canPerformActions(domain.AppointmentStatus status) {
+    // Los usuarios solo pueden cancelar o reprogramar citas confirmadas
+    return status == domain.AppointmentStatus.confirmed;
+  }
+
+  List<PopupMenuEntry<String>> _buildPopupMenuItems(domain.AppointmentStatus status) {
+    if (!_canPerformActions(status)) {
+      return [];
+    }
+
+    return [
+      const PopupMenuItem<String>(
+        value: 'reschedule',
+        child: Row(
+          children: [
+            Icon(Icons.schedule, color: AppColors.primary),
+            SizedBox(width: 8),
+            Text('Reprogramar'),
+          ],
+        ),
+      ),
+      const PopupMenuItem<String>(
+        value: 'cancel',
+        child: Row(
+          children: [
+            Icon(Icons.cancel, color: AppColors.error),
+            SizedBox(width: 8),
+            Text('Cancelar'),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  void _handleAppointmentAction(String action, domain.Appointment appointment) {
+    switch (action) {
+      case 'reschedule':
+        _showRescheduleModal(appointment);
+        break;
+      case 'cancel':
+        _showCancelModal(appointment);
+        break;
+    }
+  }
+
+  void _showRescheduleModal(domain.Appointment appointment) {
+    DateTime selectedNewDate = appointment.appointmentDate;
+    final notesController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingS),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+              child: const Icon(
+                Icons.schedule,
+                color: AppColors.primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: AppSizes.spaceM),
+            const Text('Reprogramar Cita'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Nueva fecha y hora:'),
+            const SizedBox(height: AppSizes.spaceM),
+            StatefulBuilder(
+              builder: (context, setStateDialog) => Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.calendar_today, color: AppColors.primary),
+                    title: Text(
+                      '${selectedNewDate.day}/${selectedNewDate.month}/${selectedNewDate.year}',
+                    ),
+                    subtitle: Text(
+                      '${selectedNewDate.hour.toString().padLeft(2, '0')}:${selectedNewDate.minute.toString().padLeft(2, '0')}',
+                    ),
+                    trailing: const Icon(Icons.edit),
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: selectedNewDate,
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (date != null) {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.fromDateTime(selectedNewDate),
+                        );
+                        if (time != null) {
+                          setStateDialog(() {
+                            selectedNewDate = DateTime(
+                              date.year,
+                              date.month,
+                              date.day,
+                              time.hour,
+                              time.minute,
+                            );
+                          });
+                        }
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+            const Text('Notas adicionales (opcional):'),
+            const SizedBox(height: AppSizes.spaceS),
+            TextField(
+              controller: notesController,
+              maxLines: 2,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                ),
+                hintText: 'Agregar notas...',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _handleRescheduleAppointment(
+                appointment, 
+                selectedNewDate, 
+                notesController.text.trim().isEmpty ? null : notesController.text.trim()
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.white,
+            ),
+            child: const Text('Reprogramar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCancelModal(domain.Appointment appointment) {
+    final reasonController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingS),
+              decoration: BoxDecoration(
+                color: AppColors.error.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+              child: const Icon(
+                Icons.cancel,
+                color: AppColors.error,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: AppSizes.spaceM),
+            const Text('Cancelar Cita'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '¿Estás seguro de que deseas cancelar esta cita?',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: AppSizes.spaceM),
+            const Text('Motivo de la cancelación (opcional):'),
+            const SizedBox(height: AppSizes.spaceS),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                ),
+                hintText: 'Describe el motivo...',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('No cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _handleCancelAppointment(
+                appointment, 
+                reasonController.text.trim().isEmpty ? null : reasonController.text.trim()
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: AppColors.white,
+            ),
+            child: const Text('Cancelar Cita'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleRescheduleAppointment(
+    domain.Appointment appointment, 
+    DateTime newDate, 
+    String? notes
+  ) async {
+    setState(() => _isLoading = true);
+
+    try {
+      await _appointmentDataSource.rescheduleAppointment(
+        appointment.id, 
+        newDate, 
+        notes
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cita reprogramada exitosamente'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        
+        // Recargar las citas
+        if (_userId != null) {
+          context.read<AppointmentBloc>().add(
+            LoadAllAppointmentsEvent(userId: _userId!),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al reprogramar la cita: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleCancelAppointment(
+    domain.Appointment appointment, 
+    String? reason
+  ) async {
+    setState(() => _isLoading = true);
+
+    try {
+      await _appointmentDataSource.cancelAppointment(appointment.id, reason);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cita cancelada exitosamente'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        
+        // Recargar las citas
+        if (_userId != null) {
+          context.read<AppointmentBloc>().add(
+            LoadAllAppointmentsEvent(userId: _userId!),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cancelar la cita: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 }

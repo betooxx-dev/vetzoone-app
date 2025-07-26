@@ -183,18 +183,15 @@ class _VeterinariansListPageState extends State<VeterinariansListPage>
                         child: VeterinarianCard(
                           veterinarian: {
                             'id': vet.id,
-                            'name': vet.fullName,
-                            'specialty':
-                                vet.specialties.isNotEmpty
-                                    ? vet.specialties.first
-                                    : 'Medicina General',
-                            'clinic': 'Clínica ${vet.fullName}',
+                            'name': _getFullName(vet),
+                            'specialty': _getSpecialty(vet),
+                            'clinic': _getLocation(vet),
                             'rating': 4.5,
-                            'experience': vet.experienceText,
-                            'distance': '${(index + 1) * 1.2} km',
-                            'consultationFee': vet.consultationFee ?? 150,
+                            'experience': _getExperience(vet),
+                            'distance': '',
+                            'consultationFee': _getConsultationFee(vet),
                             'available': true,
-                            'profileImage': vet.profilePhoto,
+                            'profileImage': _getProfileImage(vet),
                           },
                           isHorizontal: false,
                           onTap:
@@ -320,5 +317,62 @@ class _VeterinariansListPageState extends State<VeterinariansListPage>
         ),
       ),
     );
+  }
+
+  // Métodos helper para manejo consistente de datos
+  String _getFullName(dynamic vet) {
+    if (vet.user != null) {
+      final firstName = vet.user!.firstName ?? '';
+      final lastName = vet.user!.lastName ?? '';
+      if (firstName.isNotEmpty || lastName.isNotEmpty) {
+        return '${firstName.trim()} ${lastName.trim()}'.trim();
+      }
+    }
+    return 'Nombre no definido';
+  }
+
+  String _getSpecialty(dynamic vet) {
+    if (vet.specialties != null && vet.specialties!.isNotEmpty) {
+      return vet.specialties!.first;
+    }
+    return 'Medicina General';
+  }
+
+  String _getLocation(dynamic vet) {
+    if (vet.locationCity != null && vet.locationState != null) {
+      return '${vet.locationCity}, ${vet.locationState}';
+    } else if (vet.locationCity != null) {
+      return vet.locationCity!;
+    } else if (vet.locationState != null) {
+      return vet.locationState!;
+    }
+    return 'Ubicación no definida';
+  }
+
+  String _getExperience(dynamic vet) {
+    return vet.experienceText ?? 'Sin experiencia';
+  }
+
+  String _getConsultationFee(dynamic vet) {
+    if (vet.consultationFee != null) {
+      try {
+        final fee = double.tryParse(vet.consultationFee.toString());
+        if (fee != null && fee > 0) {
+          return '\$${fee.toInt()}';
+        }
+      } catch (e) {
+        // Error en conversión
+      }
+    }
+    return 'No especificada';
+  }
+
+  String? _getProfileImage(dynamic vet) {
+    if (vet.user?.profilePhoto != null && vet.user!.profilePhoto!.isNotEmpty) {
+      return vet.user!.profilePhoto;
+    } else if (vet.profilePhoto != null && vet.profilePhoto!.isNotEmpty) {
+      return vet.profilePhoto;
+    }
+    return null;
   }
 }

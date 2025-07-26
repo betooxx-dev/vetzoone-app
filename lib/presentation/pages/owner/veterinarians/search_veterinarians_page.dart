@@ -864,21 +864,65 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
   }
 
   Widget _buildVeterinarianCard(dynamic vet, bool isHorizontal) {
+    // Obtener la imagen prioritizando user.profile_photo sobre profile_photo del veterinario
+    String? profileImage;
+    if (vet.user?.profilePhoto != null && vet.user!.profilePhoto!.isNotEmpty) {
+      profileImage = vet.user!.profilePhoto;
+    } else if (vet.profilePhoto != null && vet.profilePhoto!.isNotEmpty) {
+      profileImage = vet.profilePhoto;
+    }
+
+    // Obtener el nombre completo del usuario
+    String fullName = 'Nombre no definido';
+    if (vet.user != null) {
+      final firstName = vet.user!.firstName ?? '';
+      final lastName = vet.user!.lastName ?? '';
+      if (firstName.isNotEmpty || lastName.isNotEmpty) {
+        fullName = '${firstName.trim()} ${lastName.trim()}'.trim();
+      }
+    }
+
+    // Obtener especialidades o mostrar texto por defecto
+    String specialty = 'Medicina General';
+    if (vet.specialties != null && vet.specialties!.isNotEmpty) {
+      specialty = vet.specialties!.first;
+    }
+
+    // Obtener tarifa de consulta
+    String consultationFee = 'No especificada';
+    if (vet.consultationFee != null) {
+      try {
+        final fee = double.tryParse(vet.consultationFee.toString());
+        if (fee != null && fee > 0) {
+          consultationFee = '\$${fee.toInt()}';
+        }
+      } catch (e) {
+        consultationFee = 'No especificada';
+      }
+    }
+
+    // Obtener ubicación
+    String location = 'Ubicación no definida';
+    if (vet.locationCity != null && vet.locationState != null) {
+      location = '${vet.locationCity}, ${vet.locationState}';
+    } else if (vet.locationCity != null) {
+      location = vet.locationCity!;
+    } else if (vet.locationState != null) {
+      location = vet.locationState!;
+    }
+
     return VeterinarianCard(
       veterinarian: {
         'id': vet.id,
-        'name': vet.fullName,
-        'specialty':
-            vet.specialties.isNotEmpty
-                ? vet.specialties.first
-                : 'Medicina General',
-        'clinic': 'Clínica ${vet.fullName}',
-        'rating': 4.5,
-        'experience': vet.experienceText,
-        'distance': '2.5 km',
-        'consultationFee': vet.consultationFee ?? 150,
-        'available': true,
-        'profileImage': vet.profilePhoto,
+        'name': fullName,
+        'specialty': specialty,
+        'clinic': location,
+        'rating': 4.5, // Este valor podría venir del backend en el futuro
+        'experience': vet.experienceText ?? 'Experiencia no definida',
+        'distance': '', // Este valor podría calcularse en el futuro
+        'consultationFee': consultationFee,
+        'available': true, // Este valor podría venir del backend en el futuro
+        'profileImage': profileImage,
       },
       isHorizontal: isHorizontal,
       onTap:
