@@ -59,7 +59,7 @@ class _EditVaccinationPageState extends State<EditVaccinationPage>
     _manufacturerController.text = widget.vaccination.manufacturer;
     _batchNumberController.text = widget.vaccination.batchNumber;
     _notesController.text = widget.vaccination.notes ?? '';
-    
+
     administeredDate = widget.vaccination.administeredDate;
     nextDueDate = widget.vaccination.nextDueDate;
   }
@@ -86,13 +86,16 @@ class _EditVaccinationPageState extends State<EditVaccinationPage>
               opacity: _fadeAnimation,
               child: SlideTransition(
                 position: _slideAnimation,
-                child: Column(
-                  children: [
-                    _buildModernAppBar(),
-                    _buildVaccinationInfo(),
-                    Expanded(child: _buildFormContent()),
-                    _buildActionButtons(),
-                  ],
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      _buildModernAppBar(),
+                      _buildVaccinationInfo(),
+                      Expanded(child: _buildFormContent()),
+                      _buildActionButtons(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -233,7 +236,11 @@ class _EditVaccinationPageState extends State<EditVaccinationPage>
               gradient: AppColors.purpleGradient,
               borderRadius: BorderRadius.circular(AppSizes.radiusRound),
             ),
-            child: const Icon(Icons.edit_rounded, color: AppColors.white, size: 30),
+            child: const Icon(
+              Icons.edit_rounded,
+              color: AppColors.white,
+              size: 30,
+            ),
           ),
           const SizedBox(width: AppSizes.spaceM),
           Expanded(
@@ -290,187 +297,248 @@ class _EditVaccinationPageState extends State<EditVaccinationPage>
   Widget _buildFormContent() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSizes.paddingL),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildFormSection(
-              'Información de la Vacuna',
-              Icons.vaccines,
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _vaccineNameController,
-                    style: const TextStyle(color: AppColors.textPrimary),
-                    decoration: _buildInputDecoration(
-                      'Nombre de la vacuna',
-                      'Ej: Triple Viral Canina, Antirrábica, Parvovirus...',
-                      Icons.medical_information,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Este campo es obligatorio';
-                      }
-                      return null;
-                    },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildFormSection(
+            'Información de la Vacuna',
+            Icons.vaccines,
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: _vaccineNameController,
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  decoration: _buildInputDecoration(
+                    'Nombre de la vacuna',
+                    'Ej: Triple Viral Canina, Antirrábica, Parvovirus...',
+                    Icons.medical_information,
                   ),
-                  const SizedBox(height: AppSizes.spaceM),
-                  TextFormField(
-                    controller: _manufacturerController,
-                    style: const TextStyle(color: AppColors.textPrimary),
-                    decoration: _buildInputDecoration(
-                      'Laboratorio/Fabricante',
-                      'Ej: Pfizer, Merck, Zoetis, Boehringer...',
-                      Icons.business,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Este campo es obligatorio';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: AppSizes.spaceM),
-                  TextFormField(
-                    controller: _batchNumberController,
-                    style: const TextStyle(color: AppColors.textPrimary),
-                    decoration: _buildInputDecoration(
-                      'Número de Lote',
-                      'Ej: TV2024-001, VX2024-123...',
-                      Icons.confirmation_number,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Este campo es obligatorio';
-                      }
-                      return null;
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSizes.spaceL),
-            _buildFormSection(
-              'Fechas de Aplicación',
-              Icons.calendar_today,
-              child: Column(
-                children: [
-                  InkWell(
-                    onTap: () => _selectAdministeredDate(),
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSizes.paddingM),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                        border: Border.all(
-                          color: AppColors.primary.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.event, color: AppColors.primary),
-                          const SizedBox(width: AppSizes.spaceM),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Fecha de Aplicación',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  '${administeredDate.day}/${administeredDate.month}/${administeredDate.year}',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            size: 16,
-                            color: AppColors.primary,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSizes.spaceM),
-                  InkWell(
-                    onTap: () => _selectNextDueDate(),
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSizes.paddingM),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                        border: Border.all(
-                          color: AppColors.primary.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.schedule, color: AppColors.primary),
-                          const SizedBox(width: AppSizes.spaceM),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Próxima Dosis (Vencimiento)',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  '${nextDueDate.day}/${nextDueDate.month}/${nextDueDate.year}',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            size: 16,
-                            color: AppColors.primary,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSizes.spaceL),
-            _buildFormSection(
-              'Notas Adicionales',
-              Icons.note,
-              child: TextFormField(
-                controller: _notesController,
-                maxLines: 3,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: _buildInputDecoration(
-                  'Observaciones',
-                  'Aplicada en el muslo derecho, reacciones observadas, próximas vacunas...',
-                  null,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'El nombre de la vacuna es obligatorio';
+                    }
+                    if (value.trim().length < 2) {
+                      return 'El nombre debe tener al menos 2 caracteres';
+                    }
+                    if (value.trim().length > 100) {
+                      return 'El nombre no puede exceder 100 caracteres';
+                    }
+                    if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                      return 'El nombre no puede contener caracteres especiales';
+                    }
+                    return null;
+                  },
                 ),
-              ),
+                const SizedBox(height: AppSizes.spaceM),
+                TextFormField(
+                  controller: _manufacturerController,
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  decoration: _buildInputDecoration(
+                    'Laboratorio/Fabricante',
+                    'Ej: Pfizer, Merck, Zoetis, Boehringer...',
+                    Icons.business,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'El fabricante es obligatorio';
+                    }
+                    if (value.trim().length < 2) {
+                      return 'El fabricante debe tener al menos 2 caracteres';
+                    }
+                    if (value.trim().length > 100) {
+                      return 'El fabricante no puede exceder 100 caracteres';
+                    }
+                    if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                      return 'El fabricante no puede contener caracteres especiales';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: AppSizes.spaceM),
+                TextFormField(
+                  controller: _batchNumberController,
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  decoration: _buildInputDecoration(
+                    'Número de Lote',
+                    'Ej: TV2024-001, VX2024-123...',
+                    Icons.confirmation_number,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'El número de lote es obligatorio';
+                    }
+                    if (value.trim().length < 3) {
+                      return 'El número de lote debe tener al menos 3 caracteres';
+                    }
+                    if (value.trim().length > 50) {
+                      return 'El número de lote no puede exceder 50 caracteres';
+                    }
+                    if (!RegExp(r'^[a-zA-Z0-9\-_]+$').hasMatch(value.trim())) {
+                      return 'El lote solo puede contener letras, números, guiones y guiones bajos';
+                    }
+                    return null;
+                  },
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: AppSizes.spaceL),
+          _buildFormSection(
+            'Fechas de Aplicación',
+            Icons.calendar_today,
+            child: Column(
+              children: [
+                InkWell(
+                  onTap: () => _selectAdministeredDate(),
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSizes.paddingM),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.event, color: AppColors.primary),
+                        const SizedBox(width: AppSizes.spaceM),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Fecha de Aplicación',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                '${administeredDate.day}/${administeredDate.month}/${administeredDate.year}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: AppColors.primary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSizes.spaceM),
+                InkWell(
+                  onTap: () => _selectNextDueDate(),
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSizes.paddingM),
+                    decoration: BoxDecoration(
+                      color: AppColors.white,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                      border: Border.all(
+                        color:
+                            nextDueDate.isBefore(administeredDate)
+                                ? AppColors.error
+                                : AppColors.primary.withOpacity(0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          color:
+                              nextDueDate.isBefore(administeredDate)
+                                  ? AppColors.error
+                                  : AppColors.primary,
+                        ),
+                        const SizedBox(width: AppSizes.spaceM),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Próxima Dosis (Vencimiento)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                '${nextDueDate.day}/${nextDueDate.month}/${nextDueDate.year}',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color:
+                                      nextDueDate.isBefore(administeredDate)
+                                          ? AppColors.error
+                                          : AppColors.textPrimary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              if (nextDueDate.isBefore(administeredDate))
+                                const Text(
+                                  'La fecha de vencimiento debe ser posterior a la aplicación',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.error,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color:
+                              nextDueDate.isBefore(administeredDate)
+                                  ? AppColors.error
+                                  : AppColors.primary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSizes.spaceL),
+          _buildFormSection(
+            'Notas Adicionales',
+            Icons.note,
+            child: TextFormField(
+              controller: _notesController,
+              maxLines: 3,
+              style: const TextStyle(color: AppColors.textPrimary),
+              decoration: _buildInputDecoration(
+                'Observaciones',
+                'Aplicada en el muslo derecho, reacciones observadas, próximas vacunas...',
+                null,
+              ),
+              validator: (value) {
+                if (value != null && value.trim().isNotEmpty) {
+                  if (value.trim().length < 5) {
+                    return 'Las notas deben tener al menos 5 caracteres';
+                  }
+                  if (value.trim().length > 500) {
+                    return 'Las notas no pueden exceder 500 caracteres';
+                  }
+                  if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                    return 'Las notas no pueden contener caracteres especiales';
+                  }
+                }
+                return null;
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -528,10 +596,29 @@ class _EditVaccinationPageState extends State<EditVaccinationPage>
         borderRadius: BorderRadius.circular(AppSizes.radiusM),
         borderSide: BorderSide(color: AppColors.primary),
       ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        borderSide: BorderSide(color: AppColors.error, width: 2),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        borderSide: BorderSide(color: AppColors.error, width: 2),
+      ),
+      errorStyle: const TextStyle(
+        fontSize: 11,
+        color: AppColors.error,
+        height: 1.3,
+      ),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.paddingM,
+        vertical: AppSizes.paddingM,
+      ),
     );
   }
 
   Widget _buildActionButtons() {
+    final bool hasValidationErrors = nextDueDate.isBefore(administeredDate);
+
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingL),
       decoration: BoxDecoration(
@@ -553,7 +640,9 @@ class _EditVaccinationPageState extends State<EditVaccinationPage>
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.textSecondary.withOpacity(0.3)),
+                border: Border.all(
+                  color: AppColors.textSecondary.withOpacity(0.3),
+                ),
                 borderRadius: BorderRadius.circular(AppSizes.radiusM),
               ),
               child: OutlinedButton.icon(
@@ -578,35 +667,50 @@ class _EditVaccinationPageState extends State<EditVaccinationPage>
             flex: 2,
             child: Container(
               decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
+                gradient:
+                    hasValidationErrors ? null : AppColors.primaryGradient,
+                color:
+                    hasValidationErrors
+                        ? AppColors.textSecondary.withOpacity(0.3)
+                        : null,
                 borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                boxShadow:
+                    hasValidationErrors
+                        ? null
+                        : [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
               ),
               child: ElevatedButton.icon(
-                onPressed: _isLoading ? null : _updateVaccination,
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.white,
+                onPressed:
+                    (_isLoading || hasValidationErrors)
+                        ? null
+                        : _updateVaccination,
+                icon:
+                    _isLoading
+                        ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.white,
+                            ),
                           ),
-                        ),
-                      )
-                    : const Icon(Icons.save_rounded),
+                        )
+                        : const Icon(Icons.save_rounded),
                 label: Text(_isLoading ? 'Guardando...' : 'Guardar Cambios'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,
-                  foregroundColor: AppColors.white,
+                  foregroundColor:
+                      hasValidationErrors
+                          ? AppColors.textSecondary
+                          : AppColors.white,
                   padding: const EdgeInsets.symmetric(
                     vertical: AppSizes.paddingM,
                   ),
@@ -633,6 +737,9 @@ class _EditVaccinationPageState extends State<EditVaccinationPage>
     if (picked != null && picked != administeredDate) {
       setState(() {
         administeredDate = picked;
+        if (nextDueDate.isBefore(picked)) {
+          nextDueDate = picked.add(const Duration(days: 365));
+        }
       });
     }
   }
@@ -640,7 +747,10 @@ class _EditVaccinationPageState extends State<EditVaccinationPage>
   void _selectNextDueDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: nextDueDate,
+      initialDate:
+          nextDueDate.isBefore(administeredDate)
+              ? administeredDate.add(const Duration(days: 365))
+              : nextDueDate,
       firstDate: administeredDate,
       lastDate: administeredDate.add(const Duration(days: 1095)),
     );
@@ -657,7 +767,7 @@ class _EditVaccinationPageState extends State<EditVaccinationPage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text(
-            'Por favor completa todos los campos obligatorios',
+            'Por favor completa todos los campos obligatorios correctamente',
           ),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
@@ -669,17 +779,30 @@ class _EditVaccinationPageState extends State<EditVaccinationPage>
       return;
     }
 
+    if (nextDueDate.isBefore(administeredDate)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'La fecha de vencimiento debe ser posterior a la fecha de aplicación',
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
       print('💉 INICIANDO ACTUALIZACIÓN DE VACUNA');
-      
+
       final token = await SharedPreferencesHelper.getToken();
-      
+
       if (token == null) {
         throw Exception('No se encontró token de autenticación');
       }
-      
+
       print('🔑 Token obtenido: ${token.substring(0, 10)}...');
       print('💉 Vaccination ID: ${widget.vaccination.id}');
 
@@ -689,9 +812,10 @@ class _EditVaccinationPageState extends State<EditVaccinationPage>
         'batch_number': _batchNumberController.text.trim(),
         'administered_date': administeredDate.toIso8601String().split('T')[0],
         'next_due_date': nextDueDate.toIso8601String().split('T')[0],
-        'notes': _notesController.text.trim().isEmpty 
-            ? null 
-            : _notesController.text.trim(),
+        'notes':
+            _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
       };
 
       print('📋 DATOS DE VACUNA A ACTUALIZAR:');
@@ -712,21 +836,23 @@ class _EditVaccinationPageState extends State<EditVaccinationPage>
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         print('✅ VACUNA ACTUALIZADA EXITOSAMENTE');
-        
+
         if (mounted) {
           setState(() => _isLoading = false);
           _showSuccessDialog();
         }
       } else {
         print('❌ ERROR EN LA RESPUESTA DEL SERVIDOR');
-        throw Exception('Error del servidor: ${response.statusCode} - ${response.body}');
+        throw Exception(
+          'Error del servidor: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
       print('❌ ERROR ACTUALIZANDO VACUNA: $e');
-      
+
       if (mounted) {
         setState(() => _isLoading = false);
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al actualizar la vacuna: ${e.toString()}'),
@@ -746,85 +872,86 @@ class _EditVaccinationPageState extends State<EditVaccinationPage>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusL),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.success,
-                    AppColors.success.withOpacity(0.8),
-                  ],
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_circle,
-                color: AppColors.white,
-                size: 50,
-              ),
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: AppColors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
             ),
-            const SizedBox(height: AppSizes.spaceL),
-            const Text(
-              '¡Vacuna Actualizada!',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSizes.spaceS),
-            Text(
-              'Los cambios se han guardado exitosamente y se actualizó el historial del paciente.',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSizes.spaceXL),
-            SizedBox(
-              width: double.infinity,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.success,
-                      AppColors.success.withOpacity(0.8),
-                    ],
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.success,
+                        AppColors.success.withOpacity(0.8),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
                   ),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  child: const Icon(
+                    Icons.check_circle,
+                    color: AppColors.white,
+                    size: 50,
+                  ),
                 ),
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context); // Cerrar diálogo
-                    Navigator.pop(context, true); // Regresar con indicador de actualización
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    foregroundColor: AppColors.white,
-                    shape: RoundedRectangleBorder(
+                const SizedBox(height: AppSizes.spaceL),
+                const Text(
+                  '¡Vacuna Actualizada!',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSizes.spaceS),
+                Text(
+                  'Los cambios se han guardado exitosamente y se actualizó el historial del paciente.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSizes.spaceXL),
+                SizedBox(
+                  width: double.infinity,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.success,
+                          AppColors.success.withOpacity(0.8),
+                        ],
+                      ),
                       borderRadius: BorderRadius.circular(AppSizes.radiusM),
                     ),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pop(context, true);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        foregroundColor: AppColors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                        ),
+                      ),
+                      child: const Text('Continuar'),
+                    ),
                   ),
-                  child: const Text('Continuar'),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 }

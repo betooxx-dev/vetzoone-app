@@ -24,10 +24,11 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
   Map<String, dynamic> vetData = {};
   File? _selectedImageFile;
 
+  final _formKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
-
+  final _licenseController = TextEditingController();
   final _bioController = TextEditingController();
   final _experienceController = TextEditingController();
   final _locationCityController = TextEditingController();
@@ -39,7 +40,6 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
   List<String> _animalsServed = [];
   List<Map<String, dynamic>> _availability = [];
 
-  // Opciones predefinidas para los selectors
   final List<String> _availableSpecialties = [
     'Medicina General',
     'Cirugía',
@@ -93,6 +93,192 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
     _loadUserData();
   }
 
+  String? _validateLicense(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'La cédula profesional es obligatoria';
+    }
+    if (value.trim().length < 4) {
+      return 'La cédula debe tener al menos 4 caracteres';
+    }
+    if (value.trim().length > 20) {
+      return 'La cédula no puede exceder 20 caracteres';
+    }
+    if (!RegExp(r'^[a-zA-Z0-9\-_]+$').hasMatch(value.trim())) {
+      return 'La cédula solo puede contener letras, números, guiones y guiones bajos';
+    }
+    return null;
+  }
+
+  String? _validateSpecialties(List<String> value) {
+    if (value.isEmpty) {
+      return 'Debe seleccionar al menos una especialidad';
+    }
+    if (value.length > 10) {
+      return 'No puede seleccionar más de 10 especialidades';
+    }
+    return null;
+  }
+
+  String? _validateYearsExperience(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Los años de experiencia son obligatorios';
+    }
+    final years = int.tryParse(value.trim());
+    if (years == null) {
+      return 'Debe ser un número válido';
+    }
+    if (years < 0) {
+      return 'Los años de experiencia no pueden ser negativos';
+    }
+    if (years > 60) {
+      return 'Los años de experiencia no pueden exceder 60';
+    }
+    return null;
+  }
+
+  String? _validateLocationCity(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null;
+    }
+    if (value.trim().length < 2) {
+      return 'La ciudad debe tener al menos 2 caracteres';
+    }
+    if (value.trim().length > 100) {
+      return 'La ciudad no puede exceder 100 caracteres';
+    }
+    if (!RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\-\.]+$').hasMatch(value.trim())) {
+      return 'La ciudad contiene caracteres no válidos';
+    }
+    return null;
+  }
+
+  String? _validateLocationState(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null;
+    }
+    if (value.trim().length < 2) {
+      return 'El estado debe tener al menos 2 caracteres';
+    }
+    if (value.trim().length > 100) {
+      return 'El estado no puede exceder 100 caracteres';
+    }
+    if (!RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\-\.]+$').hasMatch(value.trim())) {
+      return 'El estado contiene caracteres no válidos';
+    }
+    return null;
+  }
+
+  String? _validateBio(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null;
+    }
+    if (value.trim().length < 10) {
+      return 'La biografía debe tener al menos 10 caracteres';
+    }
+    if (value.trim().length > 1000) {
+      return 'La biografía no puede exceder 1000 caracteres';
+    }
+    return null;
+  }
+
+  String? _validateConsultationFee(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null;
+    }
+    final fee = double.tryParse(value.trim());
+    if (fee == null) {
+      return 'Debe ser un número válido';
+    }
+    if (fee < 0) {
+      return 'La tarifa no puede ser negativa';
+    }
+    if (fee > 10000) {
+      return 'La tarifa no puede exceder \$10,000';
+    }
+    return null;
+  }
+
+  String? _validateServices(List<String> value) {
+    if (value.isEmpty) {
+      return 'Debe seleccionar al menos un servicio';
+    }
+    if (value.length > 15) {
+      return 'No puede seleccionar más de 15 servicios';
+    }
+    return null;
+  }
+
+  String? _validateAnimalsServed(List<String> value) {
+    if (value.isEmpty) {
+      return 'Debe seleccionar al menos un tipo de animal';
+    }
+    if (value.length > 12) {
+      return 'No puede seleccionar más de 12 tipos de animales';
+    }
+    return null;
+  }
+
+  String? _validatePhone(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return null;
+    }
+    if (value.trim().length < 10) {
+      return 'El teléfono debe tener al menos 10 dígitos';
+    }
+    if (value.trim().length > 15) {
+      return 'El teléfono no puede exceder 15 dígitos';
+    }
+    if (!RegExp(r'^[\+]?[0-9\s\-\(\)]+$').hasMatch(value.trim())) {
+      return 'El teléfono contiene caracteres no válidos';
+    }
+    return null;
+  }
+
+  bool _validateForm() {
+    if (!_formKey.currentState!.validate()) {
+      return false;
+    }
+
+    final licenseValidation = _validateLicense(_licenseController.text);
+    if (licenseValidation != null) {
+      _showValidationError(licenseValidation);
+      return false;
+    }
+
+    final specialtiesValidation = _validateSpecialties(_specialties);
+    if (specialtiesValidation != null) {
+      _showValidationError(specialtiesValidation);
+      return false;
+    }
+
+    final servicesValidation = _validateServices(_services);
+    if (servicesValidation != null) {
+      _showValidationError(servicesValidation);
+      return false;
+    }
+
+    final animalsValidation = _validateAnimalsServed(_animalsServed);
+    if (animalsValidation != null) {
+      _showValidationError(animalsValidation);
+      return false;
+    }
+
+    return true;
+  }
+
+  void _showValidationError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        ),
+      ),
+    );
+  }
+
   Future<void> _loadUserData() async {
     setState(() {
       _isLoading = true;
@@ -103,13 +289,14 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
       final lastName = await SharedPreferencesHelper.getUserLastName() ?? '';
       final email = await SharedPreferencesHelper.getUserEmail() ?? '';
       final phone = await SharedPreferencesHelper.getUserPhone() ?? '';
-      final profilePhoto = await SharedPreferencesHelper.getUserProfilePhoto() ?? '';
+      final profilePhoto =
+          await SharedPreferencesHelper.getUserProfilePhoto() ?? '';
 
       final vetProfileData = await SharedPreferencesHelper.getVetData();
-      
+
       if (vetProfileData != null) {
         vetData = vetProfileData;
-        
+
         setState(() {
           professionalData = {
             'firstName': firstName,
@@ -125,20 +312,15 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
             'locationState': vetData['location_state'] ?? '',
             'consultationFee': vetData['consultation_fee'] ?? 0.0,
           };
-          
+
           _specialties = List<String>.from(vetData['specialties'] ?? []);
           _services = List<String>.from(vetData['services'] ?? []);
           _animalsServed = List<String>.from(vetData['animals_served'] ?? []);
-          _availability = List<Map<String, dynamic>>.from(vetData['availability'] ?? []);
+          _availability = List<Map<String, dynamic>>.from(
+            vetData['availability'] ?? [],
+          );
         });
-        
-        print('📊 Datos del veterinario cargados:');
-        print('Nombre completo: ${professionalData['fullName']}');
-        print('Licencia: ${professionalData['license']}');
-        print('Especialidades: $_specialties');
-        print('Servicios: $_services');
       } else {
-        print('⚠️ No se encontraron datos del veterinario en SharedPreferences');
         setState(() {
           professionalData = {
             'firstName': firstName,
@@ -156,10 +338,9 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
           };
         });
       }
-      
+
       _initializeControllers();
     } catch (e) {
-      print('❌ Error cargando datos del perfil: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -179,12 +360,14 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
     _firstNameController.text = professionalData['firstName'] ?? '';
     _lastNameController.text = professionalData['lastName'] ?? '';
     _phoneController.text = professionalData['phone'] ?? '';
-    
+    _licenseController.text = professionalData['license'] ?? '';
     _bioController.text = professionalData['bio'] ?? '';
-    _experienceController.text = professionalData['yearsExperience']?.toString() ?? '0';
+    _experienceController.text =
+        professionalData['yearsExperience']?.toString() ?? '0';
     _locationCityController.text = professionalData['locationCity'] ?? '';
     _locationStateController.text = professionalData['locationState'] ?? '';
-    _consultationFeeController.text = professionalData['consultationFee']?.toString() ?? '0';
+    _consultationFeeController.text =
+        professionalData['consultationFee']?.toString() ?? '0';
   }
 
   @override
@@ -192,6 +375,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _phoneController.dispose();
+    _licenseController.dispose();
     _bioController.dispose();
     _experienceController.dispose();
     _locationCityController.dispose();
@@ -215,13 +399,14 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
         children: [
           _buildBackgroundShapes(),
           SafeArea(
-            child: Column(
-              children: [
-                _buildModernAppBar(),
-                Expanded(
-                  child: _buildProfessionalInfoTab(),
-                ),
-              ],
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  _buildModernAppBar(),
+                  Expanded(child: _buildProfessionalInfoTab()),
+                ],
+              ),
             ),
           ),
         ],
@@ -350,7 +535,12 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
 
   Widget _buildProfessionalInfoTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(AppSizes.paddingL, 0, AppSizes.paddingL, AppSizes.paddingL),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.paddingL,
+        0,
+        AppSizes.paddingL,
+        AppSizes.paddingL,
+      ),
       child: Column(
         children: [
           _buildProfileHeader(),
@@ -375,8 +565,9 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
               _buildInfoField(
                 icon: Icons.badge_outlined,
                 label: 'Cédula profesional',
-                value: professionalData['license'],
-                enabled: false,
+                controller: _licenseController,
+                enabled: _isEditing,
+                validator: _validateLicense,
               ),
               const SizedBox(height: AppSizes.spaceM),
               _buildInfoField(
@@ -391,14 +582,16 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                 label: 'Teléfono',
                 controller: _phoneController,
                 enabled: _isEditing,
+                validator: _validatePhone,
               ),
               const SizedBox(height: AppSizes.spaceM),
               _buildInfoField(
                 icon: Icons.location_on_outlined,
-                label: 'Dirección de consulta',
+                label: 'Ciudad',
                 controller: _locationCityController,
                 enabled: _isEditing,
                 maxLines: 1,
+                validator: _validateLocationCity,
               ),
               const SizedBox(height: AppSizes.spaceM),
               _buildInfoField(
@@ -407,6 +600,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                 controller: _locationStateController,
                 enabled: _isEditing,
                 maxLines: 1,
+                validator: _validateLocationState,
               ),
               const SizedBox(height: AppSizes.spaceM),
               _buildInfoField(
@@ -415,6 +609,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                 controller: _experienceController,
                 enabled: _isEditing,
                 keyboardType: TextInputType.number,
+                validator: _validateYearsExperience,
               ),
               const SizedBox(height: AppSizes.spaceM),
               _buildInfoField(
@@ -422,7 +617,10 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                 label: 'Tarifa de consulta (MXN)',
                 controller: _consultationFeeController,
                 enabled: _isEditing,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                validator: _validateConsultationFee,
               ),
               const SizedBox(height: AppSizes.spaceM),
               _buildMultiSelectField(
@@ -436,6 +634,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                   });
                 },
                 enabled: _isEditing,
+                isRequired: true,
               ),
               const SizedBox(height: AppSizes.spaceM),
               _buildMultiSelectField(
@@ -449,6 +648,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                   });
                 },
                 enabled: _isEditing,
+                isRequired: true,
               ),
               const SizedBox(height: AppSizes.spaceM),
               _buildMultiSelectField(
@@ -462,6 +662,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                   });
                 },
                 enabled: _isEditing,
+                isRequired: true,
               ),
             ],
           ),
@@ -475,6 +676,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                 controller: _bioController,
                 enabled: _isEditing,
                 maxLines: 5,
+                validator: _validateBio,
               ),
             ],
           ),
@@ -534,29 +736,29 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                         _selectedImageFile != null
                             ? Image.file(_selectedImageFile!, fit: BoxFit.cover)
                             : (professionalData['profileImage'] != null &&
-                                    professionalData['profileImage'].isNotEmpty)
-                                ? Image.network(
-                                    professionalData['profileImage'],
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        color: AppColors.primary.withOpacity(0.1),
-                                        child: Icon(
-                                          Icons.person,
-                                          size: 40,
-                                          color: AppColors.primary,
-                                        ),
-                                      );
-                                    },
-                                  )
-                                : Container(
-                                    color: AppColors.primary.withOpacity(0.1),
-                                    child: Icon(
-                                      Icons.person,
-                                      size: 40,
-                                      color: AppColors.primary,
-                                    ),
+                                professionalData['profileImage'].isNotEmpty)
+                            ? Image.network(
+                              professionalData['profileImage'],
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: AppColors.primary.withOpacity(0.1),
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 40,
+                                    color: AppColors.primary,
                                   ),
+                                );
+                              },
+                            )
+                            : Container(
+                              color: AppColors.primary.withOpacity(0.1),
+                              child: Icon(
+                                Icons.person,
+                                size: 40,
+                                color: AppColors.primary,
+                              ),
+                            ),
                   ),
                 ),
               const SizedBox(width: AppSizes.spaceM),
@@ -665,6 +867,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
     bool enabled = true,
     int maxLines = 1,
     TextInputType? keyboardType,
+    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -691,6 +894,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
             maxLines: maxLines,
             keyboardType: keyboardType,
             style: const TextStyle(color: AppColors.textPrimary),
+            validator: validator,
             decoration: InputDecoration(
               filled: true,
               fillColor: enabled ? AppColors.white : AppColors.backgroundLight,
@@ -709,6 +913,14 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusM),
                 borderSide: BorderSide(color: AppColors.primary),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                borderSide: BorderSide(color: AppColors.error),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                borderSide: BorderSide(color: AppColors.error),
               ),
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusM),
@@ -755,6 +967,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
     required List<String> availableOptions,
     required Function(List<String>) onChanged,
     required bool enabled,
+    bool isRequired = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -771,17 +984,27 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                 fontWeight: FontWeight.w500,
               ),
             ),
+            if (isRequired)
+              const Text(
+                ' *',
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
           ],
         ),
         const SizedBox(height: AppSizes.spaceS),
         if (enabled)
           InkWell(
-            onTap: () => _showMultiSelectDialog(
-              title: label,
-              items: items,
-              availableOptions: availableOptions,
-              onChanged: onChanged,
-            ),
+            onTap:
+                () => _showMultiSelectDialog(
+                  title: label,
+                  items: items,
+                  availableOptions: availableOptions,
+                  onChanged: onChanged,
+                ),
             borderRadius: BorderRadius.circular(AppSizes.radiusM),
             child: Container(
               width: double.infinity,
@@ -789,48 +1012,52 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
               decoration: BoxDecoration(
                 color: AppColors.white,
                 borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                border: Border.all(
-                  color: AppColors.primary.withOpacity(0.2),
-                ),
+                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
               ),
               child: Row(
                 children: [
                   Expanded(
-                    child: items.isEmpty
-                        ? Text(
-                            'Seleccionar $label',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: AppColors.textSecondary.withOpacity(0.6),
+                    child:
+                        items.isEmpty
+                            ? Text(
+                              'Seleccionar $label',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: AppColors.textSecondary.withOpacity(0.6),
+                              ),
+                            )
+                            : Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              children:
+                                  items
+                                      .map(
+                                        (item) => Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary
+                                                .withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            item,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
                             ),
-                          )
-                        : Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: items.map((item) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                item,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            )).toList(),
-                          ),
                   ),
-                  Icon(
-                    Icons.arrow_drop_down,
-                    color: AppColors.primary,
-                  ),
+                  Icon(Icons.arrow_drop_down, color: AppColors.primary),
                 ],
               ),
             ),
@@ -846,36 +1073,44 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                 color: AppColors.textSecondary.withOpacity(0.2),
               ),
             ),
-            child: items.isEmpty
-                ? Text(
-                    'No se han seleccionado $label',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.textSecondary.withOpacity(0.6),
+            child:
+                items.isEmpty
+                    ? Text(
+                      'No se han seleccionado $label',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppColors.textSecondary.withOpacity(0.6),
+                      ),
+                    )
+                    : Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children:
+                          items
+                              .map(
+                                (item) => Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.textSecondary.withOpacity(
+                                      0.1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    item,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
                     ),
-                  )
-                : Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: items.map((item) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.textSecondary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        item,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    )).toList(),
-                  ),
           ),
       ],
     );
@@ -911,12 +1146,9 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                   itemBuilder: (context, index) {
                     final option = availableOptions[index];
                     final isSelected = tempSelected.contains(option);
-                    
+
                     return CheckboxListTile(
-                      title: Text(
-                        option,
-                        style: const TextStyle(fontSize: 14),
-                      ),
+                      title: Text(option, style: const TextStyle(fontSize: 14)),
                       value: isSelected,
                       activeColor: AppColors.primary,
                       onChanged: (bool? value) {
@@ -983,41 +1215,52 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
   Future<void> _saveProfile() async {
     if (_isLoading) return;
 
+    if (!_validateForm()) {
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
       final userId = await SharedPreferencesHelper.getUserId();
-      print('👤 Usuario ID obtenido: "$userId"');
-      
+
       if (userId == null || userId.isEmpty) {
-        throw Exception('No se encontró ID del usuario. Por favor, inicia sesión nuevamente.');
+        throw Exception(
+          'No se encontró ID del usuario. Por favor, inicia sesión nuevamente.',
+        );
       }
 
       final token = await SharedPreferencesHelper.getToken();
       if (token == null || token.isEmpty) {
-        throw Exception('No se encontró token de autenticación. Por favor, inicia sesión nuevamente.');
+        throw Exception(
+          'No se encontró token de autenticación. Por favor, inicia sesión nuevamente.',
+        );
       }
-
-      print('🔐 Token válido encontrado');
 
       final phone = _phoneController.text.trim();
       bool userUpdated = false;
       bool vetNeedsUpdate = false;
 
+      final license = _licenseController.text.trim();
       final bio = _bioController.text.trim();
       final experience = int.tryParse(_experienceController.text.trim()) ?? 0;
       final locationCity = _locationCityController.text.trim();
       final locationState = _locationStateController.text.trim();
-      final consultationFee = double.tryParse(_consultationFeeController.text.trim()) ?? 0.0;
+      final consultationFee =
+          double.tryParse(_consultationFeeController.text.trim()) ?? 0.0;
 
-      // Verificar si los datos del veterinario han cambiado
-      final currentSpecialties = List<String>.from(vetData['specialties'] ?? []);
+      final currentSpecialties = List<String>.from(
+        vetData['specialties'] ?? [],
+      );
       final currentServices = List<String>.from(vetData['services'] ?? []);
-      final currentAnimalsServed = List<String>.from(vetData['animals_served'] ?? []);
+      final currentAnimalsServed = List<String>.from(
+        vetData['animals_served'] ?? [],
+      );
 
-      if (bio != professionalData['bio'] || 
+      if (license != professionalData['license'] ||
+          bio != professionalData['bio'] ||
           experience != professionalData['yearsExperience'] ||
           locationCity != professionalData['locationCity'] ||
           locationState != professionalData['locationState'] ||
@@ -1028,30 +1271,27 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
         vetNeedsUpdate = true;
       }
 
-      // Verificar si los datos del usuario han cambiado (foto/teléfono)
       if (_selectedImageFile != null || phone != professionalData['phone']) {
-        print('📸 ACTUALIZANDO USUARIO (foto/teléfono)...');
-        
-        final userUrl = 'https://web-62dilcrvfkkb.up-de-fra1-k8s-1.apps.run-on-seenode.com/user/$userId';
+        final userUrl =
+            'https://web-62dilcrvfkkb.up-de-fra1-k8s-1.apps.run-on-seenode.com/user/$userId';
         final dio = Dio();
-        dio.options.headers = {
-          'Authorization': 'Bearer $token',
-        };
+        dio.options.headers = {'Authorization': 'Bearer $token'};
 
         if (_selectedImageFile != null) {
-          print('📁 Subiendo imagen: ${_selectedImageFile!.path}');
           dio.options.headers['Content-Type'] = 'multipart/form-data';
-          
+
           final formData = FormData.fromMap({
             'phone': phone,
             'file': await MultipartFile.fromFile(_selectedImageFile!.path),
           });
-          
+
           final response = await dio.patch(userUrl, data: formData);
           if (response.statusCode == 200) {
             final userData = response.data['data'] ?? response.data;
             if (userData['profile_photo'] != null) {
-              await SharedPreferencesHelper.saveUserProfilePhoto(userData['profile_photo']);
+              await SharedPreferencesHelper.saveUserProfilePhoto(
+                userData['profile_photo'],
+              );
               professionalData['profileImage'] = userData['profile_photo'];
             }
             if (userData['phone'] != null) {
@@ -1059,12 +1299,10 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
               professionalData['phone'] = userData['phone'];
             }
             userUpdated = true;
-            print('✅ Usuario actualizado con imagen');
           }
         } else {
-          print('📞 Actualizando solo teléfono');
           dio.options.headers['Content-Type'] = 'application/json';
-          
+
           final response = await dio.patch(userUrl, data: {'phone': phone});
           if (response.statusCode == 200) {
             final userData = response.data['data'] ?? response.data;
@@ -1073,88 +1311,79 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
               professionalData['phone'] = userData['phone'];
             }
             userUpdated = true;
-            print('✅ Teléfono actualizado');
           }
         }
       }
 
       if (vetNeedsUpdate) {
-        print('🩺 ACTUALIZANDO DATOS DEL VETERINARIO...');
-        
-        print('🔍 OBTENIENDO VET ID PARA ACTUALIZACIÓN...');
         String? vetId = await SharedPreferencesHelper.getVetId();
-        print('🔍 getVetId() inicial: "$vetId"');
-        
+
         if (vetId == null || vetId.isEmpty) {
-          print('🚨 VET ID VACÍO - INTENTANDO RECARGAR DESDE SERVIDOR...');
-          
           try {
             final vetDataSource = sl<VetRemoteDataSource>();
-            print('🌐 Realizando petición getVetByUserId para: $userId');
-            
             final vetResponse = await vetDataSource.getVetByUserId(userId);
-            print('📥 Respuesta cruda del servidor: $vetResponse');
-            
+
             final responseData = vetResponse['data'] ?? vetResponse;
-            if (responseData == null) {
-              throw Exception('La respuesta del servidor no contiene datos del veterinario');
+            if (responseData == null || responseData['id'] == null) {
+              throw Exception(
+                'El perfil del veterinario no tiene un ID válido',
+              );
             }
-            
-            if (responseData['id'] == null) {
-              throw Exception('El perfil del veterinario no tiene un ID válido');
-            }
-            
-            print('✅ Respuesta válida del servidor recibida');
-            
-            final fullResponse = vetResponse.containsKey('message') ? vetResponse : {
-              'message': 'Vet retrieved successfully',
-              'data': vetResponse
-            };
-            
-            await SharedPreferencesHelper.saveVetProfileFromResponse(fullResponse);
-            
+
+            final fullResponse =
+                vetResponse.containsKey('message')
+                    ? vetResponse
+                    : {
+                      'message': 'Vet retrieved successfully',
+                      'data': vetResponse,
+                    };
+
+            await SharedPreferencesHelper.saveVetProfileFromResponse(
+              fullResponse,
+            );
             vetId = await SharedPreferencesHelper.getVetId();
-            print('✅ VET ID REOBTENIDO Y GUARDADO: "$vetId"');
-            
+
             if (vetId == null || vetId.isEmpty) {
               vetId = responseData['id']?.toString();
-              print('🔧 EXTRACCIÓN MANUAL DE ID: "$vetId"');
-              
               if (vetId != null && vetId.isNotEmpty) {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setString('vet_id', vetId);
-                print('💾 GUARDADO MANUAL EXITOSO');
               } else {
-                throw Exception('No se pudo extraer el ID del veterinario de la respuesta del servidor');
+                throw Exception(
+                  'No se pudo extraer el ID del veterinario de la respuesta del servidor',
+                );
               }
             }
-            
           } catch (e) {
-            print('❌ Error detallado al recargar datos del veterinario: $e');
-            String errorMessage = 'No se pudo obtener el perfil del veterinario';
-            
-            if (e.toString().contains('404') || e.toString().contains('not found')) {
-              errorMessage = 'No tienes un perfil de veterinario creado. Por favor, completa tu perfil profesional primero.';
-            } else if (e.toString().contains('network') || e.toString().contains('connection')) {
-              errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
+            String errorMessage =
+                'No se pudo obtener el perfil del veterinario';
+
+            if (e.toString().contains('404') ||
+                e.toString().contains('not found')) {
+              errorMessage =
+                  'No tienes un perfil de veterinario creado. Por favor, completa tu perfil profesional primero.';
+            } else if (e.toString().contains('network') ||
+                e.toString().contains('connection')) {
+              errorMessage =
+                  'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
             } else if (e.toString().contains('timeout')) {
               errorMessage = 'Tiempo de espera agotado. Intenta nuevamente.';
             } else if (e is Exception) {
               errorMessage = e.toString().replaceFirst('Exception: ', '');
             }
-            
+
             throw Exception(errorMessage);
           }
         }
 
         if (vetId.isEmpty) {
-          throw Exception('FALLO CRÍTICO: No se pudo obtener el ID del veterinario después de todos los intentos. Por favor, contacta al soporte técnico.');
+          throw Exception(
+            'FALLO CRÍTICO: No se pudo obtener el ID del veterinario después de todos los intentos.',
+          );
         }
 
-        print('🆔 VetId final validado: $vetId');
-        print('🆔 UserId validado: $userId');
-
         final vetDataToSave = {
+          'license': license,
           'bio': bio,
           'specialties': _specialties,
           'years_experience': experience,
@@ -1166,15 +1395,18 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
           'availability': _availability,
         };
 
-        print('📋 Datos a actualizar: $vetDataToSave');
-
         final vetRemoteDataSource = sl<VetRemoteDataSource>();
-        final updatedVet = await vetRemoteDataSource.updateVet(vetId, userId, vetDataToSave);
+        final updatedVet = await vetRemoteDataSource.updateVet(
+          vetId,
+          userId,
+          vetDataToSave,
+        );
 
         final vetResponseData = updatedVet['data'];
-        
+
         final vetDataForSP = {
           ...vetData,
+          'license': vetResponseData['license'],
           'bio': vetResponseData['bio'],
           'specialties': vetResponseData['specialties'],
           'years_experience': vetResponseData['years_experience'],
@@ -1187,18 +1419,23 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
         };
         await SharedPreferencesHelper.saveVetData(vetDataForSP);
 
+        professionalData['license'] = vetResponseData['license'];
         professionalData['bio'] = vetResponseData['bio'];
-        professionalData['yearsExperience'] = vetResponseData['years_experience'];
+        professionalData['yearsExperience'] =
+            vetResponseData['years_experience'];
         professionalData['locationCity'] = vetResponseData['location_city'];
         professionalData['locationState'] = vetResponseData['location_state'];
-        professionalData['consultationFee'] = vetResponseData['consultation_fee'];
-        
+        professionalData['consultationFee'] =
+            vetResponseData['consultation_fee'];
+
         _specialties = List<String>.from(vetResponseData['specialties'] ?? []);
         _services = List<String>.from(vetResponseData['services'] ?? []);
-        _animalsServed = List<String>.from(vetResponseData['animals_served'] ?? []);
-        _availability = List<Map<String, dynamic>>.from(vetResponseData['availability'] ?? []);
-
-        print('✅ Veterinario actualizado exitosamente');
+        _animalsServed = List<String>.from(
+          vetResponseData['animals_served'] ?? [],
+        );
+        _availability = List<Map<String, dynamic>>.from(
+          vetResponseData['availability'] ?? [],
+        );
       }
 
       setState(() {
@@ -1207,10 +1444,6 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
       });
 
       _initializeControllers();
-
-      print('✅ Perfil actualizado correctamente');
-      print('Usuario actualizado: $userUpdated');
-      print('Veterinario actualizado: $vetNeedsUpdate');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1225,31 +1458,30 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
         );
       }
     } catch (e) {
-      print('❌ Error actualizando perfil profesional: $e');
-      
       String errorMessage = 'Error al actualizar el perfil';
-      
+
       if (e is DioException) {
-        print('❌ Dio Error type: ${e.type}');
-        print('❌ Dio Error message: ${e.message}');
-        print('❌ Response status: ${e.response?.statusCode}');
-        print('❌ Response data: ${e.response?.data}');
-        
         switch (e.type) {
           case DioExceptionType.connectionTimeout:
           case DioExceptionType.sendTimeout:
           case DioExceptionType.receiveTimeout:
-            errorMessage = 'Tiempo de conexión agotado. Verifica tu conexión a internet.';
+            errorMessage =
+                'Tiempo de conexión agotado. Verifica tu conexión a internet.';
             break;
           case DioExceptionType.badResponse:
             if (e.response?.statusCode == 404) {
-              errorMessage = 'Perfil no encontrado. Por favor, completa tu perfil profesional primero.';
+              errorMessage =
+                  'Perfil no encontrado. Por favor, completa tu perfil profesional primero.';
+            } else if (e.response?.statusCode == 400) {
+              errorMessage =
+                  'Datos inválidos. Revisa la información ingresada.';
             } else {
               errorMessage = 'Error del servidor: ${e.response?.statusCode}';
             }
             break;
           case DioExceptionType.connectionError:
-            errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
+            errorMessage =
+                'Error de conexión. Verifica tu conexión a internet.';
             break;
           default:
             errorMessage = 'Error al actualizar el perfil: ${e.message}';
