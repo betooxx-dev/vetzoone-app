@@ -8,6 +8,7 @@ import '../../../../data/datasources/pet/pet_remote_datasource.dart';
 import '../../../../data/models/pet/pet_model.dart';
 import '../../../../data/models/appointment/appointment_model.dart';
 import '../../../../data/models/medical_records/medical_record_with_treatments_model.dart';
+import '../../../../data/models/auth/user_model.dart';
 import '../../../../data/models/medical_records/treatment_model.dart';
 import '../../../../data/models/medical_records/vaccination_model.dart';
 import '../../../../core/injection/injection.dart';
@@ -31,6 +32,7 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
   List<MedicalRecordWithTreatmentsModel> _medicalRecords = [];
   List<VaccinationModel> _vaccinations = [];
   String? _currentVetId;
+  UserModel? _petOwner; // ← Información del propietario desde getPetCompleteById
 
   @override
   void initState() {
@@ -68,6 +70,7 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
       print('   - Appointments: ${petDetails.appointments.length}');
       print('   - Medical Records: ${petDetails.medicalRecords.length}');
       print('   - Vaccinations: ${petDetails.vaccinations.length}');
+      print('   - Owner: ${petDetails.user?.fullName ?? 'NO DISPONIBLE'}');
 
       if (mounted) {
         setState(() {
@@ -75,9 +78,21 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
           _appointments = petDetails.appointments;
           _medicalRecords = petDetails.medicalRecords;
           _vaccinations = petDetails.vaccinations;
+          _petOwner = petDetails.user; // ← Guardar información del propietario
           _isLoading = false;
         });
         print('✅ DATOS ACTUALIZADOS EXITOSAMENTE');
+        
+        // Log adicional sobre el propietario guardado
+        if (_petOwner != null) {
+          print('👤 PROPIETARIO GUARDADO:');
+          print('   - ID: ${_petOwner!.id}');
+          print('   - Name: ${_petOwner!.fullName}');
+          print('   - Email: ${_petOwner!.email}');
+          print('   - Phone: ${_petOwner!.phone}');
+        } else {
+          print('⚠️ NO SE PUDO GUARDAR INFORMACIÓN DEL PROPIETARIO');
+        }
       }
     } catch (e) {
       print('❌ Error cargando datos del paciente: $e');
@@ -800,23 +815,77 @@ class _PatientHistoryPageState extends State<PatientHistoryPage>
   }
 
   Map<String, dynamic> _getOwnerInfo() {
-    // Buscar el primer appointment que tenga información del user
-    for (final appointment in _appointments) {
+    print('🔍 BUSCANDO INFORMACIÓN DEL PROPIETARIO...');
+    
+    // NUEVA IMPLEMENTACIÓN: Usar información del propietario desde getPetCompleteById
+    if (_petOwner != null) {
+      print('✅ USANDO INFORMACIÓN DEL PROPIETARIO DESDE getPetCompleteById');
+      print('   - User ID: ${_petOwner!.id}');
+      print('   - User First Name: ${_petOwner!.firstName}');
+      print('   - User Last Name: ${_petOwner!.lastName}');
+      print('   - User Email: ${_petOwner!.email}');
+      print('   - User Phone: ${_petOwner!.phone}');
+      
+      return {
+        'id': _petOwner!.id, // ← ID para notificaciones
+        'name': _petOwner!.fullName,
+        'firstName': _petOwner!.firstName, // ← Para notificaciones
+        'lastName': _petOwner!.lastName,
+        'phone': _petOwner!.phone,
+        'email': _petOwner!.email, // ← Para notificaciones
+        'profilePhoto': _petOwner!.profilePhoto,
+      };
+    }
+    
+    print('📊 NO HAY INFORMACIÓN DEL PROPIETARIO EN _petOwner, BUSCANDO EN APPOINTMENTS...');
+    print('📊 Total de appointments: ${_appointments.length}');
+    
+    // FALLBACK: Buscar en appointments como antes
+    for (int i = 0; i < _appointments.length; i++) {
+      final appointment = _appointments[i];
+      print('📋 Appointment $i: ${appointment.id}');
+      print('   - User: ${appointment.user}');
+      
       if (appointment.user != null) {
+        print('✅ ENCONTRADO USER EN APPOINTMENT $i');
+        print('   - User ID: ${appointment.user!.id}');
+        print('   - User First Name: ${appointment.user!.firstName}');
+        print('   - User Last Name: ${appointment.user!.lastName}');
+        print('   - User Email: ${appointment.user!.email}');
+        print('   - User Phone: ${appointment.user!.phone}');
+        
         return {
+          'id': appointment.user!.id, // ← ID para notificaciones
           'name': '${appointment.user!.firstName} ${appointment.user!.lastName}',
+          'firstName': appointment.user!.firstName, // ← Para notificaciones
+          'lastName': appointment.user!.lastName,
           'phone': appointment.user!.phone,
-          'email': appointment.user!.email,
+          'email': appointment.user!.email, // ← Para notificaciones
           'profilePhoto': appointment.user!.profilePhoto,
         };
       }
     }
     
+    // NUEVO: También verificar si el pet tiene información del user directamente
+    print('🔍 Verificando si el pet tiene información del user...');
+    if (_pet != null) {
+      print('📊 Pet: ${_pet!.name}');
+      print('📊 Pet userId: ${_pet!.userId}');
+      
+      // Si el pet tiene userId pero no encontramos user en appointments,
+      // intentemos obtener la información del pet directamente
+      // Esto requeriría hacer una llamada adicional al API
+    }
+    
+    print('❌ NO SE ENCONTRÓ INFORMACIÓN DEL USER en appointments');
     // Si no se encuentra información del user, devolver información por defecto
     return {
+      'id': null, // ← Sin ID disponible
       'name': 'Propietario',
+      'firstName': 'Propietario', // ← Valor por defecto
+      'lastName': '',
       'phone': null,
-      'email': null,
+      'email': null, // ← Sin email para notificaciones
       'profilePhoto': null,
     };
   }

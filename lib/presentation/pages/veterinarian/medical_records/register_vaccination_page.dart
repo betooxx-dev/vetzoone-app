@@ -24,6 +24,7 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
 
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  bool _reminderScheduled = false; // ← Para tracking del recordatorio
 
   Map<String, dynamic> patientInfo = {};
   Map<String, dynamic> ownerInfo = {};
@@ -104,6 +105,12 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
         }
         
         if (ownerData != null) {
+          print('🔍 PROCESANDO OWNER DATA:');
+          print('   - Raw ownerData: $ownerData');
+          print('   - ID extraído: ${ownerData['id']}');
+          print('   - Email extraído: ${ownerData['email']}');
+          print('   - FirstName extraído: ${ownerData['firstName']}');
+          
           // Normalizar ownerInfo - manejar tanto formato nuevo como legado
           ownerInfo = {
             'id': ownerData['id'] ?? '',
@@ -115,12 +122,20 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
             // Manejar tanto profilePhoto como profile_photo
             'profilePhoto': ownerData['profilePhoto'] ?? ownerData['profile_photo'] ?? '',
           };
+          
+          print('🔍 OWNER INFO FINAL:');
+          print('   - ownerInfo resultante: $ownerInfo');
+        } else {
+          print('⚠️ NO SE RECIBIERON DATOS DEL PROPIETARIO');
         }
       });
       
       print('📊 DATOS FINALES CARGADOS:');
       print('   - Pet: ${patientInfo['name']}');
       print('   - Owner: ${ownerInfo['name']}');
+      print('   - Owner ID: ${ownerInfo['id']}');
+      print('   - Owner Email: ${ownerInfo['email']}');
+      print('   - Owner First Name: ${ownerInfo['firstName']}');
       print('   - Appointment ID: ${appointment?.id}');
     } else {
       print('⚠️ NO SE RECIBIERON ARGUMENTOS - USANDO DATOS DE EJEMPLO');
@@ -937,6 +952,11 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
       if (response.statusCode == 200 || response.statusCode == 201) {
         print('✅ VACUNA CREADA EXITOSAMENTE');
         
+        // Programar recordatorio de vacuna si tenemos la información del usuario
+        print('🔔 LLAMANDO AL MÉTODO _scheduleVaccinationReminder...');
+        _reminderScheduled = await _scheduleVaccinationReminder(vaccinationData);
+        print('🔔 RESULTADO DEL RECORDATORIO: $_reminderScheduled');
+        
         if (mounted) {
           setState(() => _isLoading = false);
           _showSuccessDialog();
@@ -963,6 +983,150 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
           ),
         );
       }
+    }
+  }
+
+  Future<bool> _scheduleVaccinationReminder(Map<String, dynamic> vaccinationData) async {
+    try {
+      print('🔔 INICIANDO PROGRAMACIÓN DE RECORDATORIO DE VACUNA');
+      print('📊 Estado actual de ownerInfo: $ownerInfo');
+      print('📊 Estado actual de patientInfo: $patientInfo');
+      print('📊 Datos de vacuna recibidos: $vaccinationData');
+      
+      // Verificar que tenemos la información necesaria del usuario
+      if (ownerInfo['id'] == null || ownerInfo['email'] == null) {
+        print('⚠️ NO SE PUEDE PROGRAMAR RECORDATORIO: Faltan datos del usuario');
+        print('   - User ID: ${ownerInfo['id']}');
+        print('   - Email: ${ownerInfo['email']}');
+        print('   - OwnerInfo completo: $ownerInfo');
+        return false;
+      }
+      
+      final token = await SharedPreferencesHelper.getToken();
+      if (token == null) {
+        print('❌ NO SE PUEDE PROGRAMAR RECORDATORIO: Sin token de autenticación');
+        return false;
+      }
+      
+      print('🔑 Token obtenido para recordatorio: ${token.substring(0, 10)}...');
+      
+      // Convertir next_due_date a DateTime con hora específica (6:00 PM)
+      print('📅 Procesando fecha: ${vaccinationData['next_due_date']}');
+      DateTime nextDueDate = DateTime.parse(vaccinationData['next_due_date']);
+      DateTime scheduledFor = DateTime(
+        nextDueDate.year,
+        nextDueDate.month,
+        nextDueDate.day,
+        18, // 6:00 PM
+        0,
+        0,
+      );
+      
+      print('⏰ Fecha programada final: ${scheduledFor.toIso8601String()}');
+      
+      final reminderData = {
+        "user_id": ownerInfo['id'],
+        "type": "VACCINATION_REMINDER",
+        "scheduled_for": scheduledFor.toIso8601String(),
+        "metadata": {
+          "email": ownerInfo['email'],
+          "notificationData": {
+            "ownerName": ownerInfo['firstName'] ?? ownerInfo['name'],
+            "petName": patientInfo['name'],
+            "vaccineName": vaccinationData['vaccine_name'],
+            "dueDate": scheduledFor.toIso8601String(),
+          }
+        }
+      };
+      
+      print('📋 DATOS DEL RECORDATORIO A ENVIAR:');
+      print('User ID: ${reminderData['user_id']}');
+      print('Type: ${reminderData['type']}');
+      print('Scheduled For: ${reminderData['scheduled_for']}');
+      print('Email: ${reminderData['metadata']['email']}');
+      print('Owner Name: ${reminderData['metadata']['notificationData']['ownerName']}');
+      print('Pet Name: ${reminderData['metadata']['notificationData']['petName']}');
+      print('Vaccine Name: ${reminderData['metadata']['notificationData']['vaccineName']}');
+      
+      print('🌐 URL del endpoint: ${ApiEndpoints.baseUrl}/notifications/schedule');
+      print('📋 JSON a enviar: ${json.encode(reminderData)}');
+      
+      print('🚀 INICIANDO SOLICITUD HTTP POST...');
+      
+      try {
+        final response = await http.post(
+          Uri.parse('${ApiEndpoints.baseUrl}/notifications/schedule'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: json.encode(reminderData),
+        ).timeout(Duration(seconds: 30));
+        
+        print('✅ SOLICITUD HTTP COMPLETADA');
+        print('📡 RESPUESTA DEL RECORDATORIO:');
+        print('Status Code: ${response.statusCode}');
+        print('Response Headers: ${response.headers}');
+        print('Response Body: ${response.body}');
+        
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          print('✅ RECORDATORIO PROGRAMADO EXITOSAMENTE');
+          return true;
+        } else {
+          print('⚠️ ERROR PROGRAMANDO RECORDATORIO: ${response.statusCode} - ${response.body}');
+          return false;
+        }
+        
+      } catch (httpError) {
+        print('❌ ERROR EN SOLICITUD HTTP: $httpError');
+        return false;
+      }
+      
+    } catch (e) {
+      print('❌ ERROR PROGRAMANDO RECORDATORIO: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
+      // No lanzamos excepción para no afectar el flujo principal
+      return false;
+    }
+  }
+
+  // MÉTODO DE PRUEBA TEMPORAL - REMOVER EN PRODUCCIÓN
+  Future<void> _testNotificationEndpoint() async {
+    print('🧪 PROBANDO ENDPOINT DE NOTIFICACIONES MANUALMENTE');
+    
+    final testData = {
+      "user_id": "test-user-123",
+      "type": "VACCINATION_REMINDER",
+      "scheduled_for": "2025-07-26T18:00:00.000Z",
+      "metadata": {
+        "email": "test@test.com",
+        "notificationData": {
+          "ownerName": "Test Owner",
+          "petName": "Test Pet",
+          "vaccineName": "Test Vaccine",
+          "dueDate": "2025-07-26T18:00:00.000Z"
+        }
+      }
+    };
+    
+    final token = await SharedPreferencesHelper.getToken();
+    
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiEndpoints.baseUrl}/notifications/schedule'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(testData),
+      );
+      
+      print('🧪 RESPUESTA DE PRUEBA:');
+      print('Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+      
+    } catch (e) {
+      print('🧪 ERROR EN PRUEBA: $e');
     }
   }
 
@@ -1009,7 +1173,9 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
                 ),
                 const SizedBox(height: AppSizes.spaceS),
                 Text(
-                  'La vacuna ha sido registrada exitosamente y estará disponible en el historial del paciente.',
+                  _reminderScheduled 
+                    ? 'La vacuna ha sido registrada exitosamente y estará disponible en el historial del paciente.\n\n✅ Se programó un recordatorio para la próxima aplicación.'
+                    : 'La vacuna ha sido registrada exitosamente y estará disponible en el historial del paciente.',
                   style: TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondary,

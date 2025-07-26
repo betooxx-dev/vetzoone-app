@@ -7,6 +7,7 @@ import '../../models/pet/pet_model.dart';
 import '../../models/appointment/appointment_model.dart';
 import '../../models/medical_records/medical_record_with_treatments_model.dart';
 import '../../models/medical_records/vaccination_model.dart';
+import '../../models/auth/user_model.dart';
 
 class PetDetailDTO {
   final PetModel pet;
@@ -19,12 +20,14 @@ class PetCompleteDetailDTO {
   final List<AppointmentModel> appointments;
   final List<MedicalRecordWithTreatmentsModel> medicalRecords;
   final List<VaccinationModel> vaccinations;
+  final UserModel? user; // ← Agregar información del propietario
   
   PetCompleteDetailDTO({
     required this.pet,
     required this.appointments,
     required this.medicalRecords,
     required this.vaccinations,
+    this.user, // ← Agregar como parámetro opcional
   });
 }
 
@@ -283,6 +286,7 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
         print('Appointments data: ${data?['appointments']}');
         print('Medical Records data: ${data?['medical_records']}');
         print('Vaccinations data: ${data?['vaccinations']}');
+        print('User data: ${data?['user']}'); // ← Log para user data
         
         // Parse pet data first
         final petData = data['pet'] as Map<String, dynamic>;
@@ -308,6 +312,24 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
             .map((json) => AppointmentModel.fromJson(json))
             .toList();
         print('📅 Appointments parseadas: ${appointments.length}');
+        
+        // Parse user (propietario) data
+        UserModel? user;
+        final userData = data['user'];
+        if (userData != null) {
+          try {
+            user = UserModel.fromJson(userData);
+            print('👤 User parseado exitosamente: ${user.fullName}');
+            print('   - ID: ${user.id}');
+            print('   - Email: ${user.email}');
+            print('   - Phone: ${user.phone}');
+          } catch (e) {
+            print('❌ Error parseando user: $e');
+            print('   - User data raw: $userData');
+          }
+        } else {
+          print('⚠️ No hay información de user en la respuesta');
+        }
         
         // Parse medical records with treatments (from separate data)
         final medicalRecordsData = data['medical_records'];
@@ -342,12 +364,14 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
         print('   - Appointments: ${appointments.length}');
         print('   - Medical Records: ${medicalRecords.length}');
         print('   - Vaccinations: ${vaccinations.length}');
+        print('   - User: ${user != null ? user.fullName : 'NO DISPONIBLE'}');
         
         return PetCompleteDetailDTO(
           pet: pet,
           appointments: appointments,
           medicalRecords: medicalRecords,
           vaccinations: vaccinations,
+          user: user, // ← Incluir user en la respuesta
         );
       } else {
         throw Exception('Failed to load pet complete details');
