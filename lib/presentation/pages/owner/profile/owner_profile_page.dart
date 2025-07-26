@@ -22,6 +22,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
   Map<String, dynamic> userData = {};
   File? _selectedImageFile;
 
+  final _formKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -126,25 +127,28 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
           children: [
             _buildDecorativeShapes(),
             SafeArea(
-              child: Column(
-                children: [
-                  _buildModernAppBar(),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(AppSizes.paddingL),
-                      child: Column(
-                        children: [
-                          _buildModernProfileHeader(),
-                          const SizedBox(height: AppSizes.spaceL),
-                          _buildModernPersonalInfoCard(),
-                          const SizedBox(height: AppSizes.spaceL),
-                          _buildModernOptionsCard(),
-                          const SizedBox(height: AppSizes.spaceXL),
-                        ],
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    _buildModernAppBar(),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(AppSizes.paddingL),
+                        child: Column(
+                          children: [
+                            _buildModernProfileHeader(),
+                            const SizedBox(height: AppSizes.spaceL),
+                            _buildModernPersonalInfoCard(),
+                            const SizedBox(height: AppSizes.spaceL),
+                            _buildModernOptionsCard(),
+                            const SizedBox(height: AppSizes.spaceXL),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -488,6 +492,27 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
                     label: 'Nombre',
                     controller: _firstNameController,
                     enabled: _isEditing,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'El nombre es obligatorio';
+                      }
+                      if (value.trim().length < 2) {
+                        return 'El nombre debe tener al menos 2 caracteres';
+                      }
+                      if (value.trim().length > 50) {
+                        return 'El nombre no puede exceder 50 caracteres';
+                      }
+                      if (RegExp(r'[0-9]').hasMatch(value)) {
+                        return 'El nombre no puede contener números';
+                      }
+                      if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                        return 'El nombre no puede contener caracteres especiales';
+                      }
+                      if (RegExp(r'^\s|\s$').hasMatch(value)) {
+                        return 'El nombre no puede empezar o terminar con espacios';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: AppSizes.spaceM),
                   _buildModernInfoField(
@@ -495,6 +520,27 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
                     label: 'Apellido',
                     controller: _lastNameController,
                     enabled: _isEditing,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'El apellido es obligatorio';
+                      }
+                      if (value.trim().length < 2) {
+                        return 'El apellido debe tener al menos 2 caracteres';
+                      }
+                      if (value.trim().length > 50) {
+                        return 'El apellido no puede exceder 50 caracteres';
+                      }
+                      if (RegExp(r'[0-9]').hasMatch(value)) {
+                        return 'El apellido no puede contener números';
+                      }
+                      if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                        return 'El apellido no puede contener caracteres especiales';
+                      }
+                      if (RegExp(r'^\s|\s$').hasMatch(value)) {
+                        return 'El apellido no puede empezar o terminar con espacios';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: AppSizes.spaceM),
                   _buildModernInfoField(
@@ -509,6 +555,25 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
                     label: 'Teléfono',
                     controller: _phoneController,
                     enabled: _isEditing,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'El teléfono es obligatorio';
+                      }
+                      final cleanedValue = value.replaceAll(
+                        RegExp(r'[\s\-\(\)]'),
+                        '',
+                      );
+                      if (cleanedValue.length < 8) {
+                        return 'El teléfono debe tener al menos 8 dígitos';
+                      }
+                      if (cleanedValue.length > 15) {
+                        return 'El teléfono no puede exceder 15 dígitos';
+                      }
+                      if (!RegExp(r'^[0-9+\s\-\(\)]+$').hasMatch(value)) {
+                        return 'El teléfono solo puede contener números, +, -, ( ), y espacios';
+                      }
+                      return null;
+                    },
                   ),
                 ],
               ),
@@ -526,6 +591,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
     String? value,
     required bool enabled,
     int maxLines = 1,
+    String? Function(String?)? validator,
   }) {
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingM),
@@ -566,6 +632,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
             initialValue: controller == null ? value : null,
             enabled: enabled,
             maxLines: maxLines,
+            validator: validator,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -575,6 +642,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
               border: InputBorder.none,
               contentPadding: EdgeInsets.zero,
               isDense: true,
+              errorStyle: TextStyle(fontSize: 12, color: AppColors.error),
             ),
           ),
         ],
@@ -740,6 +808,17 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
   Future<void> _saveProfile() async {
     if (_isLoading) return;
 
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor corrige los errores en el formulario'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -759,10 +838,9 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
       final lastName = _lastNameController.text.trim();
       final phone = _phoneController.text.trim();
 
-      // Endpoint específico solicitado por el usuario
-      final url = 'https://web-62dilcrvfkkb.up-de-fra1-k8s-1.apps.run-on-seenode.com/user/$userId';
+      final url =
+          'https://web-62dilcrvfkkb.up-de-fra1-k8s-1.apps.run-on-seenode.com/user/$userId';
 
-      // Configurar Dio con headers de autenticación
       final dio = Dio();
       dio.options.headers = {
         'Authorization': 'Bearer $token',
@@ -777,19 +855,18 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
       late Response response;
 
       if (_selectedImageFile != null) {
-        // Verificar que el archivo existe antes de enviarlo
         if (!await _selectedImageFile!.exists()) {
-          throw Exception('Archivo de imagen no encontrado. Por favor, selecciona la imagen nuevamente.');
+          throw Exception(
+            'Archivo de imagen no encontrado. Por favor, selecciona la imagen nuevamente.',
+          );
         }
 
         final fileSize = await _selectedImageFile!.length();
         print('📁 Archivo encontrado: ${_selectedImageFile!.path}');
         print('📏 Tamaño: $fileSize bytes');
 
-        // Cambiar Content-Type para multipart/form-data
         dio.options.headers['Content-Type'] = 'multipart/form-data';
 
-        // Crear FormData para enviar con imagen
         final formData = FormData.fromMap({
           'first_name': firstName,
           'last_name': lastName,
@@ -800,12 +877,13 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
           ),
         });
 
-        print('📤 Enviando con imagen - FormData fields: ${formData.fields.length}');
+        print(
+          '📤 Enviando con imagen - FormData fields: ${formData.fields.length}',
+        );
         print('📤 FormData files: ${formData.files.length}');
 
         response = await dio.patch(url, data: formData);
       } else {
-        // Enviar solo datos JSON sin imagen
         final requestData = {
           'first_name': firstName,
           'last_name': lastName,
@@ -822,7 +900,6 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
       print('Data: ${response.data}');
 
       if (response.statusCode == 200) {
-        // Extraer datos de la respuesta
         final responseData = response.data;
         Map<String, dynamic> updatedUser;
 
@@ -836,25 +913,30 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
           throw Exception('Formato de respuesta inválido');
         }
 
-        // Actualizar SharedPreferences con los nuevos datos
         if (updatedUser['first_name'] != null) {
-          await SharedPreferencesHelper.saveUserFirstName(updatedUser['first_name']);
+          await SharedPreferencesHelper.saveUserFirstName(
+            updatedUser['first_name'],
+          );
         }
         if (updatedUser['last_name'] != null) {
-          await SharedPreferencesHelper.saveUserLastName(updatedUser['last_name']);
+          await SharedPreferencesHelper.saveUserLastName(
+            updatedUser['last_name'],
+          );
         }
         if (updatedUser['phone'] != null) {
           await SharedPreferencesHelper.saveUserPhone(updatedUser['phone']);
         }
         if (updatedUser['profile_photo'] != null) {
-          await SharedPreferencesHelper.saveUserProfilePhoto(updatedUser['profile_photo']);
+          await SharedPreferencesHelper.saveUserProfilePhoto(
+            updatedUser['profile_photo'],
+          );
         }
 
-        // Actualizar el estado local de la UI
         setState(() {
           this.userData['firstName'] = updatedUser['first_name'] ?? firstName;
           this.userData['lastName'] = updatedUser['last_name'] ?? lastName;
-          this.userData['fullName'] = '${updatedUser['first_name'] ?? firstName} ${updatedUser['last_name'] ?? lastName}';
+          this.userData['fullName'] =
+              '${updatedUser['first_name'] ?? firstName} ${updatedUser['last_name'] ?? lastName}';
           this.userData['phone'] = updatedUser['phone'] ?? phone;
           if (updatedUser['profile_photo'] != null) {
             this.userData['profileImage'] = updatedUser['profile_photo'];
@@ -884,26 +966,28 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
       }
     } catch (e) {
       print('❌ Error actualizando perfil: $e');
-      
+
       String errorMessage = 'Error al actualizar el perfil';
-      
+
       if (e is DioException) {
         print('❌ Dio Error type: ${e.type}');
         print('❌ Dio Error message: ${e.message}');
         print('❌ Response status: ${e.response?.statusCode}');
         print('❌ Response data: ${e.response?.data}');
-        
+
         switch (e.type) {
           case DioExceptionType.connectionTimeout:
           case DioExceptionType.sendTimeout:
           case DioExceptionType.receiveTimeout:
-            errorMessage = 'Tiempo de conexión agotado. Verifica tu conexión a internet.';
+            errorMessage =
+                'Tiempo de conexión agotado. Verifica tu conexión a internet.';
             break;
           case DioExceptionType.badResponse:
             errorMessage = 'Error del servidor: ${e.response?.statusCode}';
             break;
           case DioExceptionType.connectionError:
-            errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
+            errorMessage =
+                'Error de conexión. Verifica tu conexión a internet.';
             break;
           default:
             errorMessage = 'Error al actualizar el perfil: ${e.message}';
