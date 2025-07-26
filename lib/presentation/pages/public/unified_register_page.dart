@@ -28,7 +28,6 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
   bool _isLoading = false;
   bool _acceptTerms = false;
 
-  // Colores dinámicos según el rol
   Color get _primaryColor =>
       widget.userRole == 'VETERINARIAN'
           ? AppColors.accent
@@ -99,6 +98,13 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
       setState(() {
         _isLoading = false;
       });
+    } else if (!_acceptTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes aceptar los términos y condiciones'),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
@@ -109,10 +115,7 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
         decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
         child: Stack(
           children: [
-            // Formas decorativas de fondo
             _buildDecorativeShapes(),
-
-            // Contenido principal
             SafeArea(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
@@ -121,8 +124,6 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
                 child: Column(
                   children: [
                     const SizedBox(height: AppSizes.spaceL),
-
-                    // Botón de retroceso
                     Row(
                       children: [
                         GestureDetector(
@@ -151,10 +152,7 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: AppSizes.spaceXL),
-
-                    // Logo en círculo
                     Container(
                       width: 120,
                       height: 120,
@@ -179,10 +177,7 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: AppSizes.spaceXL),
-
-                    // Título
                     Text(
                       widget.userRole == 'VETERINARIAN'
                           ? 'Crear cuenta profesional'
@@ -194,9 +189,7 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
                         color: AppColors.textOnDark,
                       ),
                     ),
-
                     const SizedBox(height: AppSizes.spaceS),
-
                     Text(
                       widget.userRole == 'VETERINARIAN'
                           ? 'Regístrate como veterinario'
@@ -207,10 +200,7 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
                         color: AppColors.textOnDark,
                       ),
                     ),
-
                     const SizedBox(height: AppSizes.spaceXL),
-
-                    // Formulario
                     Container(
                       padding: const EdgeInsets.all(AppSizes.paddingL),
                       decoration: BoxDecoration(
@@ -233,64 +223,113 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
                               label: 'Nombre',
                               icon: Icons.person_outline,
                               validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Por favor ingresa tu nombre';
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'El nombre es obligatorio';
+                                }
+                                if (value.trim().length < 2) {
+                                  return 'El nombre debe tener al menos 2 caracteres';
+                                }
+                                if (value.trim().length > 50) {
+                                  return 'El nombre no puede exceder 50 caracteres';
+                                }
+                                if (RegExp(r'[0-9]').hasMatch(value)) {
+                                  return 'El nombre no puede contener números';
+                                }
+                                if (RegExp(
+                                  r'[!@#$%^&*(),.?":{}|<>]',
+                                ).hasMatch(value)) {
+                                  return 'El nombre no puede contener caracteres especiales';
+                                }
+                                if (RegExp(r'^\s|\s$').hasMatch(value)) {
+                                  return 'El nombre no puede empezar o terminar con espacios';
                                 }
                                 return null;
                               },
                             ),
-
                             const SizedBox(height: AppSizes.spaceL),
-
                             _buildTextField(
                               controller: _lastNameController,
                               label: 'Apellido',
                               icon: Icons.person_outline,
                               validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Por favor ingresa tu apellido';
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'El apellido es obligatorio';
+                                }
+                                if (value.trim().length < 2) {
+                                  return 'El apellido debe tener al menos 2 caracteres';
+                                }
+                                if (value.trim().length > 50) {
+                                  return 'El apellido no puede exceder 50 caracteres';
+                                }
+                                if (RegExp(r'[0-9]').hasMatch(value)) {
+                                  return 'El apellido no puede contener números';
+                                }
+                                if (RegExp(
+                                  r'[!@#$%^&*(),.?":{}|<>]',
+                                ).hasMatch(value)) {
+                                  return 'El apellido no puede contener caracteres especiales';
+                                }
+                                if (RegExp(r'^\s|\s$').hasMatch(value)) {
+                                  return 'El apellido no puede empezar o terminar con espacios';
                                 }
                                 return null;
                               },
                             ),
-
                             const SizedBox(height: AppSizes.spaceL),
-
                             _buildTextField(
                               controller: _emailController,
                               label: 'Correo electrónico',
                               icon: Icons.email_outlined,
                               keyboardType: TextInputType.emailAddress,
                               validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Por favor ingresa tu correo';
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'El correo electrónico es obligatorio';
                                 }
                                 if (!RegExp(
                                   r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                                ).hasMatch(value)) {
-                                  return 'Ingresa un correo válido';
+                                ).hasMatch(value.trim())) {
+                                  return 'Ingresa un correo electrónico válido';
+                                }
+                                if (value.trim().length > 254) {
+                                  return 'El correo electrónico es demasiado largo';
                                 }
                                 return null;
                               },
                             ),
-
                             const SizedBox(height: AppSizes.spaceL),
-
                             _buildTextField(
                               controller: _phoneController,
                               label: 'Teléfono',
                               icon: Icons.phone_outlined,
                               keyboardType: TextInputType.phone,
                               validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Por favor ingresa tu teléfono';
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'El número de teléfono es obligatorio';
+                                }
+                                final cleanedValue = value.replaceAll(
+                                  RegExp(r'[\s\-\(\)\+]'),
+                                  '',
+                                );
+                                if (cleanedValue.length < 10) {
+                                  return 'El teléfono debe tener al menos 10 dígitos';
+                                }
+                                if (cleanedValue.length > 13) {
+                                  return 'El teléfono no puede exceder 13 dígitos';
+                                }
+                                if (!RegExp(
+                                  r'^[0-9+\s\-\(\)]+$',
+                                ).hasMatch(value)) {
+                                  return 'El teléfono solo puede contener números, +, -, ( ), y espacios';
+                                }
+                                if (!RegExp(
+                                  r'^(\+52)?[0-9\s\-\(\)]{10,13}$',
+                                ).hasMatch(value.trim())) {
+                                  return 'Ingresa un número de teléfono mexicano válido';
                                 }
                                 return null;
                               },
                             ),
-
                             const SizedBox(height: AppSizes.spaceL),
-
                             _buildTextField(
                               controller: _passwordController,
                               label: 'Contraseña',
@@ -311,17 +350,32 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Por favor ingresa tu contraseña';
+                                  return 'La contraseña es obligatoria';
                                 }
-                                if (value.length < 6) {
-                                  return 'La contraseña debe tener al menos 6 caracteres';
+                                if (value.length < 9) {
+                                  return 'La contraseña debe tener al menos 9 caracteres';
+                                }
+                                if (value.length > 20) {
+                                  return 'La contraseña no puede exceder 20 caracteres';
+                                }
+                                if (!RegExp(r'[a-z]').hasMatch(value)) {
+                                  return 'La contraseña debe contener al menos una letra minúscula';
+                                }
+                                if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                                  return 'La contraseña debe contener al menos una letra mayúscula';
+                                }
+                                if (!RegExp(r'[0-9]').hasMatch(value)) {
+                                  return 'La contraseña debe contener al menos un número';
+                                }
+                                if (!RegExp(
+                                  r'[!@#$%^&*(),.?":{}|<>]',
+                                ).hasMatch(value)) {
+                                  return 'La contraseña debe contener al menos un símbolo especial';
                                 }
                                 return null;
                               },
                             ),
-
                             const SizedBox(height: AppSizes.spaceL),
-
                             _buildTextField(
                               controller: _confirmPasswordController,
                               label: 'Confirmar contraseña',
@@ -343,7 +397,7 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Por favor confirma tu contraseña';
+                                  return 'Debes confirmar tu contraseña';
                                 }
                                 if (value != _passwordController.text) {
                                   return 'Las contraseñas no coinciden';
@@ -351,10 +405,7 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
                                 return null;
                               },
                             ),
-
                             const SizedBox(height: AppSizes.spaceL),
-
-                            // Checkbox términos
                             Row(
                               children: [
                                 Checkbox(
@@ -377,10 +428,7 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
                                 ),
                               ],
                             ),
-
                             const SizedBox(height: AppSizes.spaceXL),
-
-                            // Botón de registro
                             SizedBox(
                               width: double.infinity,
                               height: AppSizes.buttonHeight,
@@ -423,10 +471,7 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: AppSizes.spaceXL),
-
-                    // Enlace a login
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -449,7 +494,6 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: AppSizes.spaceL),
                   ],
                 ),
@@ -509,6 +553,10 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
         labelText: label,
         prefixIcon: Icon(icon, color: _primaryColor),
         suffixIcon: suffixIcon,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.paddingM,
+          vertical: AppSizes.paddingM,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusM),
           borderSide: BorderSide(color: Colors.grey.shade300),
@@ -521,6 +569,20 @@ class _UnifiedRegisterPageState extends State<UnifiedRegisterPage> {
           borderRadius: BorderRadius.circular(AppSizes.radiusM),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          borderSide: BorderSide(color: AppColors.error, width: 2),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          borderSide: BorderSide(color: AppColors.error, width: 2),
+        ),
+        errorStyle: const TextStyle(
+          fontSize: 10,
+          color: AppColors.error,
+          height: 1.4,
+        ),
+        errorMaxLines: 10,
       ),
       validator: validator,
     );

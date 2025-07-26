@@ -80,10 +80,7 @@ class _LoginPageState extends State<LoginPage> {
         decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
         child: Stack(
           children: [
-            // Formas decorativas de fondo
             _buildDecorativeShapes(),
-
-            // Contenido principal
             SafeArea(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
@@ -92,8 +89,6 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   children: [
                     const SizedBox(height: AppSizes.spaceXXL),
-
-                    // Logo en círculo blanco
                     Container(
                       width: 140,
                       height: 140,
@@ -118,10 +113,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: AppSizes.spaceXL),
-
-                    // Título
                     const Text(
                       'Bienvenido de vuelta',
                       style: TextStyle(
@@ -130,9 +122,7 @@ class _LoginPageState extends State<LoginPage> {
                         color: AppColors.textOnDark,
                       ),
                     ),
-
                     const SizedBox(height: AppSizes.spaceS),
-
                     const Text(
                       'Inicia sesión en tu cuenta',
                       style: TextStyle(
@@ -140,10 +130,7 @@ class _LoginPageState extends State<LoginPage> {
                         color: AppColors.textOnDark,
                       ),
                     ),
-
                     const SizedBox(height: AppSizes.spaceXXL),
-
-                    // Formulario
                     Container(
                       padding: const EdgeInsets.all(AppSizes.paddingL),
                       decoration: BoxDecoration(
@@ -161,7 +148,6 @@ class _LoginPageState extends State<LoginPage> {
                         key: _formKey,
                         child: Column(
                           children: [
-                            // Campo Email
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
@@ -196,23 +182,50 @@ class _LoginPageState extends State<LoginPage> {
                                     color: Colors.grey.shade300,
                                   ),
                                 ),
+                                errorBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppSizes.radiusM,
+                                  ),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.error,
+                                    width: 2,
+                                  ),
+                                ),
+                                focusedErrorBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppSizes.radiusM,
+                                  ),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.error,
+                                    width: 2,
+                                  ),
+                                ),
+                                errorStyle: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.error,
+                                  height: 1.3,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: AppSizes.paddingM,
+                                  vertical: AppSizes.paddingM,
+                                ),
                               ),
                               validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Por favor ingresa tu correo';
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'El correo electrónico es obligatorio';
                                 }
                                 if (!RegExp(
                                   r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                                ).hasMatch(value)) {
-                                  return 'Ingresa un correo válido';
+                                ).hasMatch(value.trim())) {
+                                  return 'Ingresa un correo electrónico válido';
+                                }
+                                if (value.trim().length > 254) {
+                                  return 'El correo electrónico es demasiado largo';
                                 }
                                 return null;
                               },
                             ),
-
                             const SizedBox(height: AppSizes.spaceL),
-
-                            // Campo Contraseña
                             TextFormField(
                               controller: _passwordController,
                               obscureText: !_isPasswordVisible,
@@ -260,21 +273,70 @@ class _LoginPageState extends State<LoginPage> {
                                     color: Colors.grey.shade300,
                                   ),
                                 ),
+                                errorBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppSizes.radiusM,
+                                  ),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.error,
+                                    width: 2,
+                                  ),
+                                ),
+                                focusedErrorBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppSizes.radiusM,
+                                  ),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.error,
+                                    width: 2,
+                                  ),
+                                ),
+                                errorStyle: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.error,
+                                  height: 1.2,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: AppSizes.paddingM,
+                                  vertical: AppSizes.paddingM,
+                                ),
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Por favor ingresa tu contraseña';
+                                  return 'La contraseña es obligatoria';
                                 }
-                                if (value.length < 6) {
-                                  return 'La contraseña debe tener al menos 6 caracteres';
+
+                                List<String> errors = [];
+
+                                if (value.length < 9) {
+                                  errors.add('• Mínimo 9 caracteres');
                                 }
+                                if (value.length > 20) {
+                                  errors.add('• Máximo 20 caracteres');
+                                }
+                                if (!RegExp(r'[a-z]').hasMatch(value)) {
+                                  errors.add('• Al menos una letra minúscula');
+                                }
+                                if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                                  errors.add('• Al menos una letra mayúscula');
+                                }
+                                if (!RegExp(r'[0-9]').hasMatch(value)) {
+                                  errors.add('• Al menos un número');
+                                }
+                                if (!RegExp(
+                                  r'[!@#$%^&*(),.?":{}|<>]',
+                                ).hasMatch(value)) {
+                                  errors.add('• Al menos un símbolo especial');
+                                }
+
+                                if (errors.isNotEmpty) {
+                                  return 'La contraseña debe cumplir:\n${errors.join('\n')}';
+                                }
+
                                 return null;
                               },
                             ),
-
-                            const SizedBox(height: AppSizes.spaceL),
-
-                            // Botón de Login
+                            const SizedBox(height: AppSizes.spaceXL),
                             SizedBox(
                               width: double.infinity,
                               height: AppSizes.buttonHeight,
@@ -312,16 +374,12 @@ class _LoginPageState extends State<LoginPage> {
                                         ),
                               ),
                             ),
-
                             const SizedBox(height: AppSizes.spaceM),
                           ],
                         ),
                       ),
                     ),
-
                     const SizedBox(height: AppSizes.spaceXL),
-
-                    // Crear cuenta
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -344,7 +402,6 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: AppSizes.spaceL),
                   ],
                 ),
@@ -359,7 +416,6 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildDecorativeShapes() {
     return Stack(
       children: [
-        // Forma morada superior izquierda
         Positioned(
           top: -50,
           left: -80,
@@ -372,8 +428,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-
-        // Forma naranja superior derecha
         Positioned(
           top: 50,
           right: -60,
@@ -386,8 +440,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-
-        // Forma amarilla inferior izquierda
         Positioned(
           bottom: -30,
           left: -40,
