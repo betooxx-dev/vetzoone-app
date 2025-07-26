@@ -4,9 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/services/user_service.dart';
 import '../../../../core/injection/injection.dart';
-import '../../../../data/datasources/user/user_remote_data_source.dart';
 import '../../../../data/datasources/vet/vet_remote_datasource.dart';
 import '../../../../core/storage/shared_preferences_helper.dart';
 import '../../../widgets/common/profile_image_picker_widget.dart';
@@ -40,6 +38,54 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
   List<String> _services = [];
   List<String> _animalsServed = [];
   List<Map<String, dynamic>> _availability = [];
+
+  // Opciones predefinidas para los selectors
+  final List<String> _availableSpecialties = [
+    'Medicina General',
+    'Cirugía',
+    'Dermatología',
+    'Cardiología',
+    'Oncología',
+    'Neurología',
+    'Oftalmología',
+    'Ortopedia',
+    'Anestesiología',
+    'Medicina Interna',
+    'Medicina de Emergencias',
+    'Reproducción',
+    'Nutrición',
+    'Comportamiento Animal',
+  ];
+
+  final List<String> _availableServices = [
+    'Consulta General',
+    'Vacunación',
+    'Desparasitación',
+    'Cirugía Menor',
+    'Cirugía Mayor',
+    'Rayos X',
+    'Ultrasonido',
+    'Análisis de Laboratorio',
+    'Hospitalización',
+    'Grooming',
+    'Eutanasia',
+    'Microchip',
+  ];
+
+  final List<String> _availableAnimals = [
+    'Perros',
+    'Gatos',
+    'Aves',
+    'Conejos',
+    'Hámsters',
+    'Reptiles',
+    'Peces',
+    'Animales Exóticos',
+    'Ganado Bovino',
+    'Ganado Porcino',
+    'Equinos',
+    'Caprinos',
+  ];
 
   @override
   void initState() {
@@ -376,7 +422,46 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                 label: 'Tarifa de consulta (MXN)',
                 controller: _consultationFeeController,
                 enabled: _isEditing,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: AppSizes.spaceM),
+              _buildMultiSelectField(
+                icon: Icons.medical_services_outlined,
+                label: 'Especialidades',
+                items: _specialties,
+                availableOptions: _availableSpecialties,
+                onChanged: (selected) {
+                  setState(() {
+                    _specialties = selected;
+                  });
+                },
+                enabled: _isEditing,
+              ),
+              const SizedBox(height: AppSizes.spaceM),
+              _buildMultiSelectField(
+                icon: Icons.build_outlined,
+                label: 'Servicios que ofrece',
+                items: _services,
+                availableOptions: _availableServices,
+                onChanged: (selected) {
+                  setState(() {
+                    _services = selected;
+                  });
+                },
+                enabled: _isEditing,
+              ),
+              const SizedBox(height: AppSizes.spaceM),
+              _buildMultiSelectField(
+                icon: Icons.pets_outlined,
+                label: 'Animales que atiende',
+                items: _animalsServed,
+                availableOptions: _availableAnimals,
+                onChanged: (selected) {
+                  setState(() {
+                    _animalsServed = selected;
+                  });
+                },
+                enabled: _isEditing,
               ),
             ],
           ),
@@ -663,59 +748,236 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
     );
   }
 
+  Widget _buildMultiSelectField({
+    required IconData icon,
+    required String label,
+    required List<String> items,
+    required List<String> availableOptions,
+    required Function(List<String>) onChanged,
+    required bool enabled,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 20, color: AppColors.primary),
+            const SizedBox(width: AppSizes.spaceS),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.spaceS),
+        if (enabled)
+          InkWell(
+            onTap: () => _showMultiSelectDialog(
+              title: label,
+              items: items,
+              availableOptions: availableOptions,
+              onChanged: onChanged,
+            ),
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSizes.paddingM),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: items.isEmpty
+                        ? Text(
+                            'Seleccionar $label',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: AppColors.textSecondary.withOpacity(0.6),
+                            ),
+                          )
+                        : Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: items.map((item) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                item,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            )).toList(),
+                          ),
+                  ),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    color: AppColors.primary,
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSizes.paddingM),
+            decoration: BoxDecoration(
+              color: AppColors.backgroundLight,
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              border: Border.all(
+                color: AppColors.textSecondary.withOpacity(0.2),
+              ),
+            ),
+            child: items.isEmpty
+                ? Text(
+                    'No se han seleccionado $label',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.textSecondary.withOpacity(0.6),
+                    ),
+                  )
+                : Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: items.map((item) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.textSecondary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        item,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    )).toList(),
+                  ),
+          ),
+      ],
+    );
+  }
+
+  void _showMultiSelectDialog({
+    required String title,
+    required List<String> items,
+    required List<String> availableOptions,
+    required Function(List<String>) onChanged,
+  }) {
+    List<String> tempSelected = List.from(items);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(
+                'Seleccionar $title',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 400,
+                child: ListView.builder(
+                  itemCount: availableOptions.length,
+                  itemBuilder: (context, index) {
+                    final option = availableOptions[index];
+                    final isSelected = tempSelected.contains(option);
+                    
+                    return CheckboxListTile(
+                      title: Text(
+                        option,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      value: isSelected,
+                      activeColor: AppColors.primary,
+                      onChanged: (bool? value) {
+                        setDialogState(() {
+                          if (value == true) {
+                            if (!tempSelected.contains(option)) {
+                              tempSelected.add(option);
+                            }
+                          } else {
+                            tempSelected.remove(option);
+                          }
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    onChanged(tempSelected);
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
+                  ),
+                  child: const Text('Aceptar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _toggleEditing() {
     setState(() {
       _isEditing = !_isEditing;
     });
   }
 
-  bool _isValidUUID(String uuid) {
-    final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
-    return uuidRegex.hasMatch(uuid);
-  }
-
-  Future<void> _updateVetProfile(String vetId, String userId, Map<String, dynamic> vetDataToSave) async {
-    final vetRemoteDataSource = sl<VetRemoteDataSource>();
-    
-    print('🔄 ACTUALIZANDO DATOS DEL VETERINARIO:');
-    final updatedVet = await vetRemoteDataSource.updateVet(vetId, userId, vetDataToSave);
-
-    if (updatedVet['data'] != null) {
-      print('💾 Actualizando SharedPreferences del veterinario...');
-      final vetDataForSP = {
-        ...vetData,
-        'bio': updatedVet['data']['bio'],
-        'specialties': updatedVet['data']['specialties'],
-        'years_experience': updatedVet['data']['years_experience'],
-        'location_city': updatedVet['data']['location_city'],
-        'location_state': updatedVet['data']['location_state'],
-        'services': updatedVet['data']['services'],
-        'consultation_fee': updatedVet['data']['consultation_fee'],
-        'animals_served': updatedVet['data']['animals_served'],
-        'availability': updatedVet['data']['availability'],
-      };
-      await SharedPreferencesHelper.saveVetData(vetDataForSP);
-
-      setState(() {
-        professionalData['bio'] = updatedVet['data']['bio'];
-        professionalData['yearsExperience'] = updatedVet['data']['years_experience'];
-        professionalData['locationCity'] = updatedVet['data']['location_city'];
-        professionalData['locationState'] = updatedVet['data']['location_state'];
-        professionalData['consultationFee'] = updatedVet['data']['consultation_fee'];
-        
-        _specialties = List<String>.from(updatedVet['data']['specialties'] ?? []);
-        _services = List<String>.from(updatedVet['data']['services'] ?? []);
-        _animalsServed = List<String>.from(updatedVet['data']['animals_served'] ?? []);
-        _availability = List<Map<String, dynamic>>.from(updatedVet['data']['availability'] ?? []);
-        
-        _isEditing = false;
-        _selectedImageFile = null;
-      });
-
-      _initializeControllers();
-    } else {
-      throw Exception('Respuesta inválida del servidor al actualizar veterinario');
+  bool _listsEqual(List<String> list1, List<String> list2) {
+    if (list1.length != list2.length) return false;
+    for (int i = 0; i < list1.length; i++) {
+      if (!list2.contains(list1[i])) return false;
     }
+    for (int i = 0; i < list2.length; i++) {
+      if (!list1.contains(list2[i])) return false;
+    }
+    return true;
   }
 
   Future<void> _saveProfile() async {
@@ -750,14 +1012,23 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
       final locationState = _locationStateController.text.trim();
       final consultationFee = double.tryParse(_consultationFeeController.text.trim()) ?? 0.0;
 
+      // Verificar si los datos del veterinario han cambiado
+      final currentSpecialties = List<String>.from(vetData['specialties'] ?? []);
+      final currentServices = List<String>.from(vetData['services'] ?? []);
+      final currentAnimalsServed = List<String>.from(vetData['animals_served'] ?? []);
+
       if (bio != professionalData['bio'] || 
           experience != professionalData['yearsExperience'] ||
           locationCity != professionalData['locationCity'] ||
           locationState != professionalData['locationState'] ||
-          consultationFee != professionalData['consultationFee']) {
+          consultationFee != professionalData['consultationFee'] ||
+          !_listsEqual(_specialties, currentSpecialties) ||
+          !_listsEqual(_services, currentServices) ||
+          !_listsEqual(_animalsServed, currentAnimalsServed)) {
         vetNeedsUpdate = true;
       }
 
+      // Verificar si los datos del usuario han cambiado (foto/teléfono)
       if (_selectedImageFile != null || phone != professionalData['phone']) {
         print('📸 ACTUALIZANDO USUARIO (foto/teléfono)...');
         
@@ -824,14 +1095,6 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
             final vetResponse = await vetDataSource.getVetByUserId(userId);
             print('📥 Respuesta cruda del servidor: $vetResponse');
             
-            if (vetResponse == null) {
-              throw Exception('El servidor devolvió una respuesta vacía. Es posible que no tengas un perfil de veterinario creado.');
-            }
-            
-            if (vetResponse is! Map<String, dynamic>) {
-              throw Exception('El servidor devolvió una respuesta en formato inválido: ${vetResponse.runtimeType}');
-            }
-            
             final responseData = vetResponse['data'] ?? vetResponse;
             if (responseData == null) {
               throw Exception('La respuesta del servidor no contiene datos del veterinario');
@@ -884,7 +1147,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
           }
         }
 
-        if (vetId == null || vetId.isEmpty) {
+        if (vetId.isEmpty) {
           throw Exception('FALLO CRÍTICO: No se pudo obtener el ID del veterinario después de todos los intentos. Por favor, contacta al soporte técnico.');
         }
 
@@ -908,38 +1171,34 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
         final vetRemoteDataSource = sl<VetRemoteDataSource>();
         final updatedVet = await vetRemoteDataSource.updateVet(vetId, userId, vetDataToSave);
 
-        if (updatedVet != null && updatedVet['data'] != null) {
-          final vetResponseData = updatedVet['data'];
-          
-          final vetDataForSP = {
-            ...vetData,
-            'bio': vetResponseData['bio'],
-            'specialties': vetResponseData['specialties'],
-            'years_experience': vetResponseData['years_experience'],
-            'location_city': vetResponseData['location_city'],
-            'location_state': vetResponseData['location_state'],
-            'services': vetResponseData['services'],
-            'consultation_fee': vetResponseData['consultation_fee'],
-            'animals_served': vetResponseData['animals_served'],
-            'availability': vetResponseData['availability'],
-          };
-          await SharedPreferencesHelper.saveVetData(vetDataForSP);
+        final vetResponseData = updatedVet['data'];
+        
+        final vetDataForSP = {
+          ...vetData,
+          'bio': vetResponseData['bio'],
+          'specialties': vetResponseData['specialties'],
+          'years_experience': vetResponseData['years_experience'],
+          'location_city': vetResponseData['location_city'],
+          'location_state': vetResponseData['location_state'],
+          'services': vetResponseData['services'],
+          'consultation_fee': vetResponseData['consultation_fee'],
+          'animals_served': vetResponseData['animals_served'],
+          'availability': vetResponseData['availability'],
+        };
+        await SharedPreferencesHelper.saveVetData(vetDataForSP);
 
-          professionalData['bio'] = vetResponseData['bio'];
-          professionalData['yearsExperience'] = vetResponseData['years_experience'];
-          professionalData['locationCity'] = vetResponseData['location_city'];
-          professionalData['locationState'] = vetResponseData['location_state'];
-          professionalData['consultationFee'] = vetResponseData['consultation_fee'];
-          
-          _specialties = List<String>.from(vetResponseData['specialties'] ?? []);
-          _services = List<String>.from(vetResponseData['services'] ?? []);
-          _animalsServed = List<String>.from(vetResponseData['animals_served'] ?? []);
-          _availability = List<Map<String, dynamic>>.from(vetResponseData['availability'] ?? []);
+        professionalData['bio'] = vetResponseData['bio'];
+        professionalData['yearsExperience'] = vetResponseData['years_experience'];
+        professionalData['locationCity'] = vetResponseData['location_city'];
+        professionalData['locationState'] = vetResponseData['location_state'];
+        professionalData['consultationFee'] = vetResponseData['consultation_fee'];
+        
+        _specialties = List<String>.from(vetResponseData['specialties'] ?? []);
+        _services = List<String>.from(vetResponseData['services'] ?? []);
+        _animalsServed = List<String>.from(vetResponseData['animals_served'] ?? []);
+        _availability = List<Map<String, dynamic>>.from(vetResponseData['availability'] ?? []);
 
-          print('✅ Veterinario actualizado exitosamente');
-        } else {
-          throw Exception('La respuesta del servidor para la actualización del veterinario es inválida');
-        }
+        print('✅ Veterinario actualizado exitosamente');
       }
 
       setState(() {

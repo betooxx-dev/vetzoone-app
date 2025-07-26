@@ -6,6 +6,7 @@ abstract class VetRemoteDataSource {
   Future<Map<String, dynamic>> getVetByUserId(String userId);
   Future<Map<String, dynamic>> createVet(Map<String, dynamic> vetData);
   Future<Map<String, dynamic>> updateVet(String vetId, String userId, Map<String, dynamic> vetData);
+  Future<Map<String, dynamic>> updateVetAvailability(String vetId, String userId, List<Map<String, dynamic>> availability);
 }
 
 class VetRemoteDataSourceImpl implements VetRemoteDataSource {
@@ -142,6 +143,59 @@ class VetRemoteDataSourceImpl implements VetRemoteDataSource {
       }
       
       throw Exception('Error al actualizar veterinario: $e');
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateVetAvailability(String vetId, String userId, List<Map<String, dynamic>> availability) async {
+    try {
+      final url = ApiEndpoints.updateVetAvailabilityUrl(vetId, userId);
+      
+      final requestData = {
+        'availability': availability,
+      };
+      
+      print('📅 INICIANDO PETICIÓN PATCH ACTUALIZAR DISPONIBILIDAD:');
+      print('URL COMPLETA: $url');
+      print('Vet ID: $vetId');
+      print('User ID: $userId');
+      print('Data: $requestData');
+      print('Método: PATCH');
+      print('Timestamp: ${DateTime.now().toIso8601String()}');
+      
+      final startTime = DateTime.now();
+      final response = await apiClient.patch(url, data: requestData);
+      final endTime = DateTime.now();
+      final duration = endTime.difference(startTime);
+      
+      print('✅ DISPONIBILIDAD ACTUALIZADA EXITOSAMENTE (PATCH):');
+      print('Status: ${response.statusCode}');
+      print('Duración: ${duration.inMilliseconds}ms');
+      print('Data: ${response.data}');
+      
+      return response.data;
+    } catch (e) {
+      print('❌ ERROR AL ACTUALIZAR DISPONIBILIDAD:');
+      print('Error: $e');
+      print('Error type: ${e.runtimeType}');
+      print('Timestamp: ${DateTime.now().toIso8601String()}');
+      
+      if (e is DioException) {
+        print('DioException type: ${e.type}');
+        print('Status code: ${e.response?.statusCode}');
+        print('Response data: ${e.response?.data}');
+        print('Error message: ${e.message}');
+        
+        if (e.type == DioExceptionType.connectionTimeout) {
+          throw Exception('Tiempo de conexión agotado. Verifica tu conexión a internet e intenta nuevamente.');
+        } else if (e.type == DioExceptionType.sendTimeout) {
+          throw Exception('Tiempo de envío agotado. Intenta nuevamente.');
+        } else if (e.type == DioExceptionType.receiveTimeout) {
+          throw Exception('Tiempo de respuesta agotado. Intenta nuevamente.');
+        }
+      }
+      
+      throw Exception('Error al actualizar disponibilidad: $e');
     }
   }
 }

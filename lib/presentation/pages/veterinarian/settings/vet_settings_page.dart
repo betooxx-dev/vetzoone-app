@@ -40,12 +40,26 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
       }
       
       // Obtener especialidad del veterinario
-      String specialty = 'Medicina General • Cirugía';
+      String specialty = 'Sin especialidades registradas';
       final vetData = await SharedPreferencesHelper.getVetData();
       if (vetData != null && vetData.isNotEmpty) {
         final specialties = vetData['specialties'] as List?;
         if (specialties != null && specialties.isNotEmpty) {
-          specialty = specialties.take(2).join(' • ');
+          // Convertir la lista a List<String> y tomar máximo 3 especialidades
+          final specialtiesList = specialties.map((e) => e.toString()).toList();
+          if (specialtiesList.length == 1) {
+            specialty = specialtiesList.first;
+          } else if (specialtiesList.length == 2) {
+            specialty = specialtiesList.join(' • ');
+          } else {
+            specialty = '${specialtiesList.take(2).join(' • ')} • +${specialtiesList.length - 2} más';
+          }
+        } else {
+          // Si no hay especialidades, revisar si hay una especialización general
+          final specialization = vetData['specialization']?.toString();
+          if (specialization != null && specialization.isNotEmpty) {
+            specialty = specialization;
+          }
         }
       }
 
@@ -61,7 +75,7 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
         userData = {};
         _vetProfilePhoto = null;
         _vetName = 'Dr. Usuario';
-        _vetSpecialty = 'Medicina General • Cirugía';
+        _vetSpecialty = 'Sin especialidades registradas';
       });
     }
   }
@@ -157,23 +171,9 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
           ),
         ],
       ),
-      child: Row(
+      child: const Row(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(AppSizes.radiusM),
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.arrow_back_ios_new,
-                color: AppColors.white,
-              ),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-          const SizedBox(width: AppSizes.spaceM),
-          const Expanded(
+          Expanded(
             child: Text(
               'Configuraciones',
               style: TextStyle(

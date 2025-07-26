@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/veterinary_constants.dart';
+import '../../../../core/injection/injection.dart';
+import '../../../../core/storage/shared_preferences_helper.dart';
+import '../../../../data/datasources/vet/vet_remote_datasource.dart';
 
 class ConfigureSchedulePage extends StatefulWidget {
   const ConfigureSchedulePage({super.key});
@@ -10,84 +14,113 @@ class ConfigureSchedulePage extends StatefulWidget {
 }
 
 class _ConfigureSchedulePageState extends State<ConfigureSchedulePage> {
-  // Horarios por día de la semana
+  String? _vetId;
+  String? _userId;
+  bool _isLoading = false;
+  // Horarios por día de la semana - Simplificado sin descansos
   Map<String, Map<String, dynamic>> weeklySchedule = {
     'monday': {
-      'enabled': true,
-      'periods': [
-        {'start': '08:00', 'end': '12:00'},
-        {'start': '14:00', 'end': '18:00'},
-      ],
-      'breaks': [
-        {'start': '10:30', 'end': '10:45'},
-        {'start': '16:00', 'end': '16:15'},
-      ],
+      'enabled': false,
+      'periods': <Map<String, dynamic>>[],
     },
     'tuesday': {
-      'enabled': true,
-      'periods': [
-        {'start': '08:00', 'end': '12:00'},
-        {'start': '14:00', 'end': '18:00'},
-      ],
-      'breaks': [
-        {'start': '10:30', 'end': '10:45'},
-        {'start': '16:00', 'end': '16:15'},
-      ],
+      'enabled': false,
+      'periods': <Map<String, dynamic>>[],
     },
     'wednesday': {
-      'enabled': true,
-      'periods': [
-        {'start': '08:00', 'end': '12:00'},
-        {'start': '14:00', 'end': '18:00'},
-      ],
-      'breaks': [
-        {'start': '10:30', 'end': '10:45'},
-        {'start': '16:00', 'end': '16:15'},
-      ],
+      'enabled': false,
+      'periods': <Map<String, dynamic>>[],
     },
     'thursday': {
-      'enabled': true,
-      'periods': [
-        {'start': '08:00', 'end': '12:00'},
-        {'start': '14:00', 'end': '18:00'},
-      ],
-      'breaks': [
-        {'start': '10:30', 'end': '10:45'},
-        {'start': '16:00', 'end': '16:15'},
-      ],
+      'enabled': false,
+      'periods': <Map<String, dynamic>>[],
     },
     'friday': {
-      'enabled': true,
-      'periods': [
-        {'start': '08:00', 'end': '12:00'},
-        {'start': '14:00', 'end': '17:00'},
-      ],
-      'breaks': [
-        {'start': '10:30', 'end': '10:45'},
-        {'start': '15:30', 'end': '15:45'},
-      ],
+      'enabled': false,
+      'periods': <Map<String, dynamic>>[],
     },
     'saturday': {
-      'enabled': true,
-      'periods': [
-        {'start': '09:00', 'end': '14:00'},
-      ],
-      'breaks': [
-        {'start': '11:30', 'end': '11:45'},
-      ],
+      'enabled': false,
+      'periods': <Map<String, dynamic>>[],
     },
-    'sunday': {'enabled': false, 'periods': [], 'breaks': []},
+    'sunday': {
+      'enabled': false,
+      'periods': <Map<String, dynamic>>[],
+    },
   };
 
-  final Map<String, String> dayNames = {
-    'monday': 'Lunes',
-    'tuesday': 'Martes',
-    'wednesday': 'Miércoles',
-    'thursday': 'Jueves',
-    'friday': 'Viernes',
-    'saturday': 'Sábado',
-    'sunday': 'Domingo',
-  };
+  final Map<String, String> dayNames = VeterinaryConstants.dayMapping;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final userId = await SharedPreferencesHelper.getUserId();
+      final vetId = await SharedPreferencesHelper.getVetId();
+      
+      setState(() {
+        _userId = userId;
+        _vetId = vetId;
+      });
+      
+      // Cargar disponibilidad existente del veterinario
+      await _loadExistingAvailability();
+    } catch (e) {
+      print('Error loading user data: $e');
+    }
+  }
+
+  Future<void> _loadExistingAvailability() async {
+    try {
+      final vetData = await SharedPreferencesHelper.getVetData();
+      if (vetData != null && vetData['availability'] != null) {
+        final List<dynamic> availabilityList = vetData['availability'];
+        
+        print('📅 Cargando disponibilidad existente: $availabilityList');
+        
+        // Limpiar el horario actual
+        for (String day in VeterinaryConstants.weekDays) {
+          weeklySchedule[day] = {
+            'enabled': false,
+            'periods': <Map<String, dynamic>>[],
+          };
+        }
+        
+        // Cargar la disponibilidad desde los datos guardados
+        for (var availabilityItem in availabilityList) {
+          if (availabilityItem is Map<String, dynamic>) {
+            final day = availabilityItem['day'];
+            final startTime = availabilityItem['start_time'];
+            final endTime = availabilityItem['end_time'];
+            
+            if (day != null && startTime != null && endTime != null) {
+              if (weeklySchedule.containsKey(day)) {
+                weeklySchedule[day]!['enabled'] = true;
+                (weeklySchedule[day]!['periods'] as List<Map<String, dynamic>>).add({
+                  'start': startTime,
+                  'end': endTime,
+                });
+              }
+            }
+          }
+        }
+        
+        setState(() {
+          // Trigger rebuild with loaded data
+        });
+        
+        print('✅ Disponibilidad cargada exitosamente');
+      } else {
+        print('📅 No hay disponibilidad previa configurada');
+      }
+    } catch (e) {
+      print('❌ Error cargando disponibilidad existente: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -199,8 +232,17 @@ class _ConfigureSchedulePageState extends State<ConfigureSchedulePage> {
               borderRadius: BorderRadius.circular(AppSizes.radiusM),
             ),
             child: IconButton(
-              icon: const Icon(Icons.check, color: AppColors.white),
-              onPressed: _saveSchedule,
+              icon: _isLoading 
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                    ),
+                  )
+                : const Icon(Icons.check, color: AppColors.white),
+              onPressed: _isLoading ? null : _saveSchedule,
             ),
           ),
         ],
@@ -237,7 +279,7 @@ class _ConfigureSchedulePageState extends State<ConfigureSchedulePage> {
     final totalHours = weeklySchedule.entries
         .where((entry) => entry.value['enabled'] == true)
         .fold<double>(0, (sum, entry) {
-          final periods = entry.value['periods'] as List;
+          final periods = entry.value['periods'] as List<Map<String, dynamic>>;
           return sum +
               periods.fold<double>(0, (periodSum, period) {
                 final start = TimeOfDay(
@@ -457,8 +499,13 @@ class _ConfigureSchedulePageState extends State<ConfigureSchedulePage> {
                       setState(() {
                         dayData['enabled'] = value;
                         if (!value) {
-                          dayData['periods'] = [];
-                          dayData['breaks'] = [];
+                          dayData['periods'] = <Map<String, dynamic>>[];
+                        } else {
+                          // Agregar un período por defecto cuando se habilita el día
+                          final periods = dayData['periods'] as List<Map<String, dynamic>>;
+                          if (periods.isEmpty) {
+                            dayData['periods'] = <Map<String, dynamic>>[{'start': '09:00', 'end': '17:00'}];
+                          }
                         }
                       });
                     },
@@ -506,7 +553,7 @@ class _ConfigureSchedulePageState extends State<ConfigureSchedulePage> {
             ),
             const SizedBox(width: AppSizes.spaceS),
             const Text(
-              'Períodos de atención',
+              'Horarios de atención',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -517,7 +564,7 @@ class _ConfigureSchedulePageState extends State<ConfigureSchedulePage> {
         ),
         const SizedBox(height: AppSizes.spaceM),
 
-        ...(dayData['periods'] as List).asMap().entries.map((periodEntry) {
+        ...(dayData['periods'] as List<Map<String, dynamic>>).asMap().entries.map((periodEntry) {
           final index = periodEntry.key;
           final period = periodEntry.value;
           return Padding(
@@ -536,7 +583,7 @@ class _ConfigureSchedulePageState extends State<ConfigureSchedulePage> {
               },
               onDelete: () {
                 setState(() {
-                  (dayData['periods'] as List).removeAt(index);
+                  (dayData['periods'] as List<Map<String, dynamic>>).removeAt(index);
                 });
               },
             ),
@@ -562,91 +609,10 @@ class _ConfigureSchedulePageState extends State<ConfigureSchedulePage> {
                 Icon(Icons.add, color: AppColors.primary, size: AppSizes.iconS),
                 const SizedBox(width: AppSizes.spaceS),
                 const Text(
-                  'Agregar período',
+                  'Agregar horario',
                   style: TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        const SizedBox(height: AppSizes.spaceL),
-
-        // Descansos
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppSizes.paddingS),
-              decoration: BoxDecoration(
-                color: AppColors.accent.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(AppSizes.radiusS),
-              ),
-              child: Icon(
-                Icons.coffee_rounded,
-                color: AppColors.accent,
-                size: AppSizes.iconS,
-              ),
-            ),
-            const SizedBox(width: AppSizes.spaceS),
-            const Text(
-              'Descansos',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSizes.spaceM),
-
-        ...(dayData['breaks'] as List).asMap().entries.map((breakEntry) {
-          final index = breakEntry.key;
-          final breakPeriod = breakEntry.value;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: AppSizes.spaceS),
-            child: _buildTimePeriod(
-              period: breakPeriod,
-              isBreak: true,
-              onStartChanged: (time) {
-                setState(() {
-                  breakPeriod['start'] = time;
-                });
-              },
-              onEndChanged: (time) {
-                setState(() {
-                  breakPeriod['end'] = time;
-                });
-              },
-              onDelete: () {
-                setState(() {
-                  (dayData['breaks'] as List).removeAt(index);
-                });
-              },
-            ),
-          );
-        }).toList(),
-
-        // Botón agregar descanso
-        InkWell(
-          onTap: () => _addBreak(dayData),
-          borderRadius: BorderRadius.circular(AppSizes.radiusS),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingS),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.add, color: AppColors.textSecondary, size: 16),
-                const SizedBox(width: AppSizes.spaceS),
-                const Text(
-                  'Agregar descanso',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -691,27 +657,20 @@ class _ConfigureSchedulePageState extends State<ConfigureSchedulePage> {
     required Function(String) onStartChanged,
     required Function(String) onEndChanged,
     required VoidCallback onDelete,
-    bool isBreak = false,
   }) {
-    final backgroundColor =
-        isBreak
-            ? AppColors.accent.withOpacity(0.1)
-            : AppColors.primary.withOpacity(0.1);
-    final borderColor = isBreak ? AppColors.accent : AppColors.primary;
-
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingM),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: AppColors.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        border: Border.all(color: borderColor.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
       ),
       child: Row(
         children: [
           Icon(
-            isBreak ? Icons.coffee_rounded : Icons.schedule_rounded,
+            Icons.schedule_rounded,
             size: AppSizes.iconS,
-            color: borderColor,
+            color: AppColors.primary,
           ),
           const SizedBox(width: AppSizes.spaceS),
 
@@ -734,14 +693,14 @@ class _ConfigureSchedulePageState extends State<ConfigureSchedulePage> {
                       decoration: BoxDecoration(
                         color: AppColors.white,
                         borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                        border: Border.all(color: borderColor.withOpacity(0.3)),
+                        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
                       ),
                       child: Text(
                         period['start'],
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: borderColor,
+                          color: AppColors.primary,
                         ),
                       ),
                     ),
@@ -755,7 +714,7 @@ class _ConfigureSchedulePageState extends State<ConfigureSchedulePage> {
                     '-',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: borderColor,
+                      color: AppColors.primary,
                     ),
                   ),
                 ),
@@ -771,14 +730,14 @@ class _ConfigureSchedulePageState extends State<ConfigureSchedulePage> {
                       decoration: BoxDecoration(
                         color: AppColors.white,
                         borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                        border: Border.all(color: borderColor.withOpacity(0.3)),
+                        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
                       ),
                       child: Text(
                         period['end'],
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: borderColor,
+                          color: AppColors.primary,
                         ),
                       ),
                     ),
@@ -815,13 +774,7 @@ class _ConfigureSchedulePageState extends State<ConfigureSchedulePage> {
 
   void _addPeriod(Map<String, dynamic> dayData) {
     setState(() {
-      (dayData['periods'] as List).add({'start': '09:00', 'end': '17:00'});
-    });
-  }
-
-  void _addBreak(Map<String, dynamic> dayData) {
-    setState(() {
-      (dayData['breaks'] as List).add({'start': '12:00', 'end': '12:15'});
+      (dayData['periods'] as List<Map<String, dynamic>>).add({'start': '09:00', 'end': '17:00'});
     });
   }
 
@@ -858,17 +811,121 @@ class _ConfigureSchedulePageState extends State<ConfigureSchedulePage> {
     }
   }
 
-  void _saveSchedule() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Horarios guardados correctamente'),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        ),
-      ),
-    );
-    Navigator.pop(context);
+  Future<void> _saveSchedule() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final vetDataSource = sl<VetRemoteDataSource>();
+      
+      // Convertir el horario semanal al formato esperado por el backend
+      final List<Map<String, dynamic>> availability = [];
+      
+      weeklySchedule.forEach((day, daySchedule) {
+        if (daySchedule['enabled'] == true) {
+          final periods = daySchedule['periods'] as List;
+          
+          for (final period in periods) {
+            if (period is Map<String, dynamic>) {
+              availability.add({
+                'day': day,  // Usar el nombre en inglés
+                'start_time': period['start'] as String,
+                'end_time': period['end'] as String,
+              });
+            }
+          }
+        }
+      });
+      
+      print('🔄 Enviando disponibilidad al servidor: $availability');
+      
+      await vetDataSource.updateVetAvailability(_vetId!, _userId!, availability);
+      
+      print('✅ Disponibilidad actualizada correctamente en el servidor');
+      
+      // Refrescar los datos del veterinario en SharedPreferences con verificación
+      await _refreshVetData();
+      
+      // Verificar que los datos se guardaron correctamente
+      final savedVetData = await SharedPreferencesHelper.getVetData();
+      if (savedVetData != null) {
+        final savedAvailability = await SharedPreferencesHelper.getVetAvailability();
+        print('✅ Verificación: Disponibilidad guardada correctamente: ${savedAvailability.length} periodos');
+      } else {
+        print('⚠️ Advertencia: No se encontraron datos del veterinario después de la actualización');
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Horario guardado exitosamente'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      print('❌ Error guardando horario: $e');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al guardar el horario: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _refreshVetData() async {
+    try {
+      if (_userId == null) {
+        print('⚠️ No se puede refrescar datos sin userId');
+        return;
+      }
+      
+      print('🔄 Refrescando datos del veterinario...');
+      
+      final vetDataSource = sl<VetRemoteDataSource>();
+      final vetResponse = await vetDataSource.getVetByUserId(_userId!);
+      
+      print('📥 Respuesta recibida del servidor: ${vetResponse.keys}');
+      
+      final fullResponse = vetResponse.containsKey('message')
+          ? vetResponse
+          : {'message': 'Vet retrieved successfully', 'data': vetResponse};
+      
+      // Guardar la respuesta completa del veterinario
+      await SharedPreferencesHelper.saveVetProfileFromResponse(fullResponse);
+      
+      print('✅ Datos del veterinario actualizados en SharedPreferences');
+      
+      // Verificación adicional de que los datos se guardaron correctamente
+      final savedVetData = await SharedPreferencesHelper.getVetData();
+      if (savedVetData != null) {
+        print('✅ Verificación exitosa: Datos guardados correctamente');
+        print('   - Vet ID: ${savedVetData['id']}');
+        print('   - Nombre: ${savedVetData['name']}');
+        print('   - Disponibilidad: ${(savedVetData['availability'] as List).length} periodos');
+      } else {
+        print('⚠️ Advertencia: No se pudieron verificar los datos guardados');
+      }
+    } catch (e) {
+      print('❌ Error refrescando datos del veterinario: $e');
+      // No lanzar la excepción para no interrumpir el flujo de guardado
+    }
   }
 }
