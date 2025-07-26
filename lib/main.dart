@@ -1,122 +1,411 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'core/injection/injection.dart';
+import 'core/storage/shared_preferences_helper.dart';
+import 'core/services/image_picker_service.dart';
 
-void main() {
-  runApp(const MyApp());
+import 'presentation/blocs/pet/pet_bloc.dart';
+import 'presentation/blocs/pet/pet_event.dart';
+import 'presentation/blocs/appointment/index.dart';
+
+import 'presentation/pages/public/splash_screen.dart';
+import 'presentation/pages/public/landing_page.dart';
+import 'presentation/pages/public/login_page.dart';
+import 'presentation/pages/public/register_type_selection_page.dart';
+import 'presentation/pages/public/unified_register_page.dart';
+
+import 'presentation/pages/owner/dashboard/owner_dashboard_page.dart';
+import 'presentation/pages/veterinarian/dashboard/veterinarian_dashboard_page.dart';
+import 'presentation/widgets/common/bottom_navigation_bar.dart';
+
+import 'presentation/pages/owner/pets/my_pets_page.dart';
+import 'presentation/pages/owner/pets/add_pet_page.dart';
+import 'presentation/pages/owner/pets/edit_pet_page.dart';
+import 'presentation/pages/owner/pets/pet_detail_page.dart';
+import 'presentation/pages/owner/veterinarians/search_veterinarians_page.dart';
+import 'presentation/pages/owner/veterinarians/veterinarians_list_page.dart';
+import 'presentation/pages/owner/veterinarians/veterinarian_profile_page.dart';
+import 'presentation/pages/owner/appointments/schedule_appointment_page.dart';
+import 'presentation/pages/owner/appointments/my_appointments_page.dart';
+import 'presentation/pages/owner/appointments/appointment_detail_page.dart';
+import 'presentation/pages/owner/medical_records/medical_record_page.dart';
+import 'presentation/pages/common/notifications/notifications_page.dart';
+import 'presentation/pages/owner/profile/owner_profile_page.dart';
+
+import 'presentation/pages/veterinarian/schedule/my_schedule_page.dart';
+import 'presentation/pages/veterinarian/appointments/appointment_detail_vet_page.dart';
+import 'presentation/pages/veterinarian/medical_records/create_medical_record_page.dart';
+import 'presentation/pages/veterinarian/medical_records/prescribe_treatment_page.dart';
+import 'presentation/pages/veterinarian/medical_records/register_vaccination_page.dart';
+import 'presentation/pages/veterinarian/medical_records/edit_vaccination_page.dart';
+import 'presentation/pages/veterinarian/patients/patients_list_page.dart';
+import 'presentation/pages/veterinarian/patients/patient_history_page.dart';
+import 'presentation/pages/veterinarian/profile/professional_profile_page.dart';
+import 'presentation/pages/veterinarian/schedule/configure_schedule_page.dart';
+import 'presentation/pages/veterinarian/settings/vet_settings_page.dart';
+import 'presentation/pages/veterinarian/analytics/statistics_page.dart';
+import 'domain/entities/pet.dart';
+import 'data/models/pet/pet_model.dart';
+import 'data/models/medical_records/vaccination_model.dart';
+import 'data/models/medical_records/medical_record_with_treatments_model.dart';
+import 'data/models/medical_records/treatment_model.dart';
+import 'dart:async';
+import 'package:intl/date_symbol_data_local.dart';
+
+final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+
+void main() async {
+  // Mantenemos el manejador de errores por si acaso, es una buena práctica.
+  runZonedGuarded<Future<void>>(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      await initializeDateFormatting('es', null);
+
+      await init();
+
+      try {
+        await ImagePickerService.cleanOldImages();
+      } catch (e) {
+        print('⚠️ Error durante la limpieza de archivos: $e');
+      }
+
+      runApp(const MyApp());
+    },
+    (error, stack) {
+      print('==================== ERROR CAPTURADO ====================');
+      print('MENSAJE DE ERROR ORIGINAL: $error');
+      print('STACK TRACE DETALLADO: $stack');
+      print('=======================================================');
+    },
+  );
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<PetBloc>(create: (context) => sl<PetBloc>()),
+        BlocProvider<AppointmentBloc>(
+          create: (context) => sl<AppointmentBloc>(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'VetZoone',
+        debugShowCheckedModeBanner: false,
+        navigatorObservers: [routeObserver],
+        theme: ThemeData(
+          primarySwatch: Colors.green,
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+        ),
+        home: const AuthWrapper(),
+        routes: {
+          '/landing': (context) => const LandingPage(),
+          '/login': (context) => const LoginPage(),
+          '/register': (context) => const RegisterTypeSelectionPage(),
+          '/register/owner':
+              (context) => const UnifiedRegisterPage(userRole: 'PET_OWNER'),
+          '/register/veterinarian':
+              (context) => const UnifiedRegisterPage(userRole: 'VETERINARIAN'),
+          '/professional-verification': (context) => const Placeholder(),
+          '/reset-password': (context) => const Placeholder(),
+
+          '/dashboard': (context) => const DashboardWrapper(),
+          '/dashboard/owner': (context) => const MainScreenOwner(),
+          '/dashboard/veterinarian':
+              (context) => const MainScreenVeterinarian(),
+
+          '/my-pets': (context) => const MyPetsPage(),
+          '/add-pet': (context) => const AddPetPage(),
+          '/edit-pet': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is Pet) {
+              return EditPetPage(pet: args);
+            }
+            return _buildErrorScreen('Datos de mascota no válidos');
+          },
+          '/pet-detail': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is String) {
+              return PetDetailPage(petId: args);
+            }
+            return _buildErrorScreen('ID de mascota no válido');
+          },
+
+          '/search-veterinarians': (context) => const SearchVeterinariansPage(),
+          '/veterinarians-list': (context) => const VeterinariansListPage(),
+          '/veterinarian-profile': (context) => const VeterinarianProfilePage(),
+
+          '/schedule-appointment': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          Map<String, dynamic>? selectedVeterinarian;
+          
+          if (args != null) {
+            if (args.containsKey('veterinarian')) {
+              final vet = args['veterinarian'];
+              selectedVeterinarian = {
+                'id': vet.id,
+                'name': vet.fullName,
+                'specialty': vet.specialties.isNotEmpty ? vet.specialties.first : 'Medicina General',
+                'clinic': 'Clínica ${vet.fullName}',
+              };
+            }
+          }
+          
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider<PetBloc>(
+                create: (context) => sl<PetBloc>(),
+              ),
+              BlocProvider<AppointmentBloc>(
+                create: (context) => sl<AppointmentBloc>(),
+              ),
+            ],
+            child: ScheduleAppointmentPage(selectedVeterinarian: selectedVeterinarian),
+          );
+        },
+          '/my-appointments': (context) => const MyAppointmentsPage(),
+          '/appointment-detail': (context) => const AppointmentDetailPage(),
+
+          '/medical-record': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is Map<String, dynamic>) {
+              return MedicalRecordPage(
+                petId: args['petId'],
+                petName: args['petName'],
+              );
+            }
+            return _buildErrorScreen(
+              'Argumentos de historial médico no válidos',
+            );
+          },
+
+          '/my-schedule': (context) => const MySchedulePage(),
+          '/appointment-detail-vet':
+              (context) => const AppointmentDetailVetPage(),
+
+          '/create-medical-record': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is MedicalRecordWithTreatmentsModel) {
+              return CreateMedicalRecordPage(medicalRecordToEdit: args);
+            } else if (args is Map<String, dynamic>) {
+              if (args.containsKey('medicalRecord')) {
+                return CreateMedicalRecordPage(medicalRecordToEdit: args['medicalRecord']);
+              }
+            }
+            return const CreateMedicalRecordPage();
+          },
+          '/prescribe-treatment': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is TreatmentModel) {
+              return PrescribeTreatmentPage(treatmentToEdit: args);
+            } else if (args is Map<String, dynamic>) {
+              if (args.containsKey('treatmentToEdit')) {
+                return PrescribeTreatmentPage(treatmentToEdit: args['treatmentToEdit']);
+              }
+            }
+            return const PrescribeTreatmentPage();
+          },
+          '/register-vaccination': (context) => const RegisterVaccinationPage(),
+          '/edit-vaccination': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is VaccinationModel) {
+              return EditVaccinationPage(vaccination: args);
+            }
+            return _buildErrorScreen('Datos de vacuna no válidos');
+          },
+
+          '/patients-list': (context) => const PatientsListPage(),
+          '/patient-history': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            if (args is PetModel) {
+              return PatientHistoryPage(patient: args);
+            }
+            return _buildErrorScreen('Datos de paciente no válidos');
+          },
+
+          '/notifications': (context) => const NotificationsPage(),
+
+          '/owner-profile': (context) => const OwnerProfilePage(),
+          '/professional-profile': (context) => const ProfessionalProfilePage(),
+
+          '/configure-schedule': (context) => const ConfigureSchedulePage(),
+          '/vet-settings': (context) => const VetSettingsPage(),
+          '/statistics': (context) => const StatisticsPage(),
+        },
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+    );
+  }
+
+  Widget _buildErrorScreen(String message) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Error de Navegación')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.red, fontSize: 16),
+          ),
+        ),
+      ),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: SharedPreferencesHelper.isLoggedIn(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.data == true) {
+          return FutureBuilder<String?>(
+            future: SharedPreferencesHelper.getUserRole(),
+            builder: (context, roleSnapshot) {
+              if (roleSnapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              if (roleSnapshot.data == 'PET_OWNER') {
+                return const MainScreenOwner();
+              } else if (roleSnapshot.data == 'VETERINARIAN') {
+                return const MainScreenVeterinarian();
+              }
+
+              return const LoginPage();
+            },
+          );
+        }
+
+        return const SplashScreen();
+      },
+    );
+  }
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class DashboardWrapper extends StatelessWidget {
+  const DashboardWrapper({super.key});
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: SharedPreferencesHelper.getUserRole(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.data == 'PET_OWNER') {
+          return const MainScreenOwner();
+        } else if (snapshot.data == 'VETERINARIAN') {
+          return const MainScreenVeterinarian();
+        }
+
+        return const LoginPage();
+      },
+    );
+  }
+}
+
+class MainScreenOwner extends StatefulWidget {
+  const MainScreenOwner({super.key});
+
+  @override
+  State<MainScreenOwner> createState() => _MainScreenOwnerState();
+}
+
+class _MainScreenOwnerState extends State<MainScreenOwner> {
+  int _currentIndex = 0;
+  late final PetBloc petBloc;
+
+  final List<Widget> _pages = [
+    const OwnerDashboardPage(),
+    const MyPetsPage(),
+    const SearchVeterinariansPage(),
+    const MyAppointmentsPage(),
+    const OwnerProfilePage(),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    petBloc = context.read<PetBloc>();
+  }
+
+  Future<void> _reloadPetsIfNeeded() async {
+    if (_currentIndex == 0 || _currentIndex == 1) {
+      final userId = await SharedPreferencesHelper.getUserId();
+      if (userId != null && mounted) {
+        petBloc.add(LoadPetsEvent(userId: userId));
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+      body: IndexedStack(index: _currentIndex, children: _pages),
+      bottomNavigationBar: CustomBottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+          _reloadPetsIfNeeded();
+        },
+        isVeterinarian: false,
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
+    );
+  }
+}
+
+class MainScreenVeterinarian extends StatefulWidget {
+  const MainScreenVeterinarian({super.key});
+
+  @override
+  State<MainScreenVeterinarian> createState() => _MainScreenVeterinarianState();
+}
+
+class _MainScreenVeterinarianState extends State<MainScreenVeterinarian> {
+  int _currentIndex = 0;
+
+  final List<Widget> _pages = [
+    const VeterinarianDashboardPage(),
+    const MySchedulePage(),
+    const PatientsListPage(),
+    const VetSettingsPage(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(index: _currentIndex, children: _pages),
+      bottomNavigationBar: CustomBottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        isVeterinarian: true,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
