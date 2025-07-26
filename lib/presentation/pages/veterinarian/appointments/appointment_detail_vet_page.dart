@@ -185,7 +185,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
         'lastName': app.user?.lastName ?? '',
         'phone': app.user?.phone ?? '',
         'email': app.user?.email ?? '',
-        'profilePhoto': app.user?.profilePhoto ?? '', // Cambiar de profile_photo a profilePhoto
+        'profilePhoto': app.user?.profilePhoto ?? '', // Información del dueño de la mascota
       },
     };
 
@@ -1138,7 +1138,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                     'imageUrl': realAppointment!.pet!.imageUrl,
                   } : {};
                   
-                  // Convertir user entity a Map
+                  // Convertir user entity a Map - INFORMACIÓN DEL DUEÑO DE LA MASCOTA
                   final ownerInfo = realAppointment?.user != null ? {
                     'id': realAppointment!.user!.id,
                     'name': realAppointment!.user!.fullName,
@@ -1146,7 +1146,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                     'lastName': realAppointment!.user!.lastName,
                     'phone': realAppointment!.user!.phone,
                     'email': realAppointment!.user!.email,
-                    'profile_photo': realAppointment!.user!.profilePhoto,
+                    'profilePhoto': realAppointment!.user!.profilePhoto, // Usar profilePhoto consistente
                   } : {};
                   
                   print('🐕 PET INFO CONVERTIDA PARA VACCINATION:');
@@ -1156,11 +1156,14 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                   print('   - Breed: ${petInfo['breed']}');
                   print('   - Birth Date: ${petInfo['birthDate']}');
                   
-                  print('👤 OWNER INFO CONVERTIDA PARA VACCINATION:');
+                  print('👤 OWNER INFO CONVERTIDA PARA VACCINATION (DUEÑO DE MASCOTA):');
                   print('   - ID: ${ownerInfo['id']}');
                   print('   - Name: ${ownerInfo['name']}');
+                  print('   - FirstName: ${ownerInfo['firstName']}');
+                  print('   - LastName: ${ownerInfo['lastName']}');
                   print('   - Phone: ${ownerInfo['phone']}');
                   print('   - Email: ${ownerInfo['email']}');
+                  print('   - ProfilePhoto: ${ownerInfo['profilePhoto']}');
                   
                   final arguments = {
                     'appointment': realAppointment,

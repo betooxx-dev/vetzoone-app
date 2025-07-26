@@ -105,26 +105,35 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
         }
         
         if (ownerData != null) {
-          print('🔍 PROCESANDO OWNER DATA:');
+          print('🔍 PROCESANDO OWNER DATA (DUEÑO DE LA MASCOTA):');
           print('   - Raw ownerData: $ownerData');
           print('   - ID extraído: ${ownerData['id']}');
           print('   - Email extraído: ${ownerData['email']}');
           print('   - FirstName extraído: ${ownerData['firstName']}');
+          print('   - LastName extraído: ${ownerData['lastName']}');
+          print('   - Phone extraído: ${ownerData['phone']}');
           
           // Normalizar ownerInfo - manejar tanto formato nuevo como legado
           ownerInfo = {
             'id': ownerData['id'] ?? '',
-            'name': ownerData['name'] ?? '',
-            'firstName': ownerData['firstName'] ?? '',
-            'lastName': ownerData['lastName'] ?? '',
+            'name': ownerData['name'] ?? 
+                   '${ownerData['firstName'] ?? ''} ${ownerData['lastName'] ?? ''}'.trim(),
+            'firstName': ownerData['firstName'] ?? ownerData['first_name'] ?? '',
+            'lastName': ownerData['lastName'] ?? ownerData['last_name'] ?? '',
             'phone': ownerData['phone'] ?? '',
             'email': ownerData['email'] ?? '',
             // Manejar tanto profilePhoto como profile_photo
             'profilePhoto': ownerData['profilePhoto'] ?? ownerData['profile_photo'] ?? '',
           };
           
-          print('🔍 OWNER INFO FINAL:');
-          print('   - ownerInfo resultante: $ownerInfo');
+          print('🔍 OWNER INFO FINAL (PARA RECORDATORIOS):');
+          print('   - ID: ${ownerInfo['id']}');
+          print('   - Name: ${ownerInfo['name']}');
+          print('   - FirstName: ${ownerInfo['firstName']}');  
+          print('   - LastName: ${ownerInfo['lastName']}');
+          print('   - Phone: ${ownerInfo['phone']}');
+          print('   - Email: ${ownerInfo['email']}');
+          print('   - ProfilePhoto: ${ownerInfo['profilePhoto']}');
         } else {
           print('⚠️ NO SE RECIBIERON DATOS DEL PROPIETARIO');
         }
@@ -1087,46 +1096,6 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
       print('❌ Stack trace: ${StackTrace.current}');
       // No lanzamos excepción para no afectar el flujo principal
       return false;
-    }
-  }
-
-  // MÉTODO DE PRUEBA TEMPORAL - REMOVER EN PRODUCCIÓN
-  Future<void> _testNotificationEndpoint() async {
-    print('🧪 PROBANDO ENDPOINT DE NOTIFICACIONES MANUALMENTE');
-    
-    final testData = {
-      "user_id": "test-user-123",
-      "type": "VACCINATION_REMINDER",
-      "scheduled_for": "2025-07-26T18:00:00.000Z",
-      "metadata": {
-        "email": "test@test.com",
-        "notificationData": {
-          "ownerName": "Test Owner",
-          "petName": "Test Pet",
-          "vaccineName": "Test Vaccine",
-          "dueDate": "2025-07-26T18:00:00.000Z"
-        }
-      }
-    };
-    
-    final token = await SharedPreferencesHelper.getToken();
-    
-    try {
-      final response = await http.post(
-        Uri.parse('${ApiEndpoints.baseUrl}/notifications/schedule'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode(testData),
-      );
-      
-      print('🧪 RESPUESTA DE PRUEBA:');
-      print('Status Code: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-      
-    } catch (e) {
-      print('🧪 ERROR EN PRUEBA: $e');
     }
   }
 
