@@ -12,6 +12,8 @@ import '../../../../core/injection/injection.dart';
 import '../../../../domain/entities/appointment.dart';
 import '../../../../domain/entities/medical_record.dart';
 import '../../../../domain/entities/vaccination.dart';
+import '../../../../domain/entities/veterinarian.dart';
+import '../../../../domain/usecases/veterinarian/get_veterinarian_profile_usecase.dart';
 import 'package:intl/intl.dart';
 
 class MedicalRecordPage extends StatefulWidget {
@@ -37,6 +39,10 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
   String? _expandedRecordId;
   String? _expandedVaccineId;
 
+  // Mapa para almacenar información de veterinarios
+  Map<String, Veterinarian> _veterinariansMap = {};
+  Set<String> _loadingVetIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +60,39 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
     _tabController.dispose();
     _medicalRecordsBloc.close();
     super.dispose();
+  }
+
+  // Método para cargar información del veterinario
+  Future<void> _loadVeterinarianInfo(String vetId) async {
+    if (_veterinariansMap.containsKey(vetId) || _loadingVetIds.contains(vetId)) {
+      return; // Ya se tiene la información o se está cargando
+    }
+
+    _loadingVetIds.add(vetId);
+    
+    try {
+      final getVeterinarianUseCase = sl<GetVeterinarianProfileUseCase>();
+      final veterinarian = await getVeterinarianUseCase.call(vetId);
+      
+      if (mounted) {
+        setState(() {
+          _veterinariansMap[vetId] = veterinarian;
+          _loadingVetIds.remove(vetId);
+        });
+      }
+    } catch (e) {
+      print('❌ Error cargando veterinario $vetId: $e');
+      _loadingVetIds.remove(vetId);
+    }
+  }
+
+  // Método para obtener el nombre del veterinario
+  String _getVeterinarianName(String vetId) {
+    final vet = _veterinariansMap[vetId];
+    if (vet != null) {
+      return 'Dr. ${vet.fullName}';
+    }
+    return 'Dr. Veterinario (ID: ${vetId.substring(0, 8)}...)';
   }
 
   Widget _buildDecorativeShapes() {
@@ -426,6 +465,9 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
     final statusColor = isOverdue ? AppColors.error : AppColors.success;
     final isExpanded = _expandedVaccineId == vaccine.id;
 
+    // Cargar información del veterinario si no se tiene
+    _loadVeterinarianInfo(vaccine.vetId);
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppSizes.spaceL),
       decoration: BoxDecoration(
@@ -597,10 +639,10 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
                             ),
                           ),
                           const SizedBox(width: AppSizes.spaceM),
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Dr. Veterinario',
-                              style: TextStyle(
+                              _getVeterinarianName(vaccine.vetId),
+                              style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
                                 color: AppColors.textPrimary,
@@ -819,7 +861,7 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
                           if (!isExpanded) ...[
                             const SizedBox(height: AppSizes.spaceS),
                             Text(
-                              'Dr. Veterinario • Clínica Veterinaria',
+                              '${appointment.veterinarian?.fullName ?? 'Dr. Veterinario'} • Clínica Veterinaria',
                               style: const TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 13,
@@ -863,9 +905,9 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'Dr. Veterinario',
-                                  style: TextStyle(
+                                Text(
+                                  appointment.veterinarian?.fullName ?? 'Dr. Veterinario',
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 16,
                                     color: AppColors.textPrimary,
@@ -944,6 +986,9 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
     final visitDate = record.visitDate;
     final urgencyColor = _getUrgencyColor(record.urgencyLevel);
     final isExpanded = _expandedRecordId == record.id;
+
+    // Cargar información del veterinario si no se tiene
+    _loadVeterinarianInfo(record.vetId);
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSizes.spaceL),
@@ -1093,10 +1138,10 @@ class _MedicalRecordPageState extends State<MedicalRecordPage>
                             ),
                           ),
                           const SizedBox(width: AppSizes.spaceM),
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Dr. Veterinario',
-                              style: TextStyle(
+                              _getVeterinarianName(record.vetId),
+                              style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
                                 color: AppColors.textPrimary,

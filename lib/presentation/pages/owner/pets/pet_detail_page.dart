@@ -703,6 +703,9 @@ class _PetDetailPageState extends State<PetDetailPage> {
   }
 
   Widget _buildAppointmentItem(Appointment appointment) {
+    // Obtener el nombre del veterinario desde la cita
+    final veterinarianName = appointment.veterinarian?.fullName ?? 'Dr. Veterinario';
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -716,7 +719,7 @@ class _PetDetailPageState extends State<PetDetailPage> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '${DateFormat('dd/MM/yyyy').format(appointment.appointmentDate)} - Dr. Veterinario',
+              '${DateFormat('dd/MM/yyyy').format(appointment.appointmentDate)} - Dr. $veterinarianName',
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.textPrimary,
