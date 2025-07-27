@@ -76,37 +76,13 @@ class SharedPreferencesHelper {
   }
 
   static Future<void> clearLoginData() async {
-    final prefs = await SharedPreferences.getInstance();
+    print('🧹 Iniciando limpieza de datos de logout...');
     
-    print('🧹 Iniciando limpieza completa de datos...');
+    // Limpiar todos los datos sin importar el rol del usuario
+    print('�️ Limpiando todos los datos de SharedPreferences...');
+    await clearAllData();
     
-    // Limpiar datos específicos del usuario (por seguridad)
-    await prefs.remove(_keyToken);
-    await prefs.remove(_keyUserId);
-    await prefs.remove(_keyUserEmail);
-    await prefs.remove(_keyUserFirstName);
-    await prefs.remove(_keyUserLastName);
-    await prefs.remove(_keyUserPhone);
-    await prefs.remove(_keyUserProfilePhoto);
-    await prefs.remove(_keyUserRole);
-    await prefs.remove(_keyUserIsActive);
-    await prefs.remove(_keyUserIsVerified);
-    
-    // También limpiar datos del veterinario específicamente
-    await clearVetData();
-    
-    // 🔥 LIMPIEZA COMPLETA: Eliminar TODAS las claves para asegurar logout limpio
-    await prefs.clear();
-    
-    // Verificar que realmente se limpiaron los datos
-    final keys = prefs.getKeys();
-    if (keys.isNotEmpty) {
-      print('⚠️ Aún quedan ${keys.length} claves después de limpiar: $keys');
-      // Intentar limpiar una vez más
-      await prefs.clear();
-    }
-    
-    print('✅ Limpieza completa de SharedPreferences finalizada');
+    print('✅ Limpieza de datos de logout finalizada');
   }
 
   static Future<String?> getUserId() async {
@@ -612,6 +588,22 @@ class SharedPreferencesHelper {
     await prefs.remove(_keyVetAvailability);
     
     print('🗑️ Datos del veterinario eliminados de SharedPreferences');
+  }
+
+  static Future<void> clearUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyToken);
+    await prefs.remove(_keyUserId);
+    await prefs.remove(_keyUserEmail);
+    await prefs.remove(_keyUserFirstName);
+    await prefs.remove(_keyUserLastName);
+    await prefs.remove(_keyUserPhone);
+    await prefs.remove(_keyUserProfilePhoto);
+    await prefs.remove(_keyUserRole);
+    await prefs.remove(_keyUserIsActive);
+    await prefs.remove(_keyUserIsVerified);
+    
+    print('🗑️ Datos del usuario eliminados de SharedPreferences');
   }
 
   /// Método de emergencia para limpiar ABSOLUTAMENTE TODOS los datos

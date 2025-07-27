@@ -58,12 +58,12 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
         return 'Ave';
       case PetType.RABBIT:
         return 'Conejo';
-      case PetType.HAMSTER:
-        return 'Hámster';
       case PetType.FISH:
         return 'Pez';
-      case PetType.REPTILE:
-        return 'Reptil';
+      case PetType.FARM:
+        return 'Granja';
+      case PetType.EXOTIC:
+        return 'Exótico';
       case PetType.OTHER:
         return 'Otro';
     }

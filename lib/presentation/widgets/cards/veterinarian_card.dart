@@ -62,7 +62,7 @@ class VeterinarianCard extends StatelessWidget {
                   _buildVetInfo(),
                   const SizedBox(height: AppSizes.spaceS), // Reducido de spaceM a spaceS
                   _buildExperience(), // Simplificado: solo experiencia
-                  const SizedBox(height: AppSizes.spaceM), // Reducido de spaceL a spaceM
+                  const SizedBox(height: AppSizes.spaceS), // Reducido de spaceM a spaceS
                   _buildActionButton(),
                 ],
               ),

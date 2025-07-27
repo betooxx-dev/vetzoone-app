@@ -54,7 +54,6 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
   bool _isSearching = false;
 
   Timer? _searchDebounce;
-  bool _isTyping = false;
 
   @override
   void initState() {
@@ -118,10 +117,6 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
                               if (!_isSearching) ...[
                                 const SizedBox(height: AppSizes.spaceL),
                                 _buildSearchField(),
-                                if (_isTyping) ...[
-                                  const SizedBox(height: AppSizes.spaceS),
-                                  _buildTypingIndicator(),
-                                ],
                                 const SizedBox(height: AppSizes.spaceM),
                                 _buildFilters(),
                                 const SizedBox(height: AppSizes.spaceM),
@@ -335,84 +330,84 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
       ),
       child: TextField(
         controller: _searchController,
-        onChanged: _performSearch,
+        onChanged: (value) {
+          // Solo actualizar el estado, no buscar automáticamente
+          setState(() {});
+        },
+        onSubmitted: (value) {
+          // Buscar cuando el usuario presiona Enter
+          _performManualSearch();
+        },
+        textInputAction: TextInputAction.search,
         decoration: InputDecoration(
-          hintText: 'Buscar por nombre, especialidad, ubicación...',
+          hintText: 'Buscar por nombre... (selecciona filtros y presiona 🔍)',
           hintStyle: const TextStyle(
             color: AppColors.textSecondary,
-            fontSize: 16,
+            fontSize: 15,
           ),
           prefixIcon: Container(
             margin: const EdgeInsets.all(AppSizes.paddingS),
             decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
+              color: AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(AppSizes.radiusM),
             ),
             child: const Icon(
-              Icons.search_rounded,
-              color: AppColors.white,
+              Icons.person_search_rounded,
+              color: AppColors.primary,
               size: 20,
             ),
           ),
-          suffixIcon:
-              _searchController.text.isNotEmpty
-                  ? IconButton(
-                    icon: const Icon(
-                      Icons.clear,
-                      color: AppColors.textSecondary,
-                      size: 20,
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_searchController.text.isNotEmpty)
+                IconButton(
+                  icon: const Icon(
+                    Icons.clear,
+                    color: AppColors.textSecondary,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    _searchController.clear();
+                    _resetToInitialState();
+                  },
+                ),
+              // Botón de búsqueda principal
+              Container(
+                margin: const EdgeInsets.only(right: AppSizes.paddingS),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
-                    onPressed: () {
-                      _searchController.clear();
-                      _performSearch('');
-                    },
-                  )
-                  : null,
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.search_rounded,
+                    color: AppColors.white,
+                    size: 22,
+                  ),
+                  onPressed: _performManualSearch,
+                  tooltip: 'Buscar veterinarios',
+                ),
+              ),
+            ],
+          ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: AppSizes.paddingL,
             vertical: AppSizes.paddingM,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTypingIndicator() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.paddingM,
-        vertical: AppSizes.paddingS,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 12,
-            height: 12,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-            ),
-          ),
-          const SizedBox(width: AppSizes.spaceS),
-          Text(
-            _searchController.text.length < 3
-                ? 'Escribe al menos 3 caracteres...'
-                : 'Buscando...',
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.primary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -489,7 +484,7 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
               setState(() {
                 _selectedLocation = newValue;
               });
-              _performFilteredSearch();
+              // Eliminado: _performFilteredSearch() - ahora solo actualiza el estado
             }
           },
         ),
@@ -551,7 +546,7 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
               setState(() {
                 _selectedSpecialty = newValue;
               });
-              _performFilteredSearch();
+              // Eliminado: _performFilteredSearch() - ahora solo actualiza el estado
             }
           },
         ),
@@ -660,10 +655,6 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
                   ? state.veterinarians
                   : state.veterinarians.take(3).toList();
 
-          if (displayVets.isEmpty) {
-            return _isSearching ? _buildSearchEmptyState() : _buildEmptyState();
-          }
-
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -671,55 +662,66 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
                 _buildSectionHeader(state.veterinarians.length, false),
                 const SizedBox(height: AppSizes.spaceM),
               ] else ...[
-                // ✨ Mostrar información de predicción de IA si está disponible
+                // ✨ Mostrar información de predicción de IA si está disponible (SIEMPRE, aunque no haya resultados)
                 if (state.aiPrediction != null) ...[
                   _buildAIPredictionCard(state.aiPrediction!),
                   const SizedBox(height: AppSizes.spaceM),
                 ],
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.paddingL,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${displayVets.length} ${displayVets.length == 1 ? 'veterinario encontrado' : 'veterinarios encontrados'}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      if (_hasActiveFilters())
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSizes.paddingS,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.secondary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(
-                              AppSizes.radiusS,
-                            ),
-                          ),
-                          child: const Text(
-                            'Filtrado',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.secondary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSizes.spaceM),
               ],
-              _isSearching
-                  ? _buildVerticalVeterinariansList(displayVets)
-                  : _buildHorizontalVeterinariansList(displayVets),
+              
+              // Mostrar resultados o estado vacío
+              if (displayVets.isEmpty) ...[
+                if (_isSearching) 
+                  _buildSearchEmptyState() 
+                else 
+                  _buildEmptyState(),
+              ] else ...[
+                if (_isSearching) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.paddingL,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${displayVets.length} ${displayVets.length == 1 ? 'veterinario encontrado' : 'veterinarios encontrados'}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        if (_hasActiveFilters())
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSizes.paddingS,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.secondary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusS,
+                              ),
+                            ),
+                            child: const Text(
+                              'Filtrado',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.secondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSizes.spaceM),
+                ],
+                _isSearching
+                    ? _buildVerticalVeterinariansList(displayVets)
+                    : _buildHorizontalVeterinariansList(displayVets),
+              ],
             ],
           );
         }
@@ -836,9 +838,14 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
     );
   }
 
+  // Método para verificar si hay búsqueda por texto activa
+
+
+
+
   Widget _buildHorizontalVeterinariansList(List<dynamic> veterinarians) {
     return SizedBox(
-      height: 280,
+      height: 200, // Reducido de 280 a 200 píxeles
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -975,7 +982,7 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
             ),
             const SizedBox(height: AppSizes.spaceM),
             const Text(
-              'Intenta ajustar los filtros o inicia una nueva búsqueda',
+              'La IA procesó tu consulta correctamente, pero no hay veterinarios disponibles para esa especialidad en este momento.',
               style: TextStyle(
                 fontSize: 16,
                 color: AppColors.textSecondary,
@@ -983,25 +990,93 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
               ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: AppSizes.spaceL),
+            // Sugerencias específicas
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingM),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.lightbulb_outlined,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: AppSizes.spaceS),
+                      const Text(
+                        'Sugerencias:',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSizes.spaceS),
+                  const Text(
+                    '• Intenta con una búsqueda más general\n• Prueba describiendo los síntomas de otra forma\n• Busca especialistas en medicina general',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: AppSizes.spaceXL),
-            ElevatedButton.icon(
-              onPressed: _startNewSearch,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secondary,
-                foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.paddingL,
-                  vertical: AppSizes.paddingM,
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _searchBySymptomsWithAI('medicina general emergencia veterinaria'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.paddingM,
+                        vertical: AppSizes.paddingS,
+                      ),
+                      side: BorderSide(color: AppColors.primary.withOpacity(0.5)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                      ),
+                    ),
+                    icon: const Icon(Icons.medical_services, size: 16),
+                    label: const Text(
+                      'Medicina General',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                const SizedBox(width: AppSizes.spaceS),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _startNewSearch,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondary,
+                      foregroundColor: AppColors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.paddingM,
+                        vertical: AppSizes.paddingS,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                      ),
+                    ),
+                    icon: const Icon(Icons.refresh_rounded, size: 16),
+                    label: const Text(
+                      'Nueva Búsqueda',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                    ),
+                  ),
                 ),
-              ),
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text(
-                'Nueva Búsqueda',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
+              ],
             ),
           ],
         ),
@@ -1075,6 +1150,8 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
       context: pageContext,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      enableDrag: true,
+      isDismissible: true,
       builder: (context) => _buildSymptomsSearchContent(pageContext),
     );
   }
@@ -1082,178 +1159,305 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
   Widget _buildSymptomsSearchContent(BuildContext pageContext) {
     final symptomsController = TextEditingController();
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(AppSizes.radiusXL),
-          topRight: Radius.circular(AppSizes.radiusXL),
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.only(
-          top: AppSizes.paddingL,
-          left: AppSizes.paddingL,
-          right: AppSizes.paddingL,
-          bottom: MediaQuery.of(context).viewInsets.bottom + AppSizes.paddingL,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, scrollController) {
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          decoration: const BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(AppSizes.radiusXL),
+              topRight: Radius.circular(AppSizes.radiusXL),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 10,
+                offset: Offset(0, -5),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Handle bar para arrastrar
+              Container(
                 width: 40,
                 height: 4,
+                margin: const EdgeInsets.only(top: AppSizes.paddingM),
                 decoration: BoxDecoration(
                   color: AppColors.textSecondary.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSizes.spaceL),
-            const Row(
-              children: [
-                SizedBox(width: AppSizes.spaceM),
-                Expanded(
+              
+              // Contenido scrolleable
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.only(
+                    top: AppSizes.paddingL,
+                    left: AppSizes.paddingL,
+                    right: AppSizes.paddingL,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + AppSizes.paddingL,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        'Búsqueda Inteligente',
+                      // Header con icono
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [AppColors.accent, AppColors.accent.withOpacity(0.8)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.accent.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.psychology_rounded,
+                              color: AppColors.white,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: AppSizes.spaceM),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Búsqueda Inteligente',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                Text(
+                                  'Describe los síntomas de tu mascota',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: AppSizes.spaceXL),
+                      
+                      // Card informativo mejorado
+                      Container(
+                        padding: const EdgeInsets.all(AppSizes.paddingL),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.accent.withOpacity(0.1),
+                              AppColors.accent.withOpacity(0.05),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                          border: Border.all(color: AppColors.accent.withOpacity(0.2)),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.accent.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                                  ),
+                                  child: const Icon(
+                                    Icons.lightbulb_rounded,
+                                    color: AppColors.accent,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: AppSizes.spaceM),
+                                const Expanded(
+                                  child: Text(
+                                    'IA Veterinaria Especializada',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSizes.spaceM),
+                            const Text(
+                              'Nuestra inteligencia artificial analizará los síntomas de tu mascota y te recomendará los especialistas veterinarios más adecuados para el caso.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.textPrimary,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: AppSizes.spaceXL),
+                      
+                      // Label del campo
+                      const Text(
+                        'Describe los síntomas detalladamente:',
                         style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      Text(
-                        'Describe los síntomas de tu mascota',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
+                      
+                      const SizedBox(height: AppSizes.spaceM),
+                      
+                      // Campo de texto mejorado
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.backgroundLight,
+                          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                          border: Border.all(color: AppColors.accent.withOpacity(0.3)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: TextField(
+                          controller: symptomsController,
+                          maxLines: 6,
+                          minLines: 4,
+                          textInputAction: TextInputAction.newline,
+                          decoration: const InputDecoration(
+                            hintText: 'Ejemplo:\n"Mi perro de 3 años está vomitando desde ayer, tiene diarrea, está muy decaído y no quiere comer. También noto que bebe mucha agua..."',
+                            hintStyle: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 15,
+                              height: 1.4,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.all(AppSizes.paddingL),
+                          ),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: AppColors.textPrimary,
+                            height: 1.4,
+                          ),
                         ),
                       ),
+                      
+                      const SizedBox(height: AppSizes.spaceXL),
+                      
+                      // Botones mejorados
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSizes.paddingL,
+                                ),
+                                side: BorderSide(
+                                  color: AppColors.textSecondary.withOpacity(0.5),
+                                  width: 1.5,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                                ),
+                              ),
+                              child: const Text(
+                                'Cancelar',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSizes.spaceM),
+                          Expanded(
+                            flex: 2,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                final symptoms = symptomsController.text.trim();
+                                if (symptoms.isNotEmpty) {
+                                  Navigator.pop(context);
+                                  _searchBySymptomsWithAI(symptoms);
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.accent,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSizes.paddingL,
+                                ),
+                                elevation: 8,
+                                shadowColor: AppColors.accent.withOpacity(0.4),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.psychology_rounded,
+                                    color: AppColors.white,
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: AppSizes.spaceS),
+                                  Text(
+                                    'Buscar con IA',
+                                    style: TextStyle(
+                                      color: AppColors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      // Espacio adicional para el teclado
+                      SizedBox(height: MediaQuery.of(context).viewInsets.bottom > 0 ? AppSizes.spaceXL : AppSizes.spaceM),
                     ],
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: AppSizes.spaceL),
-            Container(
-              padding: const EdgeInsets.all(AppSizes.paddingM),
-              decoration: BoxDecoration(
-                color: AppColors.accent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                border: Border.all(color: AppColors.accent.withOpacity(0.2)),
               ),
-              child: const Row(
-                children: [
-                  Icon(
-                    Icons.lightbulb_rounded,
-                    color: AppColors.accent,
-                    size: 20,
-                  ),
-                  SizedBox(width: AppSizes.spaceS),
-                  Expanded(
-                    child: Text(
-                      'Nuestra IA analizará los síntomas y te recomendará especialistas.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSizes.spaceL),
-            const Text(
-              'Describe los síntomas:',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSizes.spaceM),
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.backgroundLight,
-                borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                border: Border.all(color: AppColors.accent.withOpacity(0.2)),
-              ),
-              child: TextField(
-                controller: symptomsController,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  hintText:
-                      'Ej: Mi perro está vomitando, tiene diarrea y está muy decaído...',
-                  hintStyle: TextStyle(color: AppColors.textSecondary),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.all(AppSizes.paddingM),
-                ),
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-            const Spacer(),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppSizes.paddingM,
-                      ),
-                      side: const BorderSide(color: AppColors.textSecondary),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                      ),
-                    ),
-                    child: const Text(
-                      'Cancelar',
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSizes.spaceM),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      final symptoms = symptomsController.text.trim();
-                      if (symptoms.isNotEmpty) {
-                        Navigator.pop(context);
-                        _searchBySymptomsWithAI(symptoms);
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppSizes.paddingM,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                      ),
-                    ),
-                    child: const Text(
-                      '🔍 Buscar con IA',
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1280,7 +1484,6 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
 
     setState(() {
       _isSearching = false;
-      _isTyping = false;
       _searchController.clear();
       _selectedLocation = VeterinaryConstants.chiapasLocations.first;
       _selectedSpecialty = VeterinaryConstants.veterinarySpecialties.first;
@@ -1295,81 +1498,57 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
     );
   }
 
-  void _performFilteredSearch() {
-    setState(() {
-      _isSearching = true;
-    });
-
-    context.read<VeterinarianBloc>().add(
-      SearchVeterinariansEvent(
-        search:
-            _searchController.text.isNotEmpty ? _searchController.text : null,
-        location: VeterinaryConstants.getLocationForApi(_selectedLocation),
-        specialty: VeterinaryConstants.getSpecialtyForApi(_selectedSpecialty),
-        limit: 100,
-      ),
-    );
-  }
-
   void _clearFilters() {
     setState(() {
       _selectedLocation = VeterinaryConstants.chiapasLocations.first;
       _selectedSpecialty = VeterinaryConstants.veterinarySpecialties.first;
     });
 
+    // Si estamos en modo búsqueda, ejecutar búsqueda con filtros limpiados
     if (_isSearching) {
-      _performFilteredSearch();
+      _performManualSearch();
     }
   }
 
-  void _performSearch(String query) {
+  // Nuevo método para resetear al estado inicial
+  void _resetToInitialState() {
     _searchDebounce?.cancel();
-
-    if (query.isEmpty && !_hasActiveFilters()) {
-      setState(() {
-        _isSearching = false;
-        _isTyping = false;
-      });
-
-      context.read<VeterinarianBloc>().add(
-        SearchVeterinariansEvent(
-          limit: 100,
-          location: VeterinaryConstants.getLocationForApi(VeterinaryConstants.chiapasLocations.first),
-          specialty: VeterinaryConstants.getSpecialtyForApi(VeterinaryConstants.veterinarySpecialties.first),
-        ),
-      );
-      return;
-    }
-
-    if (query.length < 3 && query.isNotEmpty) {
-      setState(() {
-        _isTyping = true;
-      });
-      return;
-    }
-
-    if (query.isEmpty && _hasActiveFilters()) {
-      _performFilteredSearch();
-      return;
-    }
-
-    if (query.isNotEmpty) {
-      setState(() {
-        _isTyping = true;
-      });
-    }
-
-    _searchDebounce = Timer(const Duration(seconds: 4), () {
-      if (!mounted) return;
-
-      setState(() {
-        _isTyping = false;
-      });
-
-      if (query.isNotEmpty || _hasActiveFilters()) {
-        _performFilteredSearch();
-      }
+    
+    setState(() {
+      _isSearching = false;
     });
+
+    // Cargar veterinarios iniciales con filtros actuales
+    context.read<VeterinarianBloc>().add(
+      SearchVeterinariansEvent(
+        limit: 100,
+        location: VeterinaryConstants.getLocationForApi(_selectedLocation),
+        specialty: VeterinaryConstants.getSpecialtyForApi(_selectedSpecialty),
+      ),
+    );
+  }
+
+  // Nuevo método para búsqueda manual combinada
+  void _performManualSearch() {
+    if (_searchController.text.isEmpty && !_hasActiveFilters()) {
+      // Si no hay texto ni filtros, mostrar veterinarios por defecto
+      _resetToInitialState();
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    // Búsqueda combinada: texto + filtros
+    context.read<VeterinarianBloc>().add(
+      SearchVeterinariansEvent(
+        search: _searchController.text.trim().isNotEmpty ? _searchController.text.trim() : null,
+        location: VeterinaryConstants.getLocationForApi(_selectedLocation),
+        specialty: VeterinaryConstants.getSpecialtyForApi(_selectedSpecialty),
+        limit: 100,
+      ),
+    );
   }
 
   // ✨ NUEVO: Widget para mostrar información de predicción de IA

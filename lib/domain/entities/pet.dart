@@ -4,11 +4,11 @@ import 'medical_record.dart';
 enum PetType { 
   DOG, 
   CAT, 
+  RABBIT,
   BIRD, 
-  RABBIT, 
-  HAMSTER, 
   FISH, 
-  REPTILE, 
+  FARM, 
+  EXOTIC, 
   OTHER 
 }
 

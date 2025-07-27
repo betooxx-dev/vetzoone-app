@@ -9,6 +9,7 @@ import '../../../blocs/pet/pet_state.dart';
 import '../../../widgets/common/image_picker_widget.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/veterinary_constants.dart';
 
 class AddPetPage extends StatefulWidget {
   const AddPetPage({super.key});
@@ -555,23 +556,30 @@ class _AddPetPageState extends State<AddPetPage> {
   }
 
   String _getPetTypeText(PetType type) {
+    // Usar el enum centralizado para nombres consistentes
+    final animalType = AnimalType.fromPetTypeCode(type.name);
+    if (animalType != null) {
+      return animalType.displayName;
+    }
+    
+    // Fallback al método anterior si no se encuentra en el enum
     switch (type) {
       case PetType.DOG:
-        return 'Perro';
+        return 'Perros';
       case PetType.CAT:
-        return 'Gato';
-      case PetType.BIRD:
-        return 'Ave';
-      case PetType.FISH:
-        return 'Pez';
+        return 'Gatos';
       case PetType.RABBIT:
-        return 'Conejo';
-      case PetType.HAMSTER:
-        return 'Hámster';
-      case PetType.REPTILE:
-        return 'Reptil';
+        return 'Conejos';
+      case PetType.BIRD:
+        return 'Aves';
+      case PetType.FISH:
+        return 'Peces';
+      case PetType.FARM:
+        return 'Animales de Granja';
+      case PetType.EXOTIC:
+        return 'Animales Exóticos';
       case PetType.OTHER:
-        return 'Otro';
+        return 'Otros';
     }
   }
 

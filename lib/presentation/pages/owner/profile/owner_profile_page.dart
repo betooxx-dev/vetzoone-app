@@ -1063,26 +1063,43 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
                   ),
                 ),
                 onPressed: () async {
+                  // Cerrar el diálogo primero
                   Navigator.pop(context);
                   
+                  // Verificar que el context sigue siendo válido
+                  if (!mounted) return;
+                  
                   try {
+                    print('🔐 Iniciando proceso de logout...');
+                    
                     // Ejecutar logout completo usando el usecase
                     final logoutUseCase = sl<LogoutUseCase>();
                     await logoutUseCase.call();
                     
                     print('🔐 Logout ejecutado correctamente');
+                    
+                    // Verificar que el widget sigue montado antes de navegar
+                    if (mounted) {
+                      // Navegar a login y limpiar stack completo
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        '/login',
+                        (route) => false,
+                      );
+                    }
                   } catch (e) {
                     print('⚠️ Error durante logout: $e');
-                    // Incluso si hay error, limpiar datos localmente
-                    await SharedPreferencesHelper.clearLoginData();
+                    
+                    // Verificar que el widget sigue montado antes de navegar
+                    if (mounted) {
+                      // Aunque haya error, navegar a login
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        '/login',
+                        (route) => false,
+                      );
+                    }
                   }
-                  
-                  // Navegar a login eliminando todo el stack
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/login',
-                    (route) => false,
-                  );
                 },
                 child: const Text(
                   'Cerrar Sesión',

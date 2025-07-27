@@ -224,6 +224,66 @@ enum VeterinarySpecialty {
   final String displayName;
 }
 
+// Enum unificado para tipos de animales usado en toda la aplicación
+enum AnimalType {
+  dog('dog', 'Perros', 'DOG'),
+  cat('cat', 'Gatos', 'CAT'),
+  rabbit('rabbit', 'Conejos', 'RABBIT'),
+  bird('bird', 'Aves', 'BIRD'),
+  fish('fish', 'Peces', 'FISH'),
+  farm('farm', 'Animales de Granja', 'FARM'),
+  exotic('exotic', 'Animales Exóticos', 'EXOTIC'),
+  other('other', 'Otros', 'OTHER');
+
+  const AnimalType(this.code, this.displayName, this.petTypeCode);
+
+  /// Código interno usado en la base de datos
+  final String code;
+  
+  /// Nombre que se muestra al usuario en la interfaz
+  final String displayName;
+  
+  /// Código correspondiente al enum PetType para compatibilidad
+  final String petTypeCode;
+
+  /// Lista de todos los tipos de animales para veterinarios
+  static List<String> get allAnimalNames => values.map((e) => e.displayName).toList();
+  
+  /// Lista de tipos de animales que pueden ser mascotas domésticas
+  static List<AnimalType> get domesticPetTypes => [
+    dog, cat, rabbit, bird, fish
+  ];
+  
+  /// Lista de nombres de mascotas domésticas
+  static List<String> get domesticPetNames => domesticPetTypes.map((e) => e.displayName).toList();
+  
+  /// Lista de animales especiales (granja, exóticos, etc.)
+  static List<AnimalType> get specialPetTypes => [
+    farm, exotic, other
+  ];
+  
+  /// Lista de nombres de animales especiales
+  static List<String> get specialPetNames => specialPetTypes.map((e) => e.displayName).toList();
+  
+  /// Convierte de PetType enum a AnimalType
+  static AnimalType? fromPetTypeCode(String petTypeCode) {
+    try {
+      return values.firstWhere((type) => type.petTypeCode == petTypeCode);
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  /// Convierte el nombre mostrado al AnimalType correspondiente
+  static AnimalType? fromDisplayName(String displayName) {
+    try {
+      return values.firstWhere((type) => type.displayName == displayName);
+    } catch (e) {
+      return null;
+    }
+  }
+}
+
 // Constantes para los días de la semana
 class WeekDays {
   static const Map<String, String> dayNames = {

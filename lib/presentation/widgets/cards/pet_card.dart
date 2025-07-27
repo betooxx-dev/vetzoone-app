@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/constants/veterinary_constants.dart';
 import '../../../core/utils/image_utils.dart';
 import '../../../domain/entities/pet.dart';
 
@@ -185,7 +186,7 @@ class PetCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSizes.spaceXS),
                   Text(
-                    pet.type.name,
+                    _getPetTypeText(),
                     style: TextStyle(
                       fontSize: 11,
                       color: _getGradientByType().colors.first,
@@ -338,7 +339,25 @@ class PetCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         );
-      default:
+      case PetType.FISH:
+        return const LinearGradient(
+          colors: [Color(0xFF00B4DB), Color(0xFF0083B0)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case PetType.FARM:
+        return const LinearGradient(
+          colors: [Color(0xFF8BC34A), Color(0xFF4CAF50)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case PetType.EXOTIC:
+        return const LinearGradient(
+          colors: [Color(0xFFE91E63), Color(0xFF9C27B0)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case PetType.OTHER:
         return const LinearGradient(
           colors: [Color(0xFF74B9FF), Color(0xFF0984E3)],
           begin: Alignment.topLeft,
@@ -357,8 +376,42 @@ class PetCard extends StatelessWidget {
         return Icons.flutter_dash;
       case PetType.RABBIT:
         return Icons.cruelty_free;
-      default:
+      case PetType.FISH:
+        return Icons.set_meal;
+      case PetType.FARM:
+        return Icons.agriculture;
+      case PetType.EXOTIC:
         return Icons.pets;
+      case PetType.OTHER:
+        return Icons.pets;
+    }
+  }
+
+  String _getPetTypeText() {
+    // Usar el enum centralizado para nombres consistentes
+    final animalType = AnimalType.fromPetTypeCode(pet.type.name);
+    if (animalType != null) {
+      return animalType.displayName;
+    }
+    
+    // Fallback al método anterior si no se encuentra en el enum
+    switch (pet.type) {
+      case PetType.DOG:
+        return 'Perros';
+      case PetType.CAT:
+        return 'Gatos';
+      case PetType.RABBIT:
+        return 'Conejos';
+      case PetType.BIRD:
+        return 'Aves';
+      case PetType.FISH:
+        return 'Peces';
+      case PetType.FARM:
+        return 'Animales de Granja';
+      case PetType.EXOTIC:
+        return 'Animales Exóticos';
+      case PetType.OTHER:
+        return 'Otros';
     }
   }
 

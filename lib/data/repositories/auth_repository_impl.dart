@@ -22,13 +22,10 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
-    try {
-      await remoteDataSource.logout();
-    } catch (e) {
-      print('Error al hacer logout en servidor: $e');
-    } finally {
-      await SharedPreferencesHelper.clearLoginData();
-    }
+    // Solo limpiar datos locales, no hacer petición al servidor
+    print('🔐 Iniciando logout local...');
+    await SharedPreferencesHelper.clearLoginData();
+    print('🔐 Logout local completado');
   }
 
   @override

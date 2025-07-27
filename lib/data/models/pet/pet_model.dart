@@ -153,11 +153,11 @@ class PetModel extends Pet {
         return 'bird';
       case PetType.RABBIT:
         return 'rabbit';
-      case PetType.HAMSTER:
-        return 'other';
       case PetType.FISH:
         return 'fish';
-      case PetType.REPTILE:
+      case PetType.FARM:
+        return 'farm';
+      case PetType.EXOTIC:
         return 'exotic';
       case PetType.OTHER:
         return 'other';
@@ -198,8 +198,10 @@ class PetModel extends Pet {
         return PetType.RABBIT;
       case 'fish':
         return PetType.FISH;
+      case 'farm':
+        return PetType.FARM;
       case 'exotic':
-        return PetType.REPTILE;
+        return PetType.EXOTIC;
       case 'other':
         return PetType.OTHER;
       default:

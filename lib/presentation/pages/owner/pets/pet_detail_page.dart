@@ -6,6 +6,7 @@ import '../../../blocs/pet/pet_state.dart';
 import '../../../widgets/common/empty_state_widget.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/veterinary_constants.dart';
 import '../../../../domain/entities/pet.dart';
 import '../../../../domain/entities/appointment.dart';
 import '../../../../core/storage/shared_preferences_helper.dart';
@@ -743,9 +744,9 @@ class _PetDetailPageState extends State<PetDetailPage> {
         return Icons.set_meal;
       case PetType.RABBIT:
         return Icons.pets;
-      case PetType.HAMSTER:
-        return Icons.pets;
-      case PetType.REPTILE:
+      case PetType.FARM:
+        return Icons.agriculture;
+      case PetType.EXOTIC:
         return Icons.pets;
       case PetType.OTHER:
         return Icons.pets;
@@ -764,23 +765,30 @@ class _PetDetailPageState extends State<PetDetailPage> {
   }
 
   String _getPetTypeText(PetType type) {
+    // Usar el enum centralizado para nombres consistentes
+    final animalType = AnimalType.fromPetTypeCode(type.name);
+    if (animalType != null) {
+      return animalType.displayName;
+    }
+    
+    // Fallback al método anterior si no se encuentra en el enum
     switch (type) {
       case PetType.DOG:
-        return 'Perro';
+        return 'Perros';
       case PetType.CAT:
-        return 'Gato';
-      case PetType.BIRD:
-        return 'Ave';
-      case PetType.FISH:
-        return 'Pez';
+        return 'Gatos';
       case PetType.RABBIT:
-        return 'Conejo';
-      case PetType.HAMSTER:
-        return 'Hámster';
-      case PetType.REPTILE:
-        return 'Reptil';
+        return 'Conejos';
+      case PetType.BIRD:
+        return 'Aves';
+      case PetType.FISH:
+        return 'Peces';
+      case PetType.FARM:
+        return 'Animales de Granja';
+      case PetType.EXOTIC:
+        return 'Animales Exóticos';
       case PetType.OTHER:
-        return 'Otro';
+        return 'Otros';
     }
   }
 

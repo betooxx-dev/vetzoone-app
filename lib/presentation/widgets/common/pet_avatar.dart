@@ -55,9 +55,9 @@ class PetAvatar extends StatelessWidget {
         return Icons.cruelty_free;
       case PetType.FISH:
         return Icons.set_meal;
-      case PetType.REPTILE:
-        return Icons.pets;
-      case PetType.HAMSTER:
+      case PetType.FARM:
+        return Icons.agriculture;
+      case PetType.EXOTIC:
         return Icons.pets;
       case PetType.OTHER:
       default:
@@ -142,10 +142,10 @@ class PetInfo extends StatelessWidget {
         return 'Conejo';
       case PetType.FISH:
         return 'Pez';
-      case PetType.REPTILE:
-        return 'Reptil';
-      case PetType.HAMSTER:
-        return 'Hámster';
+      case PetType.FARM:
+        return 'Granja';
+      case PetType.EXOTIC:
+        return 'Exótico';
       case PetType.OTHER:
         return 'Otro';
     }

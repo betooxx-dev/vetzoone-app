@@ -60,20 +60,8 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
     'Microchip',
   ];
 
-  final List<String> _availableAnimals = [
-    'Perros',
-    'Gatos',
-    'Aves',
-    'Conejos',
-    'Hámsters',
-    'Reptiles',
-    'Peces',
-    'Animales Exóticos',
-    'Ganado Bovino',
-    'Ganado Porcino',
-    'Equinos',
-    'Caprinos',
-  ];
+  // Usar el enum centralizado para tipos de animales
+  List<String> get _availableAnimals => AnimalType.allAnimalNames;
 
   @override
   void initState() {
