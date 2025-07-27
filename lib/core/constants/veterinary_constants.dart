@@ -162,7 +162,8 @@ class VeterinaryConstants {
 
   static String? getSpecialtyForApi(String specialty) {
     if (specialty == 'Todas las especialidades') return null;
-    return specialty;
+    // 🤖 Convertir el nombre de display al código de IA
+    return getSpecialtyCodeForAI(specialty);
   }
 
   // 🤖 Convierte el nombre mostrado al código del modelo de IA
@@ -221,6 +222,59 @@ enum VeterinarySpecialty {
   
   /// Nombre que se muestra al usuario en la interfaz
   final String displayName;
+}
+
+// Constantes para los días de la semana
+class WeekDays {
+  static const Map<String, String> dayNames = {
+    'monday': 'Lunes',
+    'tuesday': 'Martes', 
+    'wednesday': 'Miércoles',
+    'thursday': 'Jueves',
+    'friday': 'Viernes',
+    'saturday': 'Sábado',
+    'sunday': 'Domingo',
+  };
+
+  static const List<String> orderedDays = [
+    'monday',
+    'tuesday', 
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
+  ];
+
+  static String getDisplayName(String dayKey) {
+    return dayNames[dayKey] ?? dayKey;
+  }
+}
+
+// Constantes para horarios de trabajo
+class WorkingHours {
+  static const List<String> availableHours = [
+    '06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
+    '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+    '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
+    '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30',
+    '22:00', '22:30', '23:00'
+  ];
+
+  static String formatTime(String time) {
+    try {
+      final parts = time.split(':');
+      final hour = int.parse(parts[0]);
+      final minute = parts[1];
+      
+      if (hour == 0) return '12:$minute AM';
+      if (hour < 12) return '$hour:$minute AM';
+      if (hour == 12) return '12:$minute PM';
+      return '${hour - 12}:$minute PM';
+    } catch (e) {
+      return time;
+    }
+  }
 }
 
 // Extensión para convertir strings a TitleCase

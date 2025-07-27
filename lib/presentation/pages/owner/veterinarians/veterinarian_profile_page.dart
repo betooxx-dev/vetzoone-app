@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/veterinary_constants.dart';
+import '../../../../core/utils/image_utils.dart';
 import '../../../../core/injection/injection.dart';
 import '../../../../domain/entities/veterinarian.dart';
 import '../../../blocs/veterinarian/veterinarian_bloc.dart';
@@ -252,7 +253,7 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
       profileImage = veterinarian.profilePhoto;
     }
 
-    if (profileImage != null) {
+    if (profileImage != null && ImageUtils.isValidImageUrl(profileImage)) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(50),
         child: Image.network(
@@ -563,7 +564,7 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
               ),
               const SizedBox(width: AppSizes.spaceS),
               const Text(
-                'Disponibilidad',
+                'Horarios de Disponibilidad',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -573,26 +574,148 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
             ],
           ),
           const SizedBox(height: AppSizes.spaceL),
-          if (veterinarian.availability.isNotEmpty)
-            ...veterinarian.availability.map(
-              (schedule) => Padding(
-                padding: const EdgeInsets.only(bottom: AppSizes.spaceS),
-                child: Text(
-                  schedule,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+          _buildAvailabilitySchedule(veterinarian),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvailabilitySchedule(Veterinarian veterinarian) {
+    // Verificar si availability contiene datos estructurados
+    if (veterinarian.availability.isEmpty) {
+      return _buildEmptySection(
+        'Sin horarios disponibles',
+        'El veterinario no ha configurado su disponibilidad',
+        Icons.schedule_outlined,
+      );
+    }
+
+    // Intentar parsear los horarios si están en formato string
+    List<Map<String, dynamic>> scheduleData = [];
+    
+    for (String schedule in veterinarian.availability) {
+      try {
+        // Si es un string que representa un mapa, intentar parsearlo
+        if (schedule.contains('day:') && schedule.contains('start_time:') && schedule.contains('end_time:')) {
+          // Usar regex más específico para el nuevo formato
+          final dayMatch = RegExp(r'day:\s*([^,]+)').firstMatch(schedule);
+          final startTimeMatch = RegExp(r'start_time:\s*([^,]+)').firstMatch(schedule);
+          final endTimeMatch = RegExp(r'end_time:\s*(.+)').firstMatch(schedule);
+          
+          if (dayMatch != null && startTimeMatch != null && endTimeMatch != null) {
+            scheduleData.add({
+              'day': dayMatch.group(1)?.trim(),
+              'start_time': startTimeMatch.group(1)?.trim(),
+              'end_time': endTimeMatch.group(1)?.trim(),
+            });
+          }
+        }
+      } catch (e) {
+        // Si no se puede parsear, intentar con el formato anterior
+        print('⚠️ Error parseando horario: $schedule, error: $e');
+        continue;
+      }
+    }
+
+    // Si no se pudo parsear nada, mostrar como estaba antes
+    if (scheduleData.isEmpty) {
+      return Column(
+        children: veterinarian.availability.map(
+          (schedule) => Padding(
+            padding: const EdgeInsets.only(bottom: AppSizes.spaceS),
+            child: Text(
+              schedule,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
               ),
-            )
-          else
-            _buildEmptySection(
-              'Sin horarios disponibles',
-              'El veterinario no ha configurado su disponibilidad',
-              Icons.schedule_outlined,
             ),
+          ),
+        ).toList(),
+      );
+    }
+
+    // Mostrar horarios organizados por día
+    return Column(
+      children: WeekDays.orderedDays.map((day) {
+        final daySchedules = scheduleData.where((schedule) => 
+          schedule['day'] == day
+        ).toList();
+        
+        return _buildDayScheduleRow(day, daySchedules);
+      }).where((widget) => widget != null).cast<Widget>().toList(),
+    );
+  }
+
+  Widget? _buildDayScheduleRow(String day, List<Map<String, dynamic>> schedules) {
+    // Solo mostrar días que tienen horarios
+    if (schedules.isEmpty) return null;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.paddingM,
+        vertical: AppSizes.paddingS,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.secondary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        border: Border.all(
+          color: AppColors.secondary.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              WeekDays.getDisplayName(day),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSizes.spaceM),
+          Expanded(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: schedules.map((schedule) {
+                final startTime = schedule['start_time'] ?? '';
+                final endTime = schedule['end_time'] ?? '';
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.2),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    '$startTime - $endTime',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
         ],
       ),
     );

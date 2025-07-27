@@ -60,7 +60,8 @@ class VeterinarianModel extends Veterinarian {
           final day = item['day'] ?? '';
           final start = item['start_time'] ?? '';
           final end = item['end_time'] ?? '';
-          return '$day: $start - $end';
+          // Mantener formato JSON para poder parsearlo después
+          return 'day: $day, start_time: $start, end_time: $end';
         }
         return item.toString();
       }).toList();

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/veterinary_constants.dart';
 import '../../../../core/widgets/confirmation_modal.dart';
 import '../../../../core/services/user_service.dart';
-import '../../../../core/injection/injection.dart';
+import '../../../../core/utils/image_utils.dart';
 import '../../../../domain/entities/pet.dart';
+import '../../../../domain/entities/veterinarian.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/pet/pet_bloc.dart';
 import '../../../blocs/pet/pet_event.dart';
@@ -14,7 +16,7 @@ import '../../../blocs/appointment/appointment_event.dart';
 import '../../../blocs/appointment/appointment_state.dart';
 
 class ScheduleAppointmentPage extends StatefulWidget {
-  final Map<String, dynamic>? selectedVeterinarian;
+  final Veterinarian? selectedVeterinarian;
 
   const ScheduleAppointmentPage({super.key, this.selectedVeterinarian});
 
@@ -27,7 +29,7 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
   final _formKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
 
-  Map<String, dynamic>? selectedVeterinarian;
+  Veterinarian? selectedVeterinarian;
   Pet? selectedPet;
   DateTime? selectedDate;
   String? selectedTimeSlot;
@@ -37,7 +39,7 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
   void _selectVeterinarian() async {
     final result = await Navigator.pushNamed(context, '/search-veterinarians');
 
-    if (result != null && result is Map<String, dynamic>) {
+    if (result != null && result is Veterinarian) {
       setState(() {
         selectedVeterinarian = result;
         selectedDate = null;
@@ -68,36 +70,173 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
   }
 
   List<String> _getAvailableTimeSlotsForDate(DateTime date) {
-    final dayOfWeek = date.weekday;
+    if (selectedVeterinarian == null) return [];
 
-    if (dayOfWeek == 7) {
-      return [];
+    final dayOfWeek = _getDayFromWeekday(date.weekday);
+    final List<String> timeSlots = [];
+
+    // Buscar los horarios del veterinario para el día seleccionado
+    for (String scheduleString in selectedVeterinarian!.availability) {
+      try {
+        // Parsear el string de disponibilidad
+        if (scheduleString.contains('day:') && scheduleString.contains('start_time:') && scheduleString.contains('end_time:')) {
+          final dayMatch = RegExp(r'day:\s*([^,]+)').firstMatch(scheduleString);
+          final startTimeMatch = RegExp(r'start_time:\s*([^,]+)').firstMatch(scheduleString);
+          final endTimeMatch = RegExp(r'end_time:\s*(.+)').firstMatch(scheduleString);
+          
+          if (dayMatch != null && startTimeMatch != null && endTimeMatch != null) {
+            final scheduleDayKey = dayMatch.group(1)?.trim();
+            final startTime = startTimeMatch.group(1)?.trim();
+            final endTime = endTimeMatch.group(1)?.trim();
+            
+            if (scheduleDayKey == dayOfWeek && startTime != null && endTime != null) {
+              timeSlots.addAll(_generateTimeSlots(startTime, endTime));
+            }
+          }
+        }
+      } catch (e) {
+        print('⚠️ Error parseando horario: $scheduleString, error: $e');
+        continue;
+      }
     }
 
-    if (dayOfWeek == 6) {
-      return [
-        '9:00 AM',
-        '10:00 AM',
-        '11:00 AM',
-        '12:00 PM',
-        '1:00 PM',
-        '2:00 PM',
-      ];
+    return timeSlots;
+  }
+
+  String _getDayFromWeekday(int weekday) {
+    switch (weekday) {
+      case 1: return 'monday';
+      case 2: return 'tuesday';
+      case 3: return 'wednesday';
+      case 4: return 'thursday';
+      case 5: return 'friday';
+      case 6: return 'saturday';
+      case 7: return 'sunday';
+      default: return '';
+    }
+  }
+
+  List<String> _generateTimeSlots(String startTime, String endTime) {
+    final List<String> slots = [];
+    
+    try {
+      // Parsear horas de inicio y fin
+      final startParts = startTime.split(':');
+      final endParts = endTime.split(':');
+      
+      final startHour = int.parse(startParts[0]);
+      final startMinute = int.parse(startParts[1]);
+      final endHour = int.parse(endParts[0]);
+      final endMinute = int.parse(endParts[1]);
+      
+      // Crear DateTime para facilitar la manipulación
+      DateTime current = DateTime(2000, 1, 1, startHour, startMinute);
+      final end = DateTime(2000, 1, 1, endHour, endMinute);
+      
+      // Generar slots de 30 minutos
+      while (current.isBefore(end)) {
+        // Eliminar variables no utilizadas
+        // Convertir a formato 12 horas con AM/PM
+        final hour12 = current.hour == 0 ? 12 : (current.hour > 12 ? current.hour - 12 : current.hour);
+        final ampm = current.hour < 12 ? 'AM' : 'PM';
+        final minute = current.minute == 0 ? '00' : current.minute.toString();
+        
+        slots.add('$hour12:$minute $ampm');
+        
+        // Agregar 30 minutos
+        current = current.add(const Duration(minutes: 30));
+      }
+    } catch (e) {
+      print('⚠️ Error generando slots de tiempo: $e');
+    }
+    
+    return slots;
+  }
+
+  Widget _buildVeterinarianImage() {
+    // Obtener la imagen prioritizando user.profilePhoto sobre profilePhoto del veterinario
+    String? profileImage;
+    if (selectedVeterinarian!.user.profilePhoto != null && selectedVeterinarian!.user.profilePhoto!.isNotEmpty) {
+      profileImage = selectedVeterinarian!.user.profilePhoto;
+    } else if (selectedVeterinarian!.profilePhoto != null && selectedVeterinarian!.profilePhoto!.isNotEmpty) {
+      profileImage = selectedVeterinarian!.profilePhoto;
     }
 
-    return [
-      '8:00 AM',
-      '9:00 AM',
-      '10:00 AM',
-      '11:00 AM',
-      '12:00 PM',
-      '1:00 PM',
-      '2:00 PM',
-      '3:00 PM',
-      '4:00 PM',
-      '5:00 PM',
-      '6:00 PM',
-    ];
+    // Validar la URL de la imagen
+    final validImageUrl = ImageUtils.isValidImageUrl(profileImage) ? profileImage : null;
+
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.3),
+          width: 2,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSizes.radiusM - 2),
+        child: validImageUrl != null
+            ? Image.network(
+                validImageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.secondary,
+                        AppColors.secondary.withOpacity(0.8),
+                      ],
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.person_rounded,
+                    size: AppSizes.iconM,
+                    color: AppColors.white,
+                  ),
+                ),
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.secondary,
+                          AppColors.secondary.withOpacity(0.8),
+                        ],
+                      ),
+                    ),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.white,
+                        strokeWidth: 2,
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded / 
+                              loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    ),
+                  );
+                },
+              )
+            : Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.secondary,
+                      AppColors.secondary.withOpacity(0.8),
+                    ],
+                  ),
+                ),
+                child: const Icon(
+                  Icons.person_rounded,
+                  size: AppSizes.iconM,
+                  color: AppColors.white,
+                ),
+              ),
+      ),
+    );
   }
 
   @override
@@ -111,16 +250,8 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
       final arguments = ModalRoute.of(context)?.settings.arguments;
       if (arguments != null && arguments is Map<String, dynamic>) {
         setState(() {
-          if (arguments.containsKey('selectedVeterinarian')) {
-            selectedVeterinarian = arguments['selectedVeterinarian'];
-          }
-          if (arguments.containsKey('vetId')) {
-            selectedVeterinarian = {
-              'id': arguments['vetId'],
-              'name': 'Veterinario Seleccionado',
-              'specialty': 'Medicina General',
-              'clinic': 'Clínica Veterinaria',
-            };
+          if (arguments.containsKey('veterinarian')) {
+            selectedVeterinarian = arguments['veterinarian'] as Veterinarian?;
           }
         });
       }
@@ -307,31 +438,14 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
               selectedVeterinarian != null
                   ? Row(
                     children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.secondary,
-                              AppColors.secondary.withOpacity(0.8),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                        ),
-                        child: const Icon(
-                          Icons.person_rounded,
-                          size: AppSizes.iconM,
-                          color: AppColors.white,
-                        ),
-                      ),
+                      _buildVeterinarianImage(),
                       const SizedBox(width: AppSizes.spaceM),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              selectedVeterinarian!['name'] ?? 'Veterinario',
+                              selectedVeterinarian!.fullName,
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -340,15 +454,18 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              selectedVeterinarian!['specialty'] ??
-                                  'Especialidad',
+                              selectedVeterinarian!.specialties.isNotEmpty
+                                  ? selectedVeterinarian!.specialties
+                                      .map((specialtyCode) => VeterinaryConstants.getDisplayNameFromAICode(specialtyCode))
+                                      .join(', ')
+                                  : 'Especialidad no definida',
                               style: const TextStyle(
                                 fontSize: 14,
                                 color: AppColors.textSecondary,
                               ),
                             ),
                             Text(
-                              selectedVeterinarian!['clinic'] ?? 'Clínica',
+                              selectedVeterinarian!.location,
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textSecondary,
@@ -880,7 +997,7 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
               ? _notesController.text.trim()
               : null,
       'pet_id': selectedPet!.id,
-      'vet_id': selectedVeterinarian!['id'],
+      'vet_id': selectedVeterinarian!.id,
       'user_id': _userId!,
     };
   }
@@ -956,7 +1073,7 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
       title: 'Confirmar cita',
       message:
           '¿Estás seguro de que quieres agendar esta cita?\n\n'
-          'Veterinario: ${selectedVeterinarian!['name']}\n'
+          'Veterinario: ${selectedVeterinarian!.fullName}\n'
           'Mascota: ${selectedPet!.name}\n'
           'Fecha: ${_formatDate(selectedDate!)}\n'
           'Hora: $selectedTimeSlot',

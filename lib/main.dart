@@ -4,6 +4,8 @@ import 'core/injection/injection.dart';
 import 'core/storage/shared_preferences_helper.dart';
 import 'core/services/image_picker_service.dart';
 
+import 'domain/entities/veterinarian.dart';
+
 import 'presentation/blocs/pet/pet_bloc.dart';
 import 'presentation/blocs/pet/pet_event.dart';
 import 'presentation/blocs/appointment/index.dart';
@@ -141,17 +143,11 @@ class MyApp extends StatelessWidget {
 
           '/schedule-appointment': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-          Map<String, dynamic>? selectedVeterinarian;
+          Veterinarian? selectedVeterinarian;
           
           if (args != null) {
             if (args.containsKey('veterinarian')) {
-              final vet = args['veterinarian'];
-              selectedVeterinarian = {
-                'id': vet.id,
-                'name': vet.fullName,
-                'specialty': vet.specialties.isNotEmpty ? vet.specialties.first : 'Medicina General',
-                'clinic': 'Clínica ${vet.fullName}',
-              };
+              selectedVeterinarian = args['veterinarian'] as Veterinarian?;
             }
           }
           

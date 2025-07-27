@@ -20,10 +20,10 @@ class SearchVeterinariansPage extends StatelessWidget {
       create:
           (context) =>
               sl<VeterinarianBloc>()..add(
-                const SearchVeterinariansEvent(
+                SearchVeterinariansEvent(
                   limit: 100,
-                  location: null,
-                  specialty: null,
+                  location: VeterinaryConstants.getLocationForApi(VeterinaryConstants.chiapasLocations.first),
+                  specialty: VeterinaryConstants.getSpecialtyForApi(VeterinaryConstants.veterinarySpecialties.first),
                 ),
               ),
       child: const _SearchVeterinariansView(),
@@ -1287,10 +1287,10 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
     });
 
     context.read<VeterinarianBloc>().add(
-      const SearchVeterinariansEvent(
+      SearchVeterinariansEvent(
         limit: 100,
-        location: null,
-        specialty: null,
+        location: VeterinaryConstants.getLocationForApi(VeterinaryConstants.chiapasLocations.first),
+        specialty: VeterinaryConstants.getSpecialtyForApi(VeterinaryConstants.veterinarySpecialties.first),
       ),
     );
   }
@@ -1332,10 +1332,10 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
       });
 
       context.read<VeterinarianBloc>().add(
-        const SearchVeterinariansEvent(
+        SearchVeterinariansEvent(
           limit: 100,
-          location: null,
-          specialty: null,
+          location: VeterinaryConstants.getLocationForApi(VeterinaryConstants.chiapasLocations.first),
+          specialty: VeterinaryConstants.getSpecialtyForApi(VeterinaryConstants.veterinarySpecialties.first),
         ),
       );
       return;
