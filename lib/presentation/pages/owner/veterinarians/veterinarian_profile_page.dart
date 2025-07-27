@@ -146,8 +146,15 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
             width: 150,
             height: 150,
             decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
+              gradient: AppColors.orangeGradient,
               borderRadius: BorderRadius.circular(75),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.secondary.withOpacity(0.2),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
           ),
         ),
@@ -197,20 +204,27 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
               Hero(
                 tag: 'vet-${veterinarian.id}',
                 child: Container(
-                  width: 100,
-                  height: 100,
+                  width: 120,
+                  height: 120,
                   decoration: BoxDecoration(
-                    color: AppColors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(50),
+                    gradient: AppColors.purpleGradient,
+                    borderRadius: BorderRadius.circular(60),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.black.withOpacity(0.1),
+                        color: AppColors.accent.withOpacity(0.3),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
                     ],
                   ),
-                  child: _buildProfileImage(veterinarian),
+                  padding: const EdgeInsets.all(3),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(57),
+                    ),
+                    child: _buildProfileImage(veterinarian),
+                  ),
                 ),
               ),
               const SizedBox(height: AppSizes.spaceL),
@@ -255,13 +269,13 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
 
     if (profileImage != null && ImageUtils.isValidImageUrl(profileImage)) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(50),
+        borderRadius: BorderRadius.circular(57),
         child: Image.network(
           profileImage,
           fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => const Icon(
             Icons.person_rounded,
-            size: 50,
+            size: 55,
             color: AppColors.white,
           ),
           loadingBuilder: (context, child, loadingProgress) {
@@ -282,7 +296,7 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
     } else {
       return const Icon(
         Icons.person_rounded,
-        size: 50,
+        size: 55,
         color: AppColors.white,
       );
     }
@@ -308,15 +322,23 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
       margin: const EdgeInsets.all(AppSizes.paddingL),
       padding: const EdgeInsets.all(AppSizes.paddingL),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        gradient: LinearGradient(
+          colors: [AppColors.white, AppColors.backgroundLight],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withOpacity(0.06),
+            color: AppColors.secondary.withOpacity(0.1),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
         ],
+        border: Border.all(
+          color: AppColors.secondary.withOpacity(0.2),
+          width: 1,
+        ),
       ),
       child: Column(
         children: [
@@ -694,11 +716,11 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
+                    gradient: AppColors.orangeGradient,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.2),
+                        color: AppColors.secondary.withOpacity(0.3),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -776,10 +798,17 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
                             vertical: AppSizes.paddingS,
                           ),
                           decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
+                            gradient: AppColors.purpleGradient,
                             borderRadius: BorderRadius.circular(
                               AppSizes.radiusL,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.accent.withOpacity(0.3),
+                                blurRadius: 6,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
                           child: Text(
                             service,
@@ -833,11 +862,11 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
   Widget _buildFloatingActionButton(Veterinarian veterinarian) {
     return Container(
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+        gradient: AppColors.orangeGradient,
         borderRadius: BorderRadius.circular(AppSizes.radiusL),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.secondary.withOpacity(0.4),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
