@@ -889,11 +889,23 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
     );
   }
 
-  void _scheduleAppointment(Veterinarian veterinarian) {
-    Navigator.pushNamed(
+  void _scheduleAppointment(Veterinarian veterinarian) async {
+    final result = await Navigator.pushNamed(
       context,
       '/schedule-appointment',
       arguments: {'veterinarian': veterinarian},
     );
+
+    // Si se creó una cita exitosamente, mostrar confirmación
+    if (result == true && mounted) {
+      print('🟢 Cita creada exitosamente desde perfil de veterinario');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('¡Cita agendada exitosamente!'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 }

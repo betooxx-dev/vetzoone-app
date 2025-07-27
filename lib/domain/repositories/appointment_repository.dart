@@ -11,4 +11,5 @@ abstract class AppointmentRepository {
   Future<List<Appointment>> getAppointmentsByVetId(String vetId);
   Future<Appointment> getAppointmentById(String appointmentId);
   Future<Appointment> createAppointment(Map<String, dynamic> appointmentData);
+  Future<void> confirmAppointment(String appointmentId);
 } 

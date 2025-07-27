@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/widgets/confirmation_modal.dart';
 import '../../../../core/injection/injection.dart';
 import '../../../../domain/entities/appointment.dart' as domain;
 import '../../../../domain/entities/pet.dart';
@@ -172,8 +171,6 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
         return AppointmentStatus.cancelled;
       case domain.AppointmentStatus.rescheduled:
         return AppointmentStatus.rescheduled;
-      default:
-        return AppointmentStatus.pending;
     }
   }
 
@@ -293,10 +290,7 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                         _buildPetInfo(),
                         const SizedBox(height: AppSizes.spaceL),
                         _buildVeterinarianInfo(),
-                        if (_canCancelAppointment()) ...[
-                          const SizedBox(height: AppSizes.spaceXXL),
-                          _buildCancelButton(),
-                        ],
+                        const SizedBox(height: 100),
                         const SizedBox(height: 100),
                       ],
                     ),
@@ -838,45 +832,6 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
     );
   }
 
-  Widget _buildCancelButton() {
-    return Container(
-      width: double.infinity,
-      height: AppSizes.buttonHeightL,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.error, AppColors.error.withOpacity(0.8)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(AppSizes.radiusL),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.error.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: ElevatedButton.icon(
-        onPressed: _cancelAppointment,
-        icon: const Icon(Icons.cancel_outlined),
-        label: const Text(
-          'Cancelar Cita',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          foregroundColor: AppColors.white,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSizes.radiusL),
-          ),
-        ),
-      ),
-    );
-  }
-
   Color _getStatusColor(AppointmentStatus status) {
     switch (status) {
       case AppointmentStatus.scheduled:
@@ -934,12 +889,6 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
     }
   }
 
-  bool _canCancelAppointment() {
-    return status == AppointmentStatus.scheduled ||
-        status == AppointmentStatus.confirmed ||
-        status == AppointmentStatus.pending;
-  }
-
   void _handleClickableValue(String label, String value) {
     if (label == 'Teléfono') {
       _callVeterinarian(value);
@@ -987,38 +936,6 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
         ),
       ),
     );
-  }
-
-  Future<void> _cancelAppointment() async {
-    final confirmed = await ConfirmationModal.show(
-      context: context,
-      title: 'Cancelar cita',
-      message:
-          '¿Estás seguro de que quieres cancelar esta cita?\n\nEsta acción no se puede deshacer.',
-      confirmText: 'Cancelar cita',
-      cancelText: 'No cancelar',
-      icon: Icons.cancel_outlined,
-      iconColor: AppColors.error,
-      confirmButtonColor: AppColors.error,
-    );
-
-    if (confirmed == true && mounted) {
-      setState(() {
-        status = AppointmentStatus.cancelled;
-      });
-
-      Navigator.pop(context, true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Cita cancelada exitosamente'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSizes.radiusM),
-          ),
-        ),
-      );
-    }
   }
 
   void _navigateToVeterinarianProfile(String vetId) {

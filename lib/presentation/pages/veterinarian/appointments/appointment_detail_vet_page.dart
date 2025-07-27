@@ -3,10 +3,12 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../widgets/cards/appointment_card.dart';
 import '../../../../core/widgets/confirmation_modal.dart';
-import '../../../../core/widgets/date_time_selector.dart';
 import '../../../../core/injection/injection.dart';
 import '../../../../domain/usecases/appointment/get_appointment_by_id_usecase.dart';
 import '../../../../domain/entities/appointment.dart' as domain;
+import '../../../../data/datasources/appointment/appointment_remote_datasource.dart';
+import '../../../../core/constants/veterinary_constants.dart';
+import '../../../../domain/entities/pet.dart';
 
 class AppointmentDetailVetPage extends StatefulWidget {
   const AppointmentDetailVetPage({super.key});
@@ -165,13 +167,13 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
       'petDetails': {
         'id': app.pet?.id ?? '',
         'name': app.pet?.name ?? '',
-        'type': _mapPetTypeToSpecies(app.pet?.type.toString()),
+        'type': _getPetTypeDisplayName(app.pet?.type),
         'breed': app.pet?.breed ?? '',
         'age': _calculatePetAge(app.pet?.birthDate),
-        'gender': _mapPetGender(app.pet?.gender.toString()),
-        'status': _mapPetStatus(app.pet?.status.toString()),
+        'gender': _getPetGenderDisplayName(app.pet?.gender),
+        'status': _getPetStatusDisplayName(app.pet?.status),
         'description': app.pet?.description ?? '',
-        'imageUrl': app.pet?.imageUrl ?? '', // Cambiar de image_url a imageUrl
+        'imageUrl': app.pet?.imageUrl ?? '',
         'birthDate': app.pet?.birthDate,
       },
 
@@ -211,28 +213,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     }
   }
 
-  String _mapPetTypeToSpecies(String? type) {
-    if (type == null || type.isEmpty) return '';
-    switch (type.toLowerCase()) {
-      case 'dog':
-        return 'Perro';
-      case 'cat':
-        return 'Gato';
-      case 'bird':
-        return 'Ave';
-      case 'rabbit':
-        return 'Conejo';
-      case 'fish':
-        return 'Pez';
-      case 'reptile':
-        return 'Reptil';
-      case 'other':
-        return 'Otro';
-      default:
-        return type;
-    }
-  }
-
   String _calculatePetAge(DateTime? birthDate) {
     if (birthDate == null) return '';
 
@@ -250,65 +230,56 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     }
   }
 
-  String _mapPetGender(String? gender) {
-    if (gender == null || gender.isEmpty) return '';
-    switch (gender.toLowerCase()) {
-      case 'male':
+  // Nuevas funciones helper usando los enums
+  String _getPetTypeDisplayName(PetType? petType) {
+    if (petType == null) return '';
+    final animalType = AnimalType.fromPetTypeCode(petType.name);
+    return animalType?.displayName ?? _getPetTypeFallback(petType);
+  }
+
+  String _getPetTypeFallback(PetType petType) {
+    switch (petType) {
+      case PetType.DOG:
+        return 'Perros';
+      case PetType.CAT:
+        return 'Gatos';
+      case PetType.RABBIT:
+        return 'Conejos';
+      case PetType.BIRD:
+        return 'Aves';
+      case PetType.FISH:
+        return 'Peces';
+      case PetType.FARM:
+        return 'Animales de Granja';
+      case PetType.EXOTIC:
+        return 'Animales Exóticos';
+      case PetType.OTHER:
+        return 'Otros';
+    }
+  }
+
+  String _getPetGenderDisplayName(PetGender? gender) {
+    if (gender == null) return '';
+    switch (gender) {
+      case PetGender.MALE:
         return 'Macho';
-      case 'female':
+      case PetGender.FEMALE:
         return 'Hembra';
-      case 'unknown':
+      case PetGender.UNKNOWN:
         return 'No especificado';
-      default:
-        return gender;
     }
   }
 
-  String _mapPetStatus(String? status) {
-    if (status == null || status.isEmpty) return '';
-    switch (status.toLowerCase()) {
-      case 'healthy':
+  String _getPetStatusDisplayName(PetStatus? status) {
+    if (status == null) return '';
+    switch (status) {
+      case PetStatus.HEALTHY:
         return 'Saludable';
-      case 'treatment':
+      case PetStatus.TREATMENT:
         return 'En tratamiento';
-      case 'attention':
+      case PetStatus.ATTENTION:
         return 'Requiere atención';
-      default:
-        return status;
     }
-  }
-
-  String _mapUserRole(String? role) {
-    if (role == null || role.isEmpty) return '';
-    switch (role.toUpperCase()) {
-      case 'PET_OWNER':
-        return 'Propietario de mascota';
-      case 'VETERINARIAN':
-        return 'Veterinario';
-      case 'ADMIN':
-        return 'Administrador';
-      default:
-        return role;
-    }
-  }
-
-  String _formatCreatedDate(DateTime date) {
-    final months = [
-      'Ene',
-      'Feb',
-      'Mar',
-      'Abr',
-      'May',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dic',
-    ];
-
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
   @override
@@ -533,46 +504,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
               ],
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(AppSizes.radiusM),
-            ),
-            child: PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: AppColors.white),
-              onSelected: _handleMenuAction,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSizes.radiusL),
-              ),
-              itemBuilder:
-                  (context) => [
-                    PopupMenuItem(
-                      value: 'reschedule',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.schedule,
-                            size: 20,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: AppSizes.spaceM),
-                          const Text('Reprogramar'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'cancel',
-                      child: Row(
-                        children: [
-                          Icon(Icons.cancel, size: 20, color: AppColors.error),
-                          const SizedBox(width: AppSizes.spaceM),
-                          const Text('Cancelar cita'),
-                        ],
-                      ),
-                    ),
-                  ],
-            ),
-          ),
         ],
       ),
     );
@@ -582,6 +513,12 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     final status =
         appointment['status'] as AppointmentStatus? ??
         AppointmentStatus.scheduled;
+
+    // No mostrar acciones para citas completadas o canceladas
+    if (status == AppointmentStatus.completed || 
+        status == AppointmentStatus.cancelled) {
+      return const SizedBox.shrink();
+    }
 
     return Container(
       child: Row(
@@ -601,9 +538,9 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                   ],
                 ),
                 child: ElevatedButton.icon(
-                  onPressed: _startConsultation,
-                  icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text('Iniciar Consulta'),
+                  onPressed: _completeAppointment,
+                  icon: const Icon(Icons.check_circle_outline_rounded),
+                  label: const Text('Completar Cita'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
@@ -672,9 +609,9 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                   ],
                 ),
                 child: ElevatedButton.icon(
-                  onPressed: _completeConsultation,
+                  onPressed: _completeAppointment,
                   icon: const Icon(Icons.check_circle_outline_rounded),
-                  label: const Text('Finalizar Consulta'),
+                  label: const Text('Completar Cita'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
@@ -1129,11 +1066,11 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                   final petInfo = realAppointment?.pet != null ? {
                     'id': realAppointment!.pet!.id,
                     'name': realAppointment!.pet!.name,
-                    'type': realAppointment!.pet!.type.toString().split('.').last.toLowerCase(),
+                    'type': _getPetTypeDisplayName(realAppointment!.pet!.type),
                     'breed': realAppointment!.pet!.breed,
-                    'gender': realAppointment!.pet!.gender.toString().split('.').last.toLowerCase(),
+                    'gender': _getPetGenderDisplayName(realAppointment!.pet!.gender),
                     'birthDate': realAppointment!.pet!.birthDate.toIso8601String(),
-                    'status': realAppointment!.pet!.status?.toString().split('.').last.toLowerCase(),
+                    'status': _getPetStatusDisplayName(realAppointment!.pet!.status),
                     'description': realAppointment!.pet!.description,
                     'imageUrl': realAppointment!.pet!.imageUrl,
                   } : {};
@@ -1299,7 +1236,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
 
     return _buildDetailCard(
       title: 'Información del Paciente',
-      imageUrl: petDetails['image_url'],
+      imageUrl: petDetails['imageUrl'],
       icon: Icons.pets_rounded,
       iconColor: AppColors.primary,
       children: [
@@ -1328,7 +1265,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
 
     return _buildDetailCard(
       title: 'Información del Propietario',
-      imageUrl: ownerDetails['profile_photo'],
+      imageUrl: ownerDetails['profilePhoto'],
       icon: Icons.person_rounded,
       iconColor: AppColors.secondary,
       children: [
@@ -1546,17 +1483,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     }
   }
 
-  void _handleMenuAction(String action) {
-    switch (action) {
-      case 'reschedule':
-        _rescheduleAppointment();
-        break;
-      case 'cancel':
-        _cancelAppointment();
-        break;
-    }
-  }
-
   void _handleClickableValue(String label, String value) {
     if (label == 'Email') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1572,51 +1498,69 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     }
   }
 
-  void _startConsultation() {
-    setState(() {
-      appointment['status'] = AppointmentStatus.inProgress;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Consulta iniciada para ${appointment['petName']}'),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _completeConsultation() async {
+  Future<void> _completeAppointment() async {
     final confirmed = await ConfirmationModal.show(
       context: context,
-      title: 'Finalizar consulta',
+      title: 'Completar cita',
       message:
-          '¿Estás seguro de que quieres finalizar esta consulta?\n\nAsegúrate de haber completado todos los registros médicos necesarios.',
-      confirmText: 'Finalizar',
+          '¿Estás seguro de que quieres completar esta cita?\n\nAsegúrate de haber completado todos los registros médicos necesarios.',
+      confirmText: 'Completar',
       icon: Icons.check_circle_outline_rounded,
       iconColor: AppColors.success,
     );
 
     if (confirmed == true) {
-      setState(() {
-        appointment['status'] = AppointmentStatus.completed;
-      });
-
-      if (mounted) {
-        Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Consulta finalizada exitosamente'),
-            backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+      try {
+        // Mostrar loading
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Completando cita...'),
+              backgroundColor: AppColors.primary,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
             ),
-          ),
-        );
+          );
+        }
+
+        // Llamar al API para completar la cita
+        final appointmentDataSource = sl<AppointmentRemoteDataSource>();
+        await appointmentDataSource.completeAppointment(appointment['id']);
+
+        // Actualizar estado local después de éxito
+        setState(() {
+          appointment['status'] = AppointmentStatus.completed;
+        });
+
+        if (mounted) {
+          Navigator.pop(context, true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Cita completada exitosamente'),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        print('❌ Error completando cita: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Error al completar la cita'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+            ),
+          );
+        }
       }
     }
   }
@@ -1644,31 +1588,85 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     if (result != null) {
       final newDateTime = result['dateTime'] as DateTime;
 
-      setState(() {
-        appointment['status'] = AppointmentStatus.rescheduled;
-        appointment['dateTime'] = newDateTime;
-      });
+      try {
+        // Mostrar loading
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Text('Reprogramando cita...'),
+                ],
+              ),
+              duration: Duration(seconds: 30),
+            ),
+          );
+        }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Cita reprogramada para ${_formatNewDateTime(newDateTime)}',
-            ),
-            backgroundColor: AppColors.secondary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusM),
-            ),
-            action: SnackBarAction(
-              label: 'Ver agenda',
-              textColor: AppColors.white,
-              onPressed: () {
-                Navigator.pushNamed(context, '/my-schedule');
-              },
-            ),
-          ),
+        // Llamar al API para reprogramar la cita
+        final appointmentDataSource = sl<AppointmentRemoteDataSource>();
+        await appointmentDataSource.rescheduleAppointment(
+          appointment['id'], 
+          newDateTime, 
+          'Reprogramada por el veterinario'
         );
+
+        // Actualizar estado local después de éxito
+        setState(() {
+          appointment['status'] = AppointmentStatus.rescheduled;
+          appointment['dateTime'] = newDateTime;
+        });
+
+        if (mounted) {
+          // Ocultar loading snackbar
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Cita reprogramada para ${_formatNewDateTime(newDateTime)}',
+              ),
+              backgroundColor: AppColors.secondary,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+              action: SnackBarAction(
+                label: 'Ver agenda',
+                textColor: AppColors.white,
+                onPressed: () {
+                  Navigator.pushNamed(context, '/my-schedule');
+                },
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          // Ocultar loading snackbar
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al reprogramar la cita: ${e.toString()}'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
       }
     }
   }
@@ -1744,7 +1742,7 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                             ),
                           ),
                           Text(
-                            '${appointment['petName']} - ${appointment['ownerName']}',
+                            '${appointment['petName']} - ${appointment['ownerDetails']['name'] ?? 'Propietario'}',
                             style: const TextStyle(
                               fontSize: 14,
                               color: AppColors.textSecondary,
@@ -2003,25 +2001,27 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
         child: Container(
           padding: const EdgeInsets.all(AppSizes.paddingL),
           decoration: BoxDecoration(
-            color: AppColors.warning.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(AppSizes.radiusL),
-            border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+            color: AppColors.error.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            border: Border.all(
+              color: AppColors.error.withOpacity(0.3),
+              width: 1,
+            ),
           ),
           child: Row(
             children: [
               Icon(
                 Icons.info_outline,
-                color: AppColors.warning,
-                size: AppSizes.iconM,
+                color: AppColors.error,
+                size: 20,
               ),
               const SizedBox(width: AppSizes.spaceM),
               const Expanded(
                 child: Text(
-                  'No hay horarios disponibles para este día',
+                  'No hay horarios disponibles para esta fecha.',
                   style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.warning,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -2047,58 +2047,43 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
           ],
         ),
         child: Wrap(
-          spacing: AppSizes.spaceM,
-          runSpacing: AppSizes.spaceM,
-          children:
-              availableSlots.map((timeSlot) {
-                final isSelected = selectedTimeSlot == timeSlot;
-                return GestureDetector(
-                  onTap: () => onTimeSlotSelected(timeSlot),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.paddingM,
-                      vertical: AppSizes.paddingS,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient:
-                          isSelected
-                              ? AppColors.primaryGradient
-                              : LinearGradient(
-                                colors: [AppColors.white, Colors.grey.shade100],
-                              ),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                      border: Border.all(
-                        color:
-                            isSelected
-                                ? AppColors.primary
-                                : AppColors.primary.withOpacity(0.2),
-                        width: isSelected ? 2 : 1,
-                      ),
-                      boxShadow:
-                          isSelected
-                              ? [
-                                BoxShadow(
-                                  color: AppColors.primary.withOpacity(0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ]
-                              : null,
-                    ),
-                    child: Text(
-                      timeSlot,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color:
-                            isSelected
-                                ? AppColors.white
-                                : AppColors.textPrimary,
-                      ),
-                    ),
+          spacing: AppSizes.spaceS,
+          runSpacing: AppSizes.spaceS,
+          children: availableSlots.map((slot) {
+            final isSelected = selectedTimeSlot == slot;
+            return GestureDetector(
+              onTap: () => onTimeSlotSelected(slot),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.paddingM,
+                  vertical: AppSizes.paddingS,
+                ),
+                decoration: BoxDecoration(
+                  gradient: isSelected
+                      ? LinearGradient(
+                          colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+                        )
+                      : null,
+                  color: isSelected ? null : AppColors.white,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.primary.withOpacity(0.3),
+                    width: 1,
                   ),
-                );
-              }).toList(),
+                ),
+                child: Text(
+                  slot,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isSelected ? AppColors.white : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
         ),
       ),
     );
@@ -2248,37 +2233,4 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     return '${weekdays[dateTime.weekday - 1]}, ${dateTime.day} de ${months[dateTime.month - 1]} a las $displayHour:$minute $period';
   }
 
-  Future<void> _cancelAppointment() async {
-    final confirmed = await ConfirmationModal.show(
-      context: context,
-      title: 'Cancelar cita',
-      message:
-          '¿Estás seguro de que quieres cancelar esta cita?\n\nSe notificará automáticamente al propietario.',
-      confirmText: 'Cancelar cita',
-      cancelText: 'No cancelar',
-      icon: Icons.cancel_outlined,
-      iconColor: AppColors.error,
-      confirmButtonColor: AppColors.error,
-    );
-
-    if (confirmed == true) {
-      setState(() {
-        appointment['status'] = AppointmentStatus.cancelled;
-      });
-
-      if (mounted) {
-        Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Cita cancelada exitosamente'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusM),
-            ),
-          ),
-        );
-      }
-    }
-  }
 }

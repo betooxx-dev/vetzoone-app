@@ -374,7 +374,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
                 'Agendar Cita',
                 Icons.calendar_today,
                 AppColors.primary,
-                () => Navigator.pushNamed(context, '/schedule-appointment'),
+                () => _navigateToScheduleAppointment(),
               ),
             ),
           ],
@@ -810,7 +810,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
           ),
           const SizedBox(height: AppSizes.spaceL),
           ElevatedButton.icon(
-            onPressed: () => Navigator.pushNamed(context, '/schedule-appointment'),
+            onPressed: () => _navigateToScheduleAppointment(),
             icon: const Icon(Icons.add, color: AppColors.white),
             label: const Text(
               'Agendar Cita',
@@ -995,6 +995,16 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
         return 'Cancelada';
       case AppointmentStatus.rescheduled:
         return 'Reprogramada';
+    }
+  }
+
+  Future<void> _navigateToScheduleAppointment() async {
+    final result = await Navigator.pushNamed(context, '/schedule-appointment');
+    
+    // Si se creó una cita exitosamente, refrescar los datos del dashboard
+    if (result == true) {
+      print('🟢 Cita creada exitosamente desde dashboard, refrescando datos...');
+      await _loadAppointments();
     }
   }
 }

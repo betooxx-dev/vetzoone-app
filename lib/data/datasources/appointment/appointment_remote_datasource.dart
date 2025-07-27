@@ -19,7 +19,7 @@ abstract class AppointmentRemoteDataSource {
   Future<void> confirmAppointment(String appointmentId);
   Future<void> cancelAppointment(String appointmentId, String? reason);
   Future<void> rescheduleAppointment(String appointmentId, DateTime newDate, String? notes);
-  Future<void> startAppointment(String appointmentId);
+  Future<void> completeAppointment(String appointmentId);
   Future<void> updateAppointmentStatus(String appointmentId, String status);
 }
 
@@ -322,6 +322,11 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
       if (e is DioException) {
         print('Status code: ${e.response?.statusCode}');
         print('Response data: ${e.response?.data}');
+        
+        // Manejo específico para error 403
+        if (e.response?.statusCode == 403) {
+          throw Exception('No tienes permisos para cancelar esta cita. Solo el veterinario asignado puede cancelarla.');
+        }
       }
       
       throw Exception('Error cancelling appointment: $e');
@@ -367,25 +372,27 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
   }
 
   @override
-  Future<void> startAppointment(String appointmentId) async {
+  Future<void> completeAppointment(String appointmentId) async {
     try {
-      final url = '${ApiEndpoints.baseUrl}/appointments/$appointmentId/start';
+      final url = '${ApiEndpoints.baseUrl}/appointments/$appointmentId';
       
-      print('▶️ INICIANDO CITA:');
+      print('✅ COMPLETANDO CITA:');
       print('URL: $url');
       print('Appointment ID: $appointmentId');
       
-      final response = await apiClient.put(url);
+      final response = await apiClient.put(url, data: {
+        'status': 'completed'
+      });
       
-      print('✅ CITA INICIADA:');
+      print('✅ CITA COMPLETADA:');
       print('Status: ${response.statusCode}');
       print('Data: ${response.data}');
       
       if (response.statusCode != 200 && response.statusCode != 201) {
-        throw Exception('Failed to start appointment - Status: ${response.statusCode}');
+        throw Exception('Failed to complete appointment - Status: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ ERROR INICIANDO CITA:');
+      print('❌ ERROR COMPLETANDO CITA:');
       print('Error: $e');
       
       if (e is DioException) {
@@ -393,7 +400,7 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
         print('Response data: ${e.response?.data}');
       }
       
-      throw Exception('Error starting appointment: $e');
+      throw Exception('Error completing appointment: $e');
     }
   }
 

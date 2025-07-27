@@ -39,13 +39,10 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
   List<String> _specialties = [];
   List<String> _services = [];
   List<String> _animalsServed = [];
-  List<Map<String, dynamic>> _availability = [];
-  
-  // Variable para la ubicación seleccionada del enum
+
   ChiapasLocation? _selectedLocation;
 
-  // Usar las especialidades del modelo de IA con nombres legibles
-  List<String> get _availableSpecialties => 
+  List<String> get _availableSpecialties =>
       VeterinaryConstants.aiModelSpecialties.map((s) => s.displayName).toList();
 
   final List<String> _availableServices = [
@@ -63,7 +60,6 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
     'Microchip',
   ];
 
-  // Usar el enum centralizado para tipos de animales
   List<String> get _availableAnimals => AnimalType.allAnimalNames;
 
   @override
@@ -260,17 +256,14 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
             'consultationFee': vetData['consultation_fee'] ?? 0.0,
           };
 
-          // Convertir códigos de IA a nombres legibles para mostrar en UI
           final specialtyCodes = List<String>.from(vetData['specialties'] ?? []);
-          _specialties = specialtyCodes.map((code) => 
-            VeterinaryConstants.getDisplayNameFromAICode(code)
-          ).toList();
-          
+          _specialties = specialtyCodes
+              .map((code) =>
+                  VeterinaryConstants.getDisplayNameFromAICode(code))
+              .toList();
+
           _services = List<String>.from(vetData['services'] ?? []);
           _animalsServed = List<String>.from(vetData['animals_served'] ?? []);
-          _availability = List<Map<String, dynamic>>.from(
-            vetData['availability'] ?? [],
-          );
         });
       } else {
         setState(() {
@@ -317,12 +310,12 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
     _experienceController.text =
         professionalData['yearsExperience']?.toString() ?? '0';
     _locationCityController.text = professionalData['locationCity'] ?? '';
-    // Inicializar la ubicación seleccionada basada en el texto guardado
+
     final savedCity = professionalData['locationCity'] as String?;
     if (savedCity != null && savedCity.isNotEmpty) {
       _selectedLocation = ChiapasLocation.fromDisplayName(savedCity);
     }
-    _locationStateController.text = 'Chiapas'; // Estado fijo para Chiapas
+    _locationStateController.text = 'Chiapas';
     _consultationFeeController.text =
         professionalData['consultationFee']?.toString() ?? '0';
   }
@@ -632,7 +625,6 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
             ],
           ),
           const SizedBox(height: AppSizes.spaceL),
-          _buildAvailabilityCard(),
         ],
       ),
     );
@@ -685,33 +677,32 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                     border: Border.all(color: AppColors.primary, width: 3),
                   ),
                   child: ClipOval(
-                    child:
-                        _selectedImageFile != null
-                            ? Image.file(_selectedImageFile!, fit: BoxFit.cover)
-                            : (professionalData['profileImage'] != null &&
+                    child: _selectedImageFile != null
+                        ? Image.file(_selectedImageFile!, fit: BoxFit.cover)
+                        : (professionalData['profileImage'] != null &&
                                 professionalData['profileImage'].isNotEmpty)
                             ? Image.network(
-                              professionalData['profileImage'],
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: AppColors.primary.withOpacity(0.1),
-                                  child: Icon(
-                                    Icons.person,
-                                    size: 40,
-                                    color: AppColors.primary,
-                                  ),
-                                );
-                              },
-                            )
+                                professionalData['profileImage'],
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: AppColors.primary.withOpacity(0.1),
+                                    child: Icon(
+                                      Icons.person,
+                                      size: 40,
+                                      color: AppColors.primary,
+                                    ),
+                                  );
+                                },
+                              )
                             : Container(
-                              color: AppColors.primary.withOpacity(0.1),
-                              child: Icon(
-                                Icons.person,
-                                size: 40,
-                                color: AppColors.primary,
+                                color: AppColors.primary.withOpacity(0.1),
+                                child: Icon(
+                                  Icons.person,
+                                  size: 40,
+                                  color: AppColors.primary,
+                                ),
                               ),
-                            ),
                   ),
                 ),
               const SizedBox(width: AppSizes.spaceM),
@@ -972,7 +963,8 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                 ),
               ),
               items: VeterinaryConstants.chiapasLocations
-                  .where((location) => location != ChiapasLocation.todasLasUbicaciones)
+                  .where((location) =>
+                      location != ChiapasLocation.todasLasUbicaciones)
                   .map((ChiapasLocation location) {
                 return DropdownMenuItem<ChiapasLocation>(
                   value: location,
@@ -985,13 +977,15 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                   ),
                 );
               }).toList(),
-              onChanged: enabled ? (ChiapasLocation? newValue) {
-                setState(() {
-                  _selectedLocation = newValue;
-                  // Actualizar el controller para mantener compatibilidad
-                  _locationCityController.text = newValue?.displayName ?? '';
-                });
-              } : null,
+              onChanged: enabled
+                  ? (ChiapasLocation? newValue) {
+                      setState(() {
+                        _selectedLocation = newValue;
+                        _locationCityController.text =
+                            newValue?.displayName ?? '';
+                      });
+                    }
+                  : null,
             ),
           ),
         ),
@@ -1104,13 +1098,12 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
         const SizedBox(height: AppSizes.spaceS),
         if (enabled)
           InkWell(
-            onTap:
-                () => _showMultiSelectDialog(
-                  title: label,
-                  items: items,
-                  availableOptions: availableOptions,
-                  onChanged: onChanged,
-                ),
+            onTap: () => _showMultiSelectDialog(
+              title: label,
+              items: items,
+              availableOptions: availableOptions,
+              onChanged: onChanged,
+            ),
             borderRadius: BorderRadius.circular(AppSizes.radiusM),
             child: Container(
               width: double.infinity,
@@ -1123,45 +1116,43 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
               child: Row(
                 children: [
                   Expanded(
-                    child:
-                        items.isEmpty
-                            ? Text(
-                              'Seleccionar $label',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: AppColors.textSecondary.withOpacity(0.6),
-                              ),
-                            )
-                            : Wrap(
-                              spacing: 8,
-                              runSpacing: 4,
-                              children:
-                                  items
-                                      .map(
-                                        (item) => Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.primary
-                                                .withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            item,
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: AppColors.primary,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                      )
-                                      .toList(),
+                    child: items.isEmpty
+                        ? Text(
+                            'Seleccionar $label',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: AppColors.textSecondary.withOpacity(0.6),
                             ),
+                          )
+                        : Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: items
+                                .map(
+                                  (item) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          AppColors.primary.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(
+                                        12,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      item,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
                   ),
                   Icon(Icons.arrow_drop_down, color: AppColors.primary),
                 ],
@@ -1179,44 +1170,42 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                 color: AppColors.textSecondary.withOpacity(0.2),
               ),
             ),
-            child:
-                items.isEmpty
-                    ? Text(
-                      'No se han seleccionado $label',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppColors.textSecondary.withOpacity(0.6),
-                      ),
-                    )
-                    : Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children:
-                          items
-                              .map(
-                                (item) => Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.textSecondary.withOpacity(
-                                      0.1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    item,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
+            child: items.isEmpty
+                ? Text(
+                    'No se han seleccionado $label',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.textSecondary.withOpacity(0.6),
                     ),
+                  )
+                : Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: items
+                        .map(
+                          (item) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.textSecondary.withOpacity(
+                                0.1,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              item,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
           ),
       ],
     );
@@ -1307,433 +1296,6 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
     });
   }
 
-  Widget _buildAvailabilityCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSizes.paddingL),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.15),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.schedule_outlined,
-                  color: AppColors.primary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: AppSizes.spaceM),
-              const Expanded(
-                child: Text(
-                  'Horarios de Disponibilidad',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              if (_isEditing)
-                IconButton(
-                  onPressed: _showAvailabilityDialog,
-                  icon: Icon(
-                    Icons.edit_outlined,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                  tooltip: 'Editar horarios',
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSizes.spaceM),
-          _availability.isEmpty
-              ? Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppSizes.paddingL),
-                  decoration: BoxDecoration(
-                    color: AppColors.backgroundLight,
-                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                    border: Border.all(
-                      color: AppColors.textSecondary.withOpacity(0.2),
-                    ),
-                  ),
-                  child: Text(
-                    'No se han configurado horarios de disponibilidad',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.textSecondary.withOpacity(0.7),
-                      fontStyle: FontStyle.italic,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                )
-              : Column(
-                  children: WeekDays.orderedDays.map((day) {
-                    final daySchedule = _availability.where((schedule) => 
-                      schedule['day'] == day
-                    ).toList();
-                    
-                    return _buildDayScheduleRow(day, daySchedule);
-                  }).toList(),
-                ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDayScheduleRow(String day, List<Map<String, dynamic>> schedules) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.paddingM,
-        vertical: AppSizes.paddingS,
-      ),
-      decoration: BoxDecoration(
-        color: schedules.isEmpty 
-            ? AppColors.backgroundLight 
-            : AppColors.primary.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        border: Border.all(
-          color: schedules.isEmpty 
-              ? AppColors.textSecondary.withOpacity(0.2)
-              : AppColors.primary.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              WeekDays.getDisplayName(day),
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: schedules.isEmpty 
-                    ? AppColors.textSecondary.withOpacity(0.7)
-                    : AppColors.textPrimary,
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSizes.spaceM),
-          Expanded(
-            child: schedules.isEmpty
-                ? Text(
-                    'No disponible',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary.withOpacity(0.6),
-                      fontStyle: FontStyle.italic,
-                    ),
-                  )
-                : Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: schedules.map((schedule) {
-                      final startTime = schedule['start_time'] ?? '';
-                      final endTime = schedule['end_time'] ?? '';
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.primary.withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          '$startTime - $endTime',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAvailabilityDialog() {
-    List<Map<String, dynamic>> tempAvailability = _availability.map((schedule) => 
-      Map<String, dynamic>.from(schedule)
-    ).toList();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Row(
-                children: [
-                  Icon(
-                    Icons.schedule_outlined,
-                    color: AppColors.primary,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Configurar Horarios',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              content: SizedBox(
-                width: double.maxFinite,
-                height: 500,
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: WeekDays.orderedDays.map((day) {
-                      final daySchedules = tempAvailability.where((schedule) => 
-                        schedule['day'] == day
-                      ).toList();
-                      
-                      return _buildDayAvailabilityEditor(
-                        day, 
-                        daySchedules, 
-                        setDialogState,
-                        tempAvailability,
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _availability = tempAvailability;
-                    });
-                    Navigator.of(context).pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.white,
-                  ),
-                  child: const Text('Guardar'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildDayAvailabilityEditor(
-    String day, 
-    List<Map<String, dynamic>> daySchedules,
-    StateSetter setDialogState,
-    List<Map<String, dynamic>> tempAvailability,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundLight,
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                WeekDays.getDisplayName(day),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              Row(
-                children: [
-                  Switch(
-                    value: daySchedules.isNotEmpty,
-                    onChanged: (bool value) {
-                      setDialogState(() {
-                        if (value) {
-                          // Agregar horario por defecto
-                          tempAvailability.add({
-                            'day': day,
-                            'start_time': '09:00',
-                            'end_time': '17:00',
-                          });
-                        } else {
-                          // Remover todos los horarios del día
-                          tempAvailability.removeWhere((schedule) => 
-                            schedule['day'] == day
-                          );
-                        }
-                      });
-                    },
-                    activeColor: AppColors.primary,
-                  ),
-                  if (daySchedules.isNotEmpty)
-                    IconButton(
-                      onPressed: () {
-                        setDialogState(() {
-                          tempAvailability.add({
-                            'day': day,
-                            'start_time': '09:00',
-                            'end_time': '17:00',
-                          });
-                        });
-                      },
-                      icon: Icon(
-                        Icons.add_circle_outline,
-                        color: AppColors.primary,
-                        size: 20,
-                      ),
-                      tooltip: 'Agregar horario',
-                    ),
-                ],
-              ),
-            ],
-          ),
-          if (daySchedules.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            ...daySchedules.asMap().entries.map((entry) {
-              final schedule = entry.value;
-              final globalIndex = tempAvailability.indexOf(schedule);
-              
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.primary.withOpacity(0.2),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: schedule['start_time'],
-                        decoration: const InputDecoration(
-                          labelText: 'Inicio',
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 8,
-                          ),
-                        ),
-                        items: WorkingHours.availableHours.map((hour) {
-                          return DropdownMenuItem(
-                            value: hour,
-                            child: Text(hour),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            setDialogState(() {
-                              tempAvailability[globalIndex]['start_time'] = newValue;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: schedule['end_time'],
-                        decoration: const InputDecoration(
-                          labelText: 'Fin',
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 8,
-                          ),
-                        ),
-                        items: WorkingHours.availableHours.map((hour) {
-                          return DropdownMenuItem(
-                            value: hour,
-                            child: Text(hour),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            setDialogState(() {
-                              tempAvailability[globalIndex]['end_time'] = newValue;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                    if (daySchedules.length > 1)
-                      IconButton(
-                        onPressed: () {
-                          setDialogState(() {
-                            tempAvailability.removeAt(globalIndex);
-                          });
-                        },
-                        icon: const Icon(
-                          Icons.delete_outline,
-                          color: AppColors.error,
-                          size: 20,
-                        ),
-                        tooltip: 'Eliminar horario',
-                      ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ],
-        ],
-      ),
-    );
-  }
-
   bool _listsEqual(List<String> list1, List<String> list2) {
     if (list1.length != list2.length) return false;
     for (int i = 0; i < list1.length; i++) {
@@ -1778,18 +1340,18 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
       final bio = _bioController.text.trim();
       final experience = int.tryParse(_experienceController.text.trim()) ?? 0;
       final locationCity = _locationCityController.text.trim();
-      final locationState = 'Chiapas'; // Estado fijo
+      final locationState = 'Chiapas';
       final consultationFee =
           double.tryParse(_consultationFeeController.text.trim()) ?? 0.0;
 
       final currentSpecialties = List<String>.from(
         vetData['specialties'] ?? [],
       );
-      // Convertir códigos de IA actuales a nombres legibles para comparación
-      final currentSpecialtiesDisplay = currentSpecialties.map((code) => 
-        VeterinaryConstants.getDisplayNameFromAICode(code)
-      ).toList();
-      
+
+      final currentSpecialtiesDisplay = currentSpecialties
+          .map((code) => VeterinaryConstants.getDisplayNameFromAICode(code))
+          .toList();
+
       final currentServices = List<String>.from(vetData['services'] ?? []);
       final currentAnimalsServed = List<String>.from(
         vetData['animals_served'] ?? [],
@@ -1863,13 +1425,12 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
               );
             }
 
-            final fullResponse =
-                vetResponse.containsKey('message')
-                    ? vetResponse
-                    : {
-                      'message': 'Vet retrieved successfully',
-                      'data': vetResponse,
-                    };
+            final fullResponse = vetResponse.containsKey('message')
+                ? vetResponse
+                : {
+                    'message': 'Vet retrieved successfully',
+                    'data': vetResponse,
+                  };
 
             await SharedPreferencesHelper.saveVetProfileFromResponse(
               fullResponse,
@@ -1915,10 +1476,11 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
           );
         }
 
-        // Convertir nombres legibles de vuelta a códigos de IA para guardar en BD
-        final specialtyCodesToSave = _specialties.map((displayName) => 
-          VeterinaryConstants.getSpecialtyCodeForAI(displayName) ?? displayName
-        ).toList();
+        final specialtyCodesToSave = _specialties
+            .map((displayName) =>
+                VeterinaryConstants.getSpecialtyCodeForAI(displayName) ??
+                displayName)
+            .toList();
 
         final vetDataToSave = {
           'bio': bio,
@@ -1929,7 +1491,6 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
           'services': _services,
           'consultation_fee': consultationFee,
           'animals_served': _animalsServed,
-          'availability': _availability,
         };
 
         final vetRemoteDataSource = sl<VetRemoteDataSource>();
@@ -1951,7 +1512,6 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
           'services': vetResponseData['services'],
           'consultation_fee': vetResponseData['consultation_fee'],
           'animals_served': vetResponseData['animals_served'],
-          'availability': vetResponseData['availability'],
         };
         await SharedPreferencesHelper.saveVetData(vetDataForSP);
 
@@ -1963,18 +1523,15 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
         professionalData['consultationFee'] =
             vetResponseData['consultation_fee'];
 
-        // Convertir códigos de IA de vuelta a nombres legibles para mostrar en UI
-        final savedSpecialtyCodes = List<String>.from(vetResponseData['specialties'] ?? []);
-        _specialties = savedSpecialtyCodes.map((code) => 
-          VeterinaryConstants.getDisplayNameFromAICode(code)
-        ).toList();
-        
+        final savedSpecialtyCodes =
+            List<String>.from(vetResponseData['specialties'] ?? []);
+        _specialties = savedSpecialtyCodes
+            .map((code) => VeterinaryConstants.getDisplayNameFromAICode(code))
+            .toList();
+
         _services = List<String>.from(vetResponseData['services'] ?? []);
         _animalsServed = List<String>.from(
           vetResponseData['animals_served'] ?? [],
-        );
-        _availability = List<Map<String, dynamic>>.from(
-          vetResponseData['availability'] ?? [],
         );
       }
 

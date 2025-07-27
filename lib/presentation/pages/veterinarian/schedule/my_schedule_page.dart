@@ -94,7 +94,21 @@ class _MySchedulePageState extends State<MySchedulePage> {
   }
 
   String _getOwnerName(domain.Appointment appointment) {
-    // Si no hay user en la relación, intentamos crear un nombre genérico
+    // Intentar obtener el nombre del dueño desde la relación user
+    if (appointment.user != null) {
+      final firstName = appointment.user!.firstName;
+      final lastName = appointment.user!.lastName;
+      
+      if (firstName.isNotEmpty && lastName.isNotEmpty) {
+        return '$firstName $lastName';
+      } else if (firstName.isNotEmpty) {
+        return firstName;
+      } else if (lastName.isNotEmpty) {
+        return lastName;
+      }
+    }
+    
+    // Si no hay user en la relación, usar el nombre genérico
     return 'Propietario';
   }
 
@@ -1340,9 +1354,10 @@ class _MySchedulePageState extends State<MySchedulePage> {
         color = AppColors.error;
         text = 'Cancelada';
         break;
-      default:
-        color = AppColors.textSecondary;
-        text = 'Desconocido';
+      case AppointmentStatus.rescheduled:
+        color = AppColors.accent;
+        text = 'Reprogramada';
+        break;
     }
 
     return Container(
@@ -1530,15 +1545,15 @@ class _MySchedulePageState extends State<MySchedulePage> {
     }
   }
 
-  Future<void> _handleStartAppointment(domain.Appointment appointment) async {
+  Future<void> _handleCompleteAppointment(domain.Appointment appointment) async {
     try {
       setState(() => _isLoading = true);
       
-      await _appointmentDataSource.startAppointment(appointment.id);
+      await _appointmentDataSource.completeAppointment(appointment.id);
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Cita iniciada para ${_getPetName(appointment)}'),
+          content: Text('Cita completada para ${_getPetName(appointment)}'),
           backgroundColor: AppColors.secondary,
           behavior: SnackBarBehavior.floating,
         ),
@@ -1547,10 +1562,10 @@ class _MySchedulePageState extends State<MySchedulePage> {
       // Recargar las citas
       await _loadVetAppointments();
     } catch (e) {
-      print('❌ Error iniciando cita: $e');
+      print('❌ Error completando cita: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al iniciar la cita: $e'),
+          content: Text('Error al completar la cita: $e'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -1626,15 +1641,16 @@ class _MySchedulePageState extends State<MySchedulePage> {
       ));
     }
     
-    // Iniciar cita (solo si está confirmada)
-    if (appointment.status == domain.AppointmentStatus.confirmed) {  
+    // Completar cita (solo si está confirmada o en progreso)
+    if (appointment.status == domain.AppointmentStatus.confirmed || 
+        appointment.status == domain.AppointmentStatus.inProgress) {  
       buttons.add(_buildActionButton(
-        icon: Icons.play_arrow,
-        text: 'Iniciar Cita',
+        icon: Icons.check_circle,
+        text: 'Completar Cita',
         color: AppColors.secondary,
         onTap: () {
           Navigator.pop(context);
-          _handleStartAppointment(appointment);
+          _handleCompleteAppointment(appointment);
         },
       ));
     }
@@ -1764,116 +1780,533 @@ class _MySchedulePageState extends State<MySchedulePage> {
   }
 
   void _showRescheduleModal(domain.Appointment appointment) {
-    DateTime selectedNewDate = appointment.appointmentDate;
-    final notesController = TextEditingController();
-    
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSizes.radiusL),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildRescheduleModal(appointment),
+    );
+  }
+
+  Widget _buildRescheduleModal(domain.Appointment appointment) {
+    DateTime? selectedDate;
+    String? selectedTimeSlot;
+
+    return StatefulBuilder(
+      builder: (context, setModalState) {
+        final canConfirm = selectedDate != null && selectedTimeSlot != null;
+
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.8,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.white, Colors.grey.shade50],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(AppSizes.radiusXL),
+              topRight: Radius.circular(AppSizes.radiusXL),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
-          title: const Text('Reprogramar Cita'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
             children: [
-              Text(
-                'Cita con ${_getPetName(appointment)}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(top: AppSizes.spaceM),
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondary.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: AppSizes.spaceM),
-              const Text('Nueva fecha y hora:'),
-              const SizedBox(height: AppSizes.spaceS),
-              InkWell(
-                onTap: () async {
-                  final pickedDate = await showDatePicker(
-                    context: context,
-                    initialDate: selectedNewDate,
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                  );
-                  
-                  if (pickedDate != null) {
-                    final pickedTime = await showTimePicker(
-                      context: context,
-                      initialTime: TimeOfDay.fromDateTime(selectedNewDate),
-                    );
-                    
-                    if (pickedTime != null) {
-                      setDialogState(() {
-                        selectedNewDate = DateTime(
-                          pickedDate.year,
-                          pickedDate.month,
-                          pickedDate.day,
-                          pickedTime.hour,
-                          pickedTime.minute,
-                        );
-                      });
-                    }
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(AppSizes.paddingM),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.primary),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
+
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.paddingL),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                      ),
+                      child: Icon(
+                        Icons.schedule_rounded,
+                        color: AppColors.secondary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.spaceM),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Reprogramar Cita',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            '${_getPetName(appointment)} - ${_getOwnerName(appointment)}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.paddingL,
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.calendar_today, color: AppColors.primary),
-                      const SizedBox(width: AppSizes.spaceS),
-                      Text(
-                        '${selectedNewDate.day}/${selectedNewDate.month}/${selectedNewDate.year} ${selectedNewDate.hour.toString().padLeft(2, '0')}:${selectedNewDate.minute.toString().padLeft(2, '0')}',
-                        style: const TextStyle(fontSize: 16),
+                      _buildModalFormSection(
+                        title: 'Fecha',
+                        child: GestureDetector(
+                          onTap: () => _selectDateForReschedule(setModalState, (date) {
+                            selectedDate = date;
+                            selectedTimeSlot = null;
+                          }),
+                          child: Container(
+                            padding: const EdgeInsets.all(AppSizes.paddingM),
+                            decoration: BoxDecoration(
+                              color: AppColors.white.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                              border: Border.all(
+                                color: AppColors.primary.withOpacity(0.2),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_outlined,
+                                  color: AppColors.secondary,
+                                  size: AppSizes.iconM,
+                                ),
+                                const SizedBox(width: AppSizes.spaceM),
+                                Expanded(
+                                  child: Text(
+                                    selectedDate != null
+                                        ? _formatDate(selectedDate!)
+                                        : 'Selecciona una fecha',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: selectedDate != null
+                                          ? AppColors.textPrimary
+                                          : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.arrow_forward_ios,
+                                  color: AppColors.textSecondary,
+                                  size: AppSizes.iconS,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: AppSizes.spaceL),
+
+                      if (selectedDate != null)
+                        _buildTimeSlotSelectionForReschedule(
+                          selectedDate!,
+                          selectedTimeSlot,
+                          (timeSlot) {
+                            setModalState(() {
+                              selectedTimeSlot = timeSlot;
+                            });
+                          },
+                        ),
+
+                      const SizedBox(height: AppSizes.spaceL),
+
+                      Container(
+                        padding: const EdgeInsets.all(AppSizes.paddingM),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                          border: Border.all(
+                            color: AppColors.secondary.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: AppColors.secondary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: AppSizes.spaceM),
+                            const Expanded(
+                              child: Text(
+                                'Se notificará automáticamente al propietario sobre la nueva fecha y hora.',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: AppSizes.spaceM),
-              const Text('Notas adicionales (opcional):'),
-              const SizedBox(height: AppSizes.spaceS),
-              TextField(
-                controller: notesController,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                  ),
-                  hintText: 'Agregar notas...',
+
+              Padding(
+                padding: const EdgeInsets.all(AppSizes.paddingL),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSizes.paddingM,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancelar',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.spaceM),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: canConfirm
+                              ? LinearGradient(
+                                  colors: [
+                                    AppColors.secondary,
+                                    AppColors.secondary.withOpacity(0.8),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                )
+                              : null,
+                          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                        ),
+                        child: ElevatedButton(
+                          onPressed: canConfirm
+                              ? () {
+                                  final newDateTime = _createDateTimeFromSlot(
+                                    selectedDate!,
+                                    selectedTimeSlot!,
+                                  );
+                                  Navigator.pop(context);
+                                  _handleRescheduleAppointment(
+                                    appointment,
+                                    newDateTime,
+                                    null,
+                                  );
+                                }
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: canConfirm
+                                ? Colors.transparent
+                                : AppColors.textSecondary.withOpacity(0.3),
+                            shadowColor: Colors.transparent,
+                            foregroundColor: AppColors.white,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSizes.paddingM,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                            ),
+                          ),
+                          child: const Text(
+                            'Confirmar',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
+        );
+      },
+    );
+  }
+
+  Widget _buildModalFormSection({
+    required String title,
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: AppSizes.spaceS),
+        child,
+      ],
+    );
+  }
+
+  Widget _buildTimeSlotSelectionForReschedule(
+    DateTime selectedDate,
+    String? selectedTimeSlot,
+    Function(String) onTimeSlotSelected,
+  ) {
+    final availableSlots = _getAvailableTimeSlotsForDate(selectedDate);
+
+    if (availableSlots.isEmpty) {
+      return _buildModalFormSection(
+        title: 'Horarios disponibles',
+        child: Container(
+          padding: const EdgeInsets.all(AppSizes.paddingL),
+          decoration: BoxDecoration(
+            color: AppColors.error.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            border: Border.all(
+              color: AppColors.error.withOpacity(0.3),
+              width: 1,
             ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _handleRescheduleAppointment(
-                  appointment, 
-                  selectedNewDate, 
-                  notesController.text.trim().isEmpty ? null : notesController.text.trim()
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.white,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: AppColors.error,
+                size: 20,
               ),
-              child: const Text('Reprogramar'),
+              const SizedBox(width: AppSizes.spaceM),
+              const Expanded(
+                child: Text(
+                  'No hay horarios disponibles para esta fecha.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return _buildModalFormSection(
+      title: 'Horarios disponibles',
+      child: Container(
+        padding: const EdgeInsets.all(AppSizes.paddingM),
+        decoration: BoxDecoration(
+          color: AppColors.white.withOpacity(0.9),
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          border: Border.all(
+            color: AppColors.primary.withOpacity(0.2),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
+        child: Wrap(
+          spacing: AppSizes.spaceS,
+          runSpacing: AppSizes.spaceS,
+          children: availableSlots.map((slot) {
+            final isSelected = selectedTimeSlot == slot;
+            return GestureDetector(
+              onTap: () => onTimeSlotSelected(slot),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.paddingM,
+                  vertical: AppSizes.paddingS,
+                ),
+                decoration: BoxDecoration(
+                  gradient: isSelected
+                      ? LinearGradient(
+                          colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+                        )
+                      : null,
+                  color: isSelected ? null : AppColors.white,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.primary.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  slot,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isSelected ? AppColors.white : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
+  }
+
+  void _selectDateForReschedule(
+    StateSetter setModalState,
+    Function(DateTime) onDateSelected,
+  ) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now().add(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 90)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: AppColors.white,
+              surface: AppColors.white,
+              onSurface: AppColors.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setModalState(() {
+        onDateSelected(picked);
+      });
+    }
+  }
+
+  List<String> _getAvailableTimeSlotsForDate(DateTime date) {
+    final dayOfWeek = date.weekday;
+
+    if (dayOfWeek == 7) {
+      return [];
+    }
+
+    if (dayOfWeek == 6) {
+      return [
+        '9:00 AM',
+        '10:00 AM',
+        '11:00 AM',
+        '12:00 PM',
+        '1:00 PM',
+        '2:00 PM',
+      ];
+    }
+
+    return [
+      '8:00 AM',
+      '9:00 AM',
+      '10:00 AM',
+      '11:00 AM',
+      '12:00 PM',
+      '1:00 PM',
+      '2:00 PM',
+      '3:00 PM',
+      '4:00 PM',
+      '5:00 PM',
+      '6:00 PM',
+    ];
+  }
+
+  DateTime _createDateTimeFromSlot(DateTime date, String timeSlot) {
+    final timeParts = timeSlot.split(':');
+    final hour = int.parse(timeParts[0]);
+    final minutePart = timeParts[1].split(' ');
+    final minute = int.parse(minutePart[0]);
+    final period = minutePart[1];
+
+    int adjustedHour = hour;
+    if (period == 'PM' && hour != 12) {
+      adjustedHour = hour + 12;
+    } else if (period == 'AM' && hour == 12) {
+      adjustedHour = 0;
+    }
+
+    return DateTime(date.year, date.month, date.day, adjustedHour, minute);
+  }
+
+  String _formatDate(DateTime date) {
+    final months = [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
+    ];
+
+    final weekdays = [
+      'Lunes',
+      'Martes',
+      'Miércoles',
+      'Jueves',
+      'Viernes',
+      'Sábado',
+      'Domingo',
+    ];
+
+    return '${weekdays[date.weekday - 1]}, ${date.day} de ${months[date.month - 1]}';
   }
 
   // Modal para mostrar citas pendientes
