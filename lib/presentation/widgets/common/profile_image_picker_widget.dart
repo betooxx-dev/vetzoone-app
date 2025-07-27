@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import '../../../core/utils/image_utils.dart';
 
 class ProfileImagePickerWidget extends StatelessWidget {
   final File? imageFile;
@@ -85,7 +86,9 @@ class ProfileImagePickerWidget extends StatelessWidget {
           return _buildDefaultAvatar();
         },
       );
-    } else if (imageUrl != null && imageUrl!.isNotEmpty) {
+    } else if (imageUrl != null && 
+               imageUrl!.isNotEmpty && 
+               ImageUtils.isValidImageUrl(imageUrl!)) {
       return Image.network(
         imageUrl!,
         fit: BoxFit.cover,
@@ -105,6 +108,7 @@ class ProfileImagePickerWidget extends StatelessWidget {
           );
         },
         errorBuilder: (context, error, stackTrace) {
+          print('❌ Error cargando imagen de perfil de red: $error');
           return _buildDefaultAvatar();
         },
       );

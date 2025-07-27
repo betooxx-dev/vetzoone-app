@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/utils/image_utils.dart';
 
 class UserAvatar extends StatelessWidget {
   final String? imageUrl;
@@ -29,12 +30,26 @@ class UserAvatar extends StatelessWidget {
         ),
         child: ClipOval(
           child:
-              (imageUrl != null && imageUrl!.isNotEmpty)
+              (imageUrl != null && imageUrl!.isNotEmpty && ImageUtils.isValidImageUrl(imageUrl!))
                   ? Image.network(
                     imageUrl!,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
+                      print('Error loading user avatar: $error');
                       return _buildDefaultAvatar();
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          color: borderColor,
+                          strokeWidth: 2,
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded / 
+                                loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      );
                     },
                   )
                   : _buildDefaultAvatar(),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/veterinary_constants.dart';
 import '../../../../core/injection/injection.dart';
 import '../../../../domain/entities/veterinarian.dart';
 import '../../../blocs/veterinarian/veterinarian_bloc.dart';
@@ -223,7 +224,9 @@ class _VeterinarianProfilePageState extends State<VeterinarianProfilePage> {
               const SizedBox(height: AppSizes.spaceXS),
               Text(
                 veterinarian.specialties.isNotEmpty
-                    ? veterinarian.specialties.join(', ')
+                    ? veterinarian.specialties
+                        .map((specialtyCode) => VeterinaryConstants.getDisplayNameFromAICode(specialtyCode))
+                        .join(', ')
                     : 'Especialidad no definida',
                 style: TextStyle(
                   fontSize: 16,

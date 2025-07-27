@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/injection/injection.dart';
 import '../../../../core/services/user_service.dart';
 import '../../../../core/storage/shared_preferences_helper.dart';
+import '../../../../domain/usecases/auth/logout_usecase.dart';
 
 class VetSettingsPage extends StatefulWidget {
   const VetSettingsPage({super.key});
@@ -544,8 +546,22 @@ class _VetSettingsPageState extends State<VetSettingsPage> {
                       borderRadius: BorderRadius.circular(AppSizes.radiusS),
                     ),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     Navigator.pop(context);
+                    
+                    try {
+                      // Ejecutar logout completo usando el usecase
+                      final logoutUseCase = sl<LogoutUseCase>();
+                      await logoutUseCase.call();
+                      
+                      print('🔐 Logout ejecutado correctamente');
+                    } catch (e) {
+                      print('⚠️ Error durante logout: $e');
+                      // Incluso si hay error, limpiar datos localmente
+                      await SharedPreferencesHelper.clearLoginData();
+                    }
+                    
+                    // Navegar a login eliminando todo el stack
                     Navigator.pushNamedAndRemoveUntil(
                       context,
                       '/login',

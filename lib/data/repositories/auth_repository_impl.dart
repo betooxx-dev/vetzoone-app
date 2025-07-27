@@ -10,7 +10,13 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await remoteDataSource.login(email, password);
+    
+    // Guardar datos de login (que ya limpia los datos previos)
     await SharedPreferencesHelper.saveLoginData(response);
+    
+    // Pre-cargar datos del veterinario si existe
+    await SharedPreferencesHelper.preloadVeterinarianData();
+    
     return response;
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/utils/image_utils.dart';
 
 class VeterinarianCard extends StatelessWidget {
   final Map<String, dynamic> veterinarian;
@@ -90,13 +91,16 @@ class VeterinarianCard extends StatelessWidget {
             ],
           ),
           child:
-              veterinarian['profileImage'] != null && veterinarian['profileImage'].toString().isNotEmpty
+              veterinarian['profileImage'] != null && 
+              veterinarian['profileImage'].toString().isNotEmpty &&
+              ImageUtils.isValidImageUrl(veterinarian['profileImage'].toString())
                   ? ClipRRect(
                     borderRadius: BorderRadius.circular(AppSizes.radiusL),
                     child: Image.network(
                       veterinarian['profileImage'],
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
+                        print('Error loading profile image: $error');
                         return const Icon(
                           Icons.person,
                           color: AppColors.white,

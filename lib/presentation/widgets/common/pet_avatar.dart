@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/image_utils.dart';
 import '../../../domain/entities/pet.dart';
 
 class PetAvatar extends StatelessWidget {
@@ -25,10 +26,14 @@ class PetAvatar extends StatelessWidget {
     return CircleAvatar(
       backgroundColor: effectiveBackgroundColor,
       radius: radius,
-      backgroundImage: imageUrl != null && imageUrl.isNotEmpty
+      backgroundImage: imageUrl != null && 
+                      imageUrl.isNotEmpty && 
+                      ImageUtils.isValidImageUrl(imageUrl)
           ? NetworkImage(imageUrl)
           : null,
-      child: imageUrl == null || imageUrl.isEmpty
+      child: imageUrl == null || 
+             imageUrl.isEmpty || 
+             !ImageUtils.isValidImageUrl(imageUrl)
           ? Icon(
               _getPetIcon(pet?.type),
               color: effectiveIconColor,

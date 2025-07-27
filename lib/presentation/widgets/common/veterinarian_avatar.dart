@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/image_utils.dart';
 import '../../../domain/entities/veterinarian.dart';
 
 class VeterinarianAvatar extends StatelessWidget {
@@ -25,10 +26,14 @@ class VeterinarianAvatar extends StatelessWidget {
     return CircleAvatar(
       backgroundColor: effectiveBackgroundColor,
       radius: radius,
-      backgroundImage: profilePhoto != null && profilePhoto.isNotEmpty
+      backgroundImage: profilePhoto != null && 
+                      profilePhoto.isNotEmpty && 
+                      ImageUtils.isValidImageUrl(profilePhoto)
           ? NetworkImage(profilePhoto)
           : null,
-      child: profilePhoto == null || profilePhoto.isEmpty
+      child: profilePhoto == null || 
+             profilePhoto.isEmpty || 
+             !ImageUtils.isValidImageUrl(profilePhoto)
           ? Icon(
               Icons.local_hospital,
               color: effectiveIconColor,

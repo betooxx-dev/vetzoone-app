@@ -47,7 +47,6 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
   late Animation<Offset> _slideAnimation;
 
   final TextEditingController _searchController = TextEditingController();
-  List<dynamic> _allVeterinarians = [];
 
   String _selectedLocation = VeterinaryConstants.chiapasLocations.first;
   String _selectedSpecialty = VeterinaryConstants.veterinarySpecialties.first;
@@ -656,8 +655,6 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
         }
 
         if (state is VeterinarianSearchSuccess) {
-          _allVeterinarians = state.veterinarians;
-
           final displayVets =
               _isSearching
                   ? state.veterinarians
@@ -674,6 +671,11 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
                 _buildSectionHeader(state.veterinarians.length, false),
                 const SizedBox(height: AppSizes.spaceM),
               ] else ...[
+                // ✨ Mostrar información de predicción de IA si está disponible
+                if (state.aiPrediction != null) ...[
+                  _buildAIPredictionCard(state.aiPrediction!),
+                  const SizedBox(height: AppSizes.spaceM),
+                ],
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSizes.paddingL,
@@ -885,7 +887,9 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
     // Obtener especialidades o mostrar texto por defecto
     String specialty = 'Medicina General';
     if (vet.specialties != null && vet.specialties!.isNotEmpty) {
-      specialty = vet.specialties!.first;
+      // 🤖 Mapear código de especialidad a nombre legible
+      final specialtyCode = vet.specialties!.first;
+      specialty = VeterinaryConstants.getDisplayNameFromAICode(specialtyCode);
     }
 
     // Obtener tarifa de consulta
@@ -1265,6 +1269,7 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
         location: VeterinaryConstants.getLocationForApi(_selectedLocation),
         specialty: VeterinaryConstants.getSpecialtyForApi(_selectedSpecialty),
         symptoms: true,
+        useAI: true, // 🤖 Activar IA explícitamente
         limit: 100,
       ),
     );
@@ -1365,5 +1370,156 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
         _performFilteredSearch();
       }
     });
+  }
+
+  // ✨ NUEVO: Widget para mostrar información de predicción de IA
+  Widget _buildAIPredictionCard(AIPrediction aiPrediction) {
+    // 🤖 Convertir el código de IA a nombre legible
+    final specialtyDisplayName = VeterinaryConstants.getDisplayNameFromAICode(
+      aiPrediction.specialtyCode
+    );
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingL),
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withOpacity(0.1),
+            AppColors.secondary.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                ),
+                child: const Icon(
+                  Icons.psychology,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: AppSizes.spaceS),
+              const Text(
+                'Búsqueda Inteligente',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.spaceS),
+          Text(
+            'Interpretamos tu consulta: "${aiPrediction.originalQuery}"',
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          const SizedBox(height: AppSizes.spaceXS),
+          Row(
+            children: [
+              const Text(
+                'Especialidad sugerida: ',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  specialtyDisplayName,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.spaceXS),
+          Row(
+            children: [
+              const Text(
+                'Confianza:',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(width: AppSizes.spaceXS),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: _getConfidenceColor(aiPrediction.confidence),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                ),
+                child: Text(
+                  '${(aiPrediction.confidence * 100).toInt()}%',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSizes.spaceS),
+              if (aiPrediction.confidence >= 0.8)
+                const Icon(
+                  Icons.verified,
+                  color: Colors.green,
+                  size: 16,
+                )
+              else if (aiPrediction.confidence >= 0.6)
+                const Icon(
+                  Icons.help_outline,
+                  color: Colors.orange,
+                  size: 16,
+                )
+              else
+                const Icon(
+                  Icons.warning_amber_outlined,
+                  color: Colors.red,
+                  size: 16,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper para obtener el color según el nivel de confianza
+  Color _getConfidenceColor(double confidence) {
+    if (confidence >= 0.8) {
+      return Colors.green;
+    } else if (confidence >= 0.6) {
+      return Colors.orange;
+    } else {
+      return Colors.red;
+    }
   }
 }

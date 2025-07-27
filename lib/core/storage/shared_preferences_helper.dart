@@ -1,5 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../injection/injection.dart';
+import '../../data/datasources/vet/vet_remote_datasource.dart';
 
 class SharedPreferencesHelper {
   static const String _keyToken = 'auth_token';
@@ -33,8 +35,14 @@ class SharedPreferencesHelper {
 
   static Future<void> saveLoginData(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
+    
+    // 🧹 Limpiar datos previos antes de guardar los nuevos
+    print('🧹 Limpiando datos previos antes del nuevo login...');
+    await clearAllData();
+    
     final userData = data['data'];
 
+    print('💾 Guardando nuevos datos de login...');
     await prefs.setString(_keyToken, userData['token']);
     await prefs.setString(_keyUserId, userData['id']);
     await prefs.setString(_keyUserEmail, userData['email']);
@@ -48,6 +56,8 @@ class SharedPreferencesHelper {
     await prefs.setString(_keyUserRole, userData['role']);
     await prefs.setBool(_keyUserIsActive, userData['is_active']);
     await prefs.setBool(_keyUserIsVerified, userData['is_verified']);
+    
+    print('✅ Datos de login guardados correctamente');
   }
 
   static Future<String?> getToken() async {
@@ -67,6 +77,10 @@ class SharedPreferencesHelper {
 
   static Future<void> clearLoginData() async {
     final prefs = await SharedPreferences.getInstance();
+    
+    print('🧹 Iniciando limpieza completa de datos...');
+    
+    // Limpiar datos específicos del usuario (por seguridad)
     await prefs.remove(_keyToken);
     await prefs.remove(_keyUserId);
     await prefs.remove(_keyUserEmail);
@@ -78,8 +92,21 @@ class SharedPreferencesHelper {
     await prefs.remove(_keyUserIsActive);
     await prefs.remove(_keyUserIsVerified);
     
-    // También limpiar datos del veterinario
+    // También limpiar datos del veterinario específicamente
     await clearVetData();
+    
+    // 🔥 LIMPIEZA COMPLETA: Eliminar TODAS las claves para asegurar logout limpio
+    await prefs.clear();
+    
+    // Verificar que realmente se limpiaron los datos
+    final keys = prefs.getKeys();
+    if (keys.isNotEmpty) {
+      print('⚠️ Aún quedan ${keys.length} claves después de limpiar: $keys');
+      // Intentar limpiar una vez más
+      await prefs.clear();
+    }
+    
+    print('✅ Limpieza completa de SharedPreferences finalizada');
   }
 
   static Future<String?> getUserId() async {
@@ -585,6 +612,54 @@ class SharedPreferencesHelper {
     await prefs.remove(_keyVetAvailability);
     
     print('🗑️ Datos del veterinario eliminados de SharedPreferences');
+  }
+
+  /// Método de emergencia para limpiar ABSOLUTAMENTE TODOS los datos
+  static Future<void> clearAllData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    print('🔥 LIMPIEZA COMPLETA: Todos los datos eliminados de SharedPreferences');
+  }
+
+  /// Método para pre-cargar datos del veterinario después del login
+  static Future<bool> preloadVeterinarianData() async {
+    try {
+      print('🔄 Pre-cargando datos del veterinario...');
+      
+      // Obtener userId del token guardado
+      final userId = await getUserId();
+      if (userId == null || userId.isEmpty) {
+        print('❌ No se encontró userId después del login');
+        return false;
+      }
+      
+      print('👤 Usuario ID encontrado: $userId');
+      
+      // Obtener dependencia del data source
+      final vetDataSource = sl<VetRemoteDataSource>();
+      
+      // Intentar obtener datos del veterinario
+      final vetResponse = await vetDataSource.getVetByUserId(userId);
+      
+      if (vetResponse.isEmpty) {
+        print('ℹ️ Usuario no tiene perfil de veterinario');
+        return true; // No es error, simplemente no es veterinario
+      }
+      
+      // Guardar datos del veterinario
+      final fullResponse = vetResponse.containsKey('message')
+          ? vetResponse
+          : {'message': 'Vet retrieved successfully', 'data': vetResponse};
+      
+      await saveVetProfileFromResponse(fullResponse);
+      print('✅ Datos del veterinario pre-cargados exitosamente');
+      
+      return true;
+    } catch (e) {
+      print('⚠️ Error pre-cargando datos del veterinario: $e');
+      // No es un error crítico, el usuario puede continuar
+      return true;
+    }
   }
 
   static Future<bool> hasVetProfile() async {

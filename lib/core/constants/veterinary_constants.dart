@@ -122,25 +122,37 @@ class VeterinaryConstants {
     'Las Margaritas',
   ];
 
-  // Especialidades veterinarias más comunes
-  static const List<String> veterinarySpecialties = [
-    'Todas las especialidades',
-    'Medicina General',
-    'Cirugía',
-    'Cardiología Veterinaria',
-    'Dermatología Veterinaria',
-    'Oftalmología Veterinaria',
-    'Neurología Veterinaria',
-    'Oncología Veterinaria',
-    'Ortopedia y Traumatología',
-    'Medicina Interna',
-    'Emergencias y Cuidados Intensivos',
-    'Reproducción Animal',
-    'Medicina de Animales Exóticos',
-    'Nutrición Animal',
-    'Patología Veterinaria',
-    'Radiología Veterinaria',
+  // 🤖 ESPECIALIDADES DEL MODELO DE IA - Coinciden exactamente con el entrenamiento
+  // Estas son las 20 especialidades con las que se entrenó el modelo SVM
+  static const List<VeterinarySpecialty> aiModelSpecialties = [
+    VeterinarySpecialty.dermatologia,
+    VeterinarySpecialty.cardiologia,
+    VeterinarySpecialty.neurologia,
+    VeterinarySpecialty.traumatologia,
+    VeterinarySpecialty.medicinaInterna,
+    VeterinarySpecialty.oftalmologia,
+    VeterinarySpecialty.reproduccion,
+    VeterinarySpecialty.medicinaPreventiva,
+    VeterinarySpecialty.oncologia,
+    VeterinarySpecialty.anestesiologia,
+    VeterinarySpecialty.cirugia,
+    VeterinarySpecialty.endocrinologia,
+    VeterinarySpecialty.nefrologia,
+    VeterinarySpecialty.gastroenterologia,
+    VeterinarySpecialty.radiologia,
+    VeterinarySpecialty.laboratorioClinico,
+    VeterinarySpecialty.medicinaExotica,
+    VeterinarySpecialty.odontologiaVeterinaria,
+    VeterinarySpecialty.nutricion,
+    VeterinarySpecialty.etologia,
   ];
+
+  // Lista de especialidades para mostrar en el frontend (con "Todas las especialidades")
+  static List<String> get veterinarySpecialties {
+    List<String> specialties = ['Todas las especialidades'];
+    specialties.addAll(aiModelSpecialties.map((s) => s.displayName));
+    return specialties;
+  }
 
   // Métodos helper
   static String? getLocationForApi(String location) {
@@ -151,5 +163,72 @@ class VeterinaryConstants {
   static String? getSpecialtyForApi(String specialty) {
     if (specialty == 'Todas las especialidades') return null;
     return specialty;
+  }
+
+  // 🤖 Convierte el nombre mostrado al código del modelo de IA
+  static String? getSpecialtyCodeForAI(String displayName) {
+    try {
+      final specialty = aiModelSpecialties.firstWhere(
+        (s) => s.displayName == displayName,
+      );
+      return specialty.aiCode;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 🤖 Convierte el código del modelo de IA al nombre mostrado
+  static String getDisplayNameFromAICode(String aiCode) {
+    try {
+      final specialty = aiModelSpecialties.firstWhere(
+        (s) => s.aiCode == aiCode,
+      );
+      return specialty.displayName;
+    } catch (e) {
+      return aiCode.replaceAll('_', ' ').toTitleCase();
+    }
+  }
+}
+
+// 🤖 ENUM DE ESPECIALIDADES VETERINARIAS
+// Coincide exactamente con las especialidades del modelo de IA entrenado
+enum VeterinarySpecialty {
+  dermatologia('dermatologia', 'Dermatología Veterinaria'),
+  cardiologia('cardiologia', 'Cardiología Veterinaria'),
+  neurologia('neurologia', 'Neurología Veterinaria'),
+  traumatologia('traumatologia', 'Traumatología y Ortopedia'),
+  medicinaInterna('medicina_interna', 'Medicina Interna'),
+  oftalmologia('oftalmologia', 'Oftalmología Veterinaria'),
+  reproduccion('reproduccion', 'Reproducción Animal'),
+  medicinaPreventiva('medicina_preventiva', 'Medicina Preventiva'),
+  oncologia('oncologia', 'Oncología Veterinaria'),
+  anestesiologia('anestesiologia', 'Anestesiología Veterinaria'),
+  cirugia('cirugia', 'Cirugía Veterinaria'),
+  endocrinologia('endocrinologia', 'Endocrinología Veterinaria'),
+  nefrologia('nefrologia', 'Nefrología Veterinaria'),
+  gastroenterologia('gastroenterologia', 'Gastroenterología Veterinaria'),
+  radiologia('radiologia', 'Radiología Veterinaria'),
+  laboratorioClinico('laboratorio_clinico', 'Laboratorio Clínico'),
+  medicinaExotica('medicina_exotica', 'Medicina de Animales Exóticos'),
+  odontologiaVeterinaria('odontologia_veterinaria', 'Odontología Veterinaria'),
+  nutricion('nutricion', 'Nutrición Animal'),
+  etologia('etologia', 'Etología y Comportamiento Animal');
+
+  const VeterinarySpecialty(this.aiCode, this.displayName);
+
+  /// Código usado en el modelo de IA (coincide con Config.SPECIALTIES del notebook)
+  final String aiCode;
+  
+  /// Nombre que se muestra al usuario en la interfaz
+  final String displayName;
+}
+
+// Extensión para convertir strings a TitleCase
+extension StringExtension on String {
+  String toTitleCase() {
+    return split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
   }
 } 

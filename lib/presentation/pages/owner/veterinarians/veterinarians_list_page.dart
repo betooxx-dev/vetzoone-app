@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/veterinary_constants.dart';
 import '../../../../core/injection/injection.dart';
 import '../../../widgets/cards/veterinarian_card.dart';
 import '../../../blocs/veterinarian/veterinarian_bloc.dart';
@@ -333,7 +334,9 @@ class _VeterinariansListPageState extends State<VeterinariansListPage>
 
   String _getSpecialty(dynamic vet) {
     if (vet.specialties != null && vet.specialties!.isNotEmpty) {
-      return vet.specialties!.first;
+      // 🤖 Mapear código de especialidad a nombre legible
+      final specialtyCode = vet.specialties!.first;
+      return VeterinaryConstants.getDisplayNameFromAICode(specialtyCode);
     }
     return 'Medicina General';
   }

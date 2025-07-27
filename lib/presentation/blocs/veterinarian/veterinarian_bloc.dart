@@ -23,15 +23,21 @@ class VeterinarianBloc extends Bloc<VeterinarianEvent, VeterinarianState> {
     Emitter<VeterinarianState> emit,
   ) async {
     emit(VeterinarianLoading());
+    
     try {
-      final veterinarians = await searchVeterinariansUseCase(
+      final searchResult = await searchVeterinariansUseCase(
         search: event.search,
         location: event.location,
         specialty: event.specialty,
         limit: event.limit,
         symptoms: event.symptoms,
+        useAI: event.useAI, // Pasar el parámetro useAI
       );
-      emit(VeterinarianSearchSuccess(veterinarians));
+      
+      emit(VeterinarianSearchSuccess(
+        searchResult.veterinarians,
+        aiPrediction: searchResult.aiPrediction,
+      ));
     } catch (e) {
       emit(VeterinarianError(e.toString()));
     }
@@ -56,8 +62,8 @@ class VeterinarianBloc extends Bloc<VeterinarianEvent, VeterinarianState> {
   ) async {
     emit(VeterinarianLoading());
     try {
-      final veterinarians = await searchVeterinariansUseCase(limit: 100);
-      emit(FeaturedVeterinariansLoaded(veterinarians));
+      final searchResult = await searchVeterinariansUseCase(limit: 100);
+      emit(FeaturedVeterinariansLoaded(searchResult.veterinarians));
     } catch (e) {
       emit(VeterinarianError(e.toString()));
     }

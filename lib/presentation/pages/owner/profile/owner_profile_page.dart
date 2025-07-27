@@ -7,6 +7,7 @@ import '../../../../core/services/user_service.dart';
 import '../../../../core/injection/injection.dart';
 import '../../../../data/datasources/user/user_remote_data_source.dart';
 import '../../../../core/storage/shared_preferences_helper.dart';
+import '../../../../domain/usecases/auth/logout_usecase.dart';
 import '../../../widgets/common/profile_image_picker_widget.dart';
 
 class OwnerProfilePage extends StatefulWidget {
@@ -1061,8 +1062,22 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
                     borderRadius: BorderRadius.circular(AppSizes.radiusS),
                   ),
                 ),
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(context);
+                  
+                  try {
+                    // Ejecutar logout completo usando el usecase
+                    final logoutUseCase = sl<LogoutUseCase>();
+                    await logoutUseCase.call();
+                    
+                    print('🔐 Logout ejecutado correctamente');
+                  } catch (e) {
+                    print('⚠️ Error durante logout: $e');
+                    // Incluso si hay error, limpiar datos localmente
+                    await SharedPreferencesHelper.clearLoginData();
+                  }
+                  
+                  // Navegar a login eliminando todo el stack
                   Navigator.pushNamedAndRemoveUntil(
                     context,
                     '/login',

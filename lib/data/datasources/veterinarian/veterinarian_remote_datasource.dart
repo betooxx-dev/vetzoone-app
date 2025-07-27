@@ -2,14 +2,17 @@ import 'package:dio/dio.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/constants/api_endpoints.dart';
 import '../../models/veterinarian/veterinarian_model.dart';
+import '../../../domain/models/search_result.dart';
+import '../../../presentation/blocs/veterinarian/veterinarian_state.dart';
 
 abstract class VeterinarianRemoteDataSource {
-  Future<List<VeterinarianModel>> searchVeterinarians({
+  Future<SearchResult> searchVeterinarians({
     String? search,
     String? location,
     String? specialty,
     int? limit,
     bool? symptoms,
+    bool? useAI,
   });
   Future<VeterinarianModel> getVeterinarianById(String vetId);
 }
@@ -20,12 +23,13 @@ class VeterinarianRemoteDataSourceImpl implements VeterinarianRemoteDataSource {
   VeterinarianRemoteDataSourceImpl({required this.apiClient});
 
   @override
-  Future<List<VeterinarianModel>> searchVeterinarians({
+  Future<SearchResult> searchVeterinarians({
     String? search,
     String? location,
     String? specialty,
     int? limit,
     bool? symptoms,
+    bool? useAI,
   }) async {
     try {
       final queryParams = <String, dynamic>{};
@@ -35,7 +39,20 @@ class VeterinarianRemoteDataSourceImpl implements VeterinarianRemoteDataSource {
       if (specialty != null && specialty.isNotEmpty)
         queryParams['specialty'] = specialty;
       if (limit != null) queryParams['limit'] = limit;
-      if (symptoms == true) queryParams['symptoms'] = 'true';
+      
+      // ✨ NUEVA LÓGICA: Usar IA si está especificado o si es búsqueda por síntomas
+      if (useAI == true || symptoms == true) {
+        queryParams['useAI'] = 'true';
+        print('🧠 Búsqueda con IA activada');
+        if (symptoms == true) {
+          print('   - Activada por síntomas: $search');
+        }
+        if (useAI == true) {
+          print('   - Activada explícitamente por parámetro useAI');
+        }
+      }
+
+      print('📡 Enviando petición con parámetros: $queryParams');
 
       final response = await apiClient.get(
         ApiEndpoints.searchVeterinariansUrl,
@@ -49,11 +66,34 @@ class VeterinarianRemoteDataSourceImpl implements VeterinarianRemoteDataSource {
           final dataSection = responseData['data'] as Map<String, dynamic>?;
           final List<dynamic> vetsData = dataSection?['vets'] ?? [];
 
+          // ✨ NUEVA LÓGICA: Extraer información de IA si está disponible
+          AIPrediction? aiPrediction;
+          final aiPredictionData = dataSection?['aiPrediction'];
+          if (aiPredictionData != null && aiPredictionData is Map<String, dynamic>) {
+            print('🤖 Predicción de IA recibida:');
+            print('   - Consulta original: ${aiPredictionData['originalQuery']}');
+            print('   - Especialidad predicha: ${aiPredictionData['predictedSpecialty']}');
+            print('   - Confianza: ${aiPredictionData['confidence']}');
+            print('   - Código de especialidad: ${aiPredictionData['specialtyCode']}');
+
+            aiPrediction = AIPrediction(
+              originalQuery: aiPredictionData['originalQuery'] ?? '',
+              predictedSpecialty: aiPredictionData['predictedSpecialty'] ?? '',
+              confidence: (aiPredictionData['confidence'] ?? 0.0).toDouble(),
+              specialtyCode: aiPredictionData['specialtyCode'] ?? '',
+            );
+          }
+
           print('📊 Veterinarios encontrados: ${vetsData.length}');
 
-          return vetsData
+          final veterinarians = vetsData
               .map((json) => VeterinarianModel.fromJson(json))
               .toList();
+
+          return SearchResult(
+            veterinarians: veterinarians,
+            aiPrediction: aiPrediction,
+          );
         }
       }
       throw Exception('Error HTTP: ${response.statusCode}');

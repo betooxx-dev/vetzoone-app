@@ -13,6 +13,7 @@ class SearchVeterinariansEvent extends VeterinarianEvent {
   final String? specialty;
   final int? limit;
   final bool? symptoms; // Nuevo parámetro para búsqueda por síntomas
+  final bool? useAI; // Nuevo parámetro para activar IA explícitamente
 
   const SearchVeterinariansEvent({
     this.search,
@@ -20,10 +21,11 @@ class SearchVeterinariansEvent extends VeterinarianEvent {
     this.specialty,
     this.limit,
     this.symptoms,
+    this.useAI,
   });
 
   @override
-  List<Object?> get props => [search, location, specialty, limit, symptoms];
+  List<Object?> get props => [search, location, specialty, limit, symptoms, useAI];
 }
 
 class GetVeterinarianProfileEvent extends VeterinarianEvent {

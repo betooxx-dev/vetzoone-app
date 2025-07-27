@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/veterinary_constants.dart';
 import '../../../../core/injection/injection.dart';
 import '../../../../data/datasources/vet/vet_remote_datasource.dart';
 import '../../../../core/storage/shared_preferences_helper.dart';
@@ -40,22 +41,9 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
   List<String> _animalsServed = [];
   List<Map<String, dynamic>> _availability = [];
 
-  final List<String> _availableSpecialties = [
-    'Medicina General',
-    'Cirugía',
-    'Dermatología',
-    'Cardiología',
-    'Oncología',
-    'Neurología',
-    'Oftalmología',
-    'Ortopedia',
-    'Anestesiología',
-    'Medicina Interna',
-    'Medicina de Emergencias',
-    'Reproducción',
-    'Nutrición',
-    'Comportamiento Animal',
-  ];
+  // Usar las especialidades del modelo de IA con nombres legibles
+  List<String> get _availableSpecialties => 
+      VeterinaryConstants.aiModelSpecialties.map((s) => s.displayName).toList();
 
   final List<String> _availableServices = [
     'Consulta General',
@@ -313,7 +301,12 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
             'consultationFee': vetData['consultation_fee'] ?? 0.0,
           };
 
-          _specialties = List<String>.from(vetData['specialties'] ?? []);
+          // Convertir códigos de IA a nombres legibles para mostrar en UI
+          final specialtyCodes = List<String>.from(vetData['specialties'] ?? []);
+          _specialties = specialtyCodes.map((code) => 
+            VeterinaryConstants.getDisplayNameFromAICode(code)
+          ).toList();
+          
           _services = List<String>.from(vetData['services'] ?? []);
           _animalsServed = List<String>.from(vetData['animals_served'] ?? []);
           _availability = List<Map<String, dynamic>>.from(
@@ -1240,10 +1233,8 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
       }
 
       final phone = _phoneController.text.trim();
-      bool userUpdated = false;
       bool vetNeedsUpdate = false;
 
-      final license = _licenseController.text.trim();
       final bio = _bioController.text.trim();
       final experience = int.tryParse(_experienceController.text.trim()) ?? 0;
       final locationCity = _locationCityController.text.trim();
@@ -1254,18 +1245,22 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
       final currentSpecialties = List<String>.from(
         vetData['specialties'] ?? [],
       );
+      // Convertir códigos de IA actuales a nombres legibles para comparación
+      final currentSpecialtiesDisplay = currentSpecialties.map((code) => 
+        VeterinaryConstants.getDisplayNameFromAICode(code)
+      ).toList();
+      
       final currentServices = List<String>.from(vetData['services'] ?? []);
       final currentAnimalsServed = List<String>.from(
         vetData['animals_served'] ?? [],
       );
 
-      if (license != professionalData['license'] ||
-          bio != professionalData['bio'] ||
+      if (bio != professionalData['bio'] ||
           experience != professionalData['yearsExperience'] ||
           locationCity != professionalData['locationCity'] ||
           locationState != professionalData['locationState'] ||
           consultationFee != professionalData['consultationFee'] ||
-          !_listsEqual(_specialties, currentSpecialties) ||
+          !_listsEqual(_specialties, currentSpecialtiesDisplay) ||
           !_listsEqual(_services, currentServices) ||
           !_listsEqual(_animalsServed, currentAnimalsServed)) {
         vetNeedsUpdate = true;
@@ -1298,7 +1293,6 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
               await SharedPreferencesHelper.saveUserPhone(userData['phone']);
               professionalData['phone'] = userData['phone'];
             }
-            userUpdated = true;
           }
         } else {
           dio.options.headers['Content-Type'] = 'application/json';
@@ -1310,7 +1304,6 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
               await SharedPreferencesHelper.saveUserPhone(userData['phone']);
               professionalData['phone'] = userData['phone'];
             }
-            userUpdated = true;
           }
         }
       }
@@ -1382,10 +1375,14 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
           );
         }
 
+        // Convertir nombres legibles de vuelta a códigos de IA para guardar en BD
+        final specialtyCodesToSave = _specialties.map((displayName) => 
+          VeterinaryConstants.getSpecialtyCodeForAI(displayName) ?? displayName
+        ).toList();
+
         final vetDataToSave = {
-          'license': license,
           'bio': bio,
-          'specialties': _specialties,
+          'specialties': specialtyCodesToSave,
           'years_experience': experience,
           'location_city': locationCity,
           'location_state': locationState,
@@ -1406,7 +1403,6 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
 
         final vetDataForSP = {
           ...vetData,
-          'license': vetResponseData['license'],
           'bio': vetResponseData['bio'],
           'specialties': vetResponseData['specialties'],
           'years_experience': vetResponseData['years_experience'],
@@ -1419,7 +1415,6 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
         };
         await SharedPreferencesHelper.saveVetData(vetDataForSP);
 
-        professionalData['license'] = vetResponseData['license'];
         professionalData['bio'] = vetResponseData['bio'];
         professionalData['yearsExperience'] =
             vetResponseData['years_experience'];
@@ -1428,7 +1423,12 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
         professionalData['consultationFee'] =
             vetResponseData['consultation_fee'];
 
-        _specialties = List<String>.from(vetResponseData['specialties'] ?? []);
+        // Convertir códigos de IA de vuelta a nombres legibles para mostrar en UI
+        final savedSpecialtyCodes = List<String>.from(vetResponseData['specialties'] ?? []);
+        _specialties = savedSpecialtyCodes.map((code) => 
+          VeterinaryConstants.getDisplayNameFromAICode(code)
+        ).toList();
+        
         _services = List<String>.from(vetResponseData['services'] ?? []);
         _animalsServed = List<String>.from(
           vetResponseData['animals_served'] ?? [],

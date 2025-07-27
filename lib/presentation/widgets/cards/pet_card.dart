@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../domain/entities/pet.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../core/utils/image_utils.dart';
+import '../../../domain/entities/pet.dart';
 
 class PetCard extends StatelessWidget {
   final Pet pet;
@@ -207,11 +208,29 @@ class PetCard extends StatelessWidget {
   }
 
   Widget _buildPetImage() {
-    if (pet.imageUrl != null && pet.imageUrl!.isNotEmpty) {
+    if (pet.imageUrl != null && 
+        pet.imageUrl!.isNotEmpty && 
+        ImageUtils.isValidImageUrl(pet.imageUrl!)) {
       return Image.network(
         pet.imageUrl!,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildDefaultIcon(),
+        errorBuilder: (context, error, stackTrace) {
+          print('Error loading pet image: $error');
+          return _buildDefaultIcon();
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              color: _getGradientByType().colors.first,
+              strokeWidth: 2,
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded / 
+                    loadingProgress.expectedTotalBytes!
+                  : null,
+            ),
+          );
+        },
       );
     }
     return _buildDefaultIcon();

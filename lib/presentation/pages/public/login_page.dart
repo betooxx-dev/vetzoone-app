@@ -35,21 +35,38 @@ class _LoginPageState extends State<LoginPage> {
       });
 
       try {
+        print('🔐 Iniciando proceso de login...');
+        
+        // Ejecutar login (esto ya limpia datos previos y pre-carga datos del veterinario)
         final loginUseCase = sl<LoginUseCase>();
         await loginUseCase.call(
           _emailController.text.trim(),
           _passwordController.text,
         );
 
+        print('✅ Login completado, verificando datos cargados...');
+
         if (mounted) {
           final userRole = await SharedPreferencesHelper.getUserRole();
+          print('👤 Rol del usuario: $userRole');
+          
+          // Verificar que los datos estén realmente cargados
+          if (userRole == 'VETERINARIAN') {
+            final hasVetProfile = await SharedPreferencesHelper.hasVetProfile();
+            print('🩺 ¿Tiene perfil de veterinario?: $hasVetProfile');
+          }
+          
+          // Navegar según el rol
           if (userRole == 'PET_OWNER') {
             Navigator.pushReplacementNamed(context, '/dashboard');
           } else if (userRole == 'VETERINARIAN') {
             Navigator.pushReplacementNamed(context, '/dashboard');
           }
+          
+          print('🎯 Navegación completada exitosamente');
         }
       } catch (e) {
+        print('❌ Error durante el login: $e');
         if (mounted) {
           String errorMessage = 'Error al iniciar sesión';
           if (e is ServerException) {
@@ -62,14 +79,17 @@ class _LoginPageState extends State<LoginPage> {
             SnackBar(
               content: Text(errorMessage),
               backgroundColor: AppColors.error,
+              duration: const Duration(seconds: 4),
             ),
           );
         }
       }
 
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

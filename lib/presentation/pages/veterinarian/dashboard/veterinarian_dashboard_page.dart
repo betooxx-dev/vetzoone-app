@@ -1256,7 +1256,6 @@ class _VetProfileFormModalState extends State<VetProfileFormModal> {
 
       final vetData = {
         'name': _fullName,
-        'license': _licenseController.text.trim(),
         'description': _descriptionController.text.trim(),
         'user_id': userId,
       };

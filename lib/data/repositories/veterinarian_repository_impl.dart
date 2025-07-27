@@ -1,5 +1,6 @@
 import '../../domain/repositories/veterinarian_repository.dart';
 import '../../domain/entities/veterinarian.dart';
+import '../../domain/models/search_result.dart';
 import '../datasources/veterinarian/veterinarian_remote_datasource.dart';
 
 class VeterinarianRepositoryImpl implements VeterinarianRepository {
@@ -8,12 +9,13 @@ class VeterinarianRepositoryImpl implements VeterinarianRepository {
   VeterinarianRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<List<Veterinarian>> searchVeterinarians({
+  Future<SearchResult> searchVeterinarians({
     String? search,
     String? location,
     String? specialty,
     int? limit,
     bool? symptoms,
+    bool? useAI,
   }) async {
     return await remoteDataSource.searchVeterinarians(
       search: search,
@@ -21,6 +23,7 @@ class VeterinarianRepositoryImpl implements VeterinarianRepository {
       specialty: specialty,
       limit: limit,
       symptoms: symptoms,
+      useAI: useAI,
     );
   }
 
