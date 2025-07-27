@@ -40,6 +40,9 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
   List<String> _services = [];
   List<String> _animalsServed = [];
   List<Map<String, dynamic>> _availability = [];
+  
+  // Variable para la ubicación seleccionada del enum
+  ChiapasLocation? _selectedLocation;
 
   // Usar las especialidades del modelo de IA con nombres legibles
   List<String> get _availableSpecialties => 
@@ -108,38 +111,6 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
     }
     if (years > 60) {
       return 'Los años de experiencia no pueden exceder 60';
-    }
-    return null;
-  }
-
-  String? _validateLocationCity(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return null;
-    }
-    if (value.trim().length < 2) {
-      return 'La ciudad debe tener al menos 2 caracteres';
-    }
-    if (value.trim().length > 100) {
-      return 'La ciudad no puede exceder 100 caracteres';
-    }
-    if (!RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\-\.]+$').hasMatch(value.trim())) {
-      return 'La ciudad contiene caracteres no válidos';
-    }
-    return null;
-  }
-
-  String? _validateLocationState(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return null;
-    }
-    if (value.trim().length < 2) {
-      return 'El estado debe tener al menos 2 caracteres';
-    }
-    if (value.trim().length > 100) {
-      return 'El estado no puede exceder 100 caracteres';
-    }
-    if (!RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\-\.]+$').hasMatch(value.trim())) {
-      return 'El estado contiene caracteres no válidos';
     }
     return null;
   }
@@ -346,7 +317,12 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
     _experienceController.text =
         professionalData['yearsExperience']?.toString() ?? '0';
     _locationCityController.text = professionalData['locationCity'] ?? '';
-    _locationStateController.text = professionalData['locationState'] ?? '';
+    // Inicializar la ubicación seleccionada basada en el texto guardado
+    final savedCity = professionalData['locationCity'] as String?;
+    if (savedCity != null && savedCity.isNotEmpty) {
+      _selectedLocation = ChiapasLocation.fromDisplayName(savedCity);
+    }
+    _locationStateController.text = 'Chiapas'; // Estado fijo para Chiapas
     _consultationFeeController.text =
         professionalData['consultationFee']?.toString() ?? '0';
   }
@@ -566,22 +542,16 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                 validator: _validatePhone,
               ),
               const SizedBox(height: AppSizes.spaceM),
-              _buildInfoField(
+              _buildLocationDropdown(
                 icon: Icons.location_on_outlined,
                 label: 'Ciudad',
-                controller: _locationCityController,
                 enabled: _isEditing,
-                maxLines: 1,
-                validator: _validateLocationCity,
+                isRequired: true,
               ),
               const SizedBox(height: AppSizes.spaceM),
-              _buildInfoField(
+              _buildFixedStateField(
                 icon: Icons.location_on_outlined,
                 label: 'Estado',
-                controller: _locationStateController,
-                enabled: _isEditing,
-                maxLines: 1,
-                validator: _validateLocationState,
               ),
               const SizedBox(height: AppSizes.spaceM),
               _buildInfoField(
@@ -939,6 +909,159 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
               ),
             ),
           ),
+      ],
+    );
+  }
+
+  Widget _buildLocationDropdown({
+    required IconData icon,
+    required String label,
+    required bool enabled,
+    bool isRequired = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: AppSizes.spaceS),
+            Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            if (isRequired)
+              const Text(
+                ' *',
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.spaceS),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
+          decoration: BoxDecoration(
+            color: enabled ? AppColors.white : AppColors.backgroundLight,
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<ChiapasLocation>(
+              value: _selectedLocation,
+              isExpanded: true,
+              hint: Text(
+                'Selecciona una ciudad',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              items: VeterinaryConstants.chiapasLocations
+                  .where((location) => location != ChiapasLocation.todasLasUbicaciones)
+                  .map((ChiapasLocation location) {
+                return DropdownMenuItem<ChiapasLocation>(
+                  value: location,
+                  child: Text(
+                    location.displayName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                );
+              }).toList(),
+              onChanged: enabled ? (ChiapasLocation? newValue) {
+                setState(() {
+                  _selectedLocation = newValue;
+                  // Actualizar el controller para mantener compatibilidad
+                  _locationCityController.text = newValue?.displayName ?? '';
+                });
+              } : null,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFixedStateField({
+    required IconData icon,
+    required String label,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: AppSizes.spaceS),
+            Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.spaceS),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.paddingM,
+            vertical: AppSizes.paddingM,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundLight,
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Chiapas',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: AppSizes.spaceXS),
+              Text(
+                'De momento solo está habilitado en Chiapas',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -1655,7 +1778,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
       final bio = _bioController.text.trim();
       final experience = int.tryParse(_experienceController.text.trim()) ?? 0;
       final locationCity = _locationCityController.text.trim();
-      final locationState = _locationStateController.text.trim();
+      final locationState = 'Chiapas'; // Estado fijo
       final consultationFee =
           double.tryParse(_consultationFeeController.text.trim()) ?? 0.0;
 

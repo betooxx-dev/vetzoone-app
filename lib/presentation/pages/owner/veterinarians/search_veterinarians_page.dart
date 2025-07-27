@@ -48,7 +48,7 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
 
   final TextEditingController _searchController = TextEditingController();
 
-  String _selectedLocation = VeterinaryConstants.chiapasLocations.first;
+  ChiapasLocation _selectedLocation = VeterinaryConstants.chiapasLocations.first;
   String _selectedSpecialty = VeterinaryConstants.veterinarySpecialties.first;
 
   bool _isSearching = false;
@@ -449,7 +449,7 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
         ],
       ),
       child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
+        child: DropdownButton<ChiapasLocation>(
           value: _selectedLocation,
           isExpanded: true,
           icon: const Icon(
@@ -463,11 +463,11 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
             fontWeight: FontWeight.w500,
           ),
           items:
-              VeterinaryConstants.chiapasLocations.map((String location) {
-                return DropdownMenuItem<String>(
+              VeterinaryConstants.chiapasLocations.map((ChiapasLocation location) {
+                return DropdownMenuItem<ChiapasLocation>(
                   value: location,
                   child: Text(
-                    location,
+                    location.displayName,
                     style: TextStyle(
                       fontSize: 14,
                       color:
@@ -479,7 +479,7 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
                   ),
                 );
               }).toList(),
-          onChanged: (String? newValue) {
+          onChanged: (ChiapasLocation? newValue) {
             if (newValue != null) {
               setState(() {
                 _selectedLocation = newValue;
@@ -819,7 +819,7 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
     List<String> activeFilters = [];
 
     if (_selectedLocation != VeterinaryConstants.chiapasLocations.first) {
-      activeFilters.add('📍 $_selectedLocation');
+      activeFilters.add('📍 ${_selectedLocation.displayName}');
     }
 
     if (_selectedSpecialty != VeterinaryConstants.veterinarySpecialties.first) {

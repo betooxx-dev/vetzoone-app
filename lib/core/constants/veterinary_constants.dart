@@ -1,3 +1,32 @@
+// Enum para ubicaciones de Chiapas
+enum ChiapasLocation {
+  todasLasUbicaciones('Todas las ubicaciones'),
+  tuxtlaGutierrez('Tuxtla Gutiérrez'),
+  sanCristobalDeLasCasas('San Cristóbal de las Casas'),
+  tapachula('Tapachula'),
+  comitanDeDominguez('Comitán de Domínguez'),
+  palenque('Palenque'),
+  ocosingo('Ocosingo'),
+  villaflores('Villaflores'),
+  tonala('Tonalá'),
+  chiapaDeCorzo('Chiapa de Corzo'),
+  pichucalco('Pichucalco'),
+  yajalon('Yajalón'),
+  lasMargaritas('Las Margaritas');
+
+  const ChiapasLocation(this.displayName);
+  final String displayName;
+
+  static ChiapasLocation? fromDisplayName(String displayName) {
+    for (final location in ChiapasLocation.values) {
+      if (location.displayName == displayName) {
+        return location;
+      }
+    }
+    return null;
+  }
+}
+
 // Interfaces para servicios veterinarios y disponibilidad
 class VetService {
   final String id;
@@ -105,22 +134,13 @@ class VeterinaryConstants {
     'sunday',
   ];
 
-  // Ciudades más importantes de Chiapas
-  static const List<String> chiapasLocations = [
-    'Todas las ubicaciones',
-    'Tuxtla Gutiérrez',
-    'San Cristóbal de las Casas',
-    'Tapachula',
-    'Comitán de Domínguez',
-    'Palenque',
-    'Ocosingo',
-    'Villaflores',
-    'Tonalá',
-    'Chiapa de Corzo',
-    'Pichucalco',
-    'Yajalón',
-    'Las Margaritas',
-  ];
+  // Ubicaciones de Chiapas usando el enum
+  static List<ChiapasLocation> get chiapasLocations => ChiapasLocation.values;
+  
+  // Lista de strings para compatibilidad (usar ChiapasLocation.displayName preferentemente)
+  static List<String> get chiapasLocationNames => ChiapasLocation.values
+      .map((location) => location.displayName)
+      .toList();
 
   // 🤖 ESPECIALIDADES DEL MODELO DE IA - Coinciden exactamente con el entrenamiento
   // Estas son las 20 especialidades con las que se entrenó el modelo SVM
@@ -155,7 +175,13 @@ class VeterinaryConstants {
   }
 
   // Métodos helper
-  static String? getLocationForApi(String location) {
+  static String? getLocationForApi(ChiapasLocation location) {
+    if (location == ChiapasLocation.todasLasUbicaciones) return null;
+    return location.displayName;
+  }
+
+  // Método legacy para strings (mantener compatibilidad)
+  static String? getLocationForApiString(String location) {
     if (location == 'Todas las ubicaciones') return null;
     return location;
   }
