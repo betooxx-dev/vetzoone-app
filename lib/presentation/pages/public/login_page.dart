@@ -77,9 +77,17 @@ class _LoginPageState extends State<LoginPage> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(errorMessage),
+              content: Text(
+                errorMessage,
+                style: const TextStyle(fontSize: 14),
+              ),
               backgroundColor: AppColors.error,
-              duration: const Duration(seconds: 4),
+              duration: const Duration(seconds: 6), // Más tiempo para leer el mensaje completo
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
           );
         }
