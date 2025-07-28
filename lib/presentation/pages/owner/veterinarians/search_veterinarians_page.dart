@@ -4,6 +4,10 @@ import 'dart:async';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/veterinary_constants.dart';
+import '../../../../core/constants/analytics_constants.dart';
+import '../../../../core/services/analytics_service.dart';
+import '../../../../core/mixins/analytics_lifecycle_mixin.dart';
+import '../../../../core/storage/shared_preferences_helper.dart';
 import '../../../../core/injection/injection.dart';
 import '../../../widgets/cards/veterinarian_card.dart';
 import '../../../blocs/veterinarian/veterinarian_bloc.dart';
@@ -16,16 +20,18 @@ class SearchVeterinariansPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('🔍 [SEARCH-PAGE] Construyendo SearchVeterinariansPage...');
     return BlocProvider<VeterinarianBloc>(
-      create:
-          (context) =>
-              sl<VeterinarianBloc>()..add(
-                SearchVeterinariansEvent(
-                  limit: 100,
-                  location: VeterinaryConstants.getLocationForApi(VeterinaryConstants.chiapasLocations.first),
-                  specialty: VeterinaryConstants.getSpecialtyForApi(VeterinaryConstants.veterinarySpecialties.first),
-                ),
-              ),
+      create: (context) {
+        print('🔍 [SEARCH-PAGE] Creando VeterinarianBloc...');
+        return sl<VeterinarianBloc>()..add(
+          SearchVeterinariansEvent(
+            limit: 100,
+            location: VeterinaryConstants.getLocationForApi(VeterinaryConstants.chiapasLocations.first),
+            specialty: VeterinaryConstants.getSpecialtyForApi(VeterinaryConstants.veterinarySpecialties.first),
+          ),
+        );
+      },
       child: const _SearchVeterinariansView(),
     );
   }
@@ -36,12 +42,14 @@ class _SearchVeterinariansView extends StatefulWidget {
   const _SearchVeterinariansView();
 
   @override
-  State<_SearchVeterinariansView> createState() =>
-      _SearchVeterinariansViewState();
+  State<_SearchVeterinariansView> createState() {
+    print('🔍 [SEARCH-VIEW] Creando state de _SearchVeterinariansView...');
+    return _SearchVeterinariansViewState();
+  }
 }
 
 class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver, AnalyticsAppLifecycleMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -54,10 +62,25 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
   bool _isSearching = false;
 
   Timer? _searchDebounce;
+  String? _currentUserId;
+
+  // Para el mixin de analítica
+  @override
+  String? get userId {
+    print('🔍 [GETTER] userId getter llamado - valor actual: $_currentUserId');
+    return _currentUserId;
+  }
 
   @override
   void initState() {
+    print('🚀 [INIT] *** INICIANDO initState() ***');
+    print('🚀 [INIT] Inicializando SearchVeterinariansPage...');
     super.initState();
+    print('🚀 [INIT] super.initState() completado');
+    print('🚀 [INIT] Llamando _loadUserId()...');
+    _loadUserId(); // Cargar el userId al inicializar
+    print('🚀 [INIT] _loadUserId() iniciado (async)');
+    print('🚀 [INIT] Configurando animaciones...');
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -72,6 +95,38 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
       CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
     );
     _animationController.forward();
+    print('🚀 [INIT] Inicialización completada');
+  }
+
+  // Cargar el userId del usuario logueado
+  Future<void> _loadUserId() async {
+    print('🔑 [USER-ID] *** INICIANDO _loadUserId() ***');
+    try {
+      print('🔑 [USER-ID] Cargando userId del usuario...');
+      print('🔑 [USER-ID] Llamando SharedPreferencesHelper.getUserId()...');
+      final userId = await SharedPreferencesHelper.getUserId();
+      print('🔑 [USER-ID] SharedPreferencesHelper.getUserId() completado');
+      print('🔑 [USER-ID] UserId obtenido: $userId');
+      
+      setState(() {
+        _currentUserId = userId;
+      });
+      
+      print('🔑 [USER-ID] UserId establecido en estado: $_currentUserId');
+      
+      // ✅ AQUÍ es donde debemos iniciar la sesión de analytics
+      // Una vez que ya tenemos el userId disponible
+      if (userId != null) {
+        print('🔑 [USER-ID] Asegurando que la sesión de analytics esté activa...');
+        final analyticsResult = await AnalyticsService.ensureSessionActive(userId);
+        print('🔑 [USER-ID] Resultado de sesión de analytics: $analyticsResult');
+      } else {
+        print('🔑 [USER-ID] ⚠️ No hay userId disponible - no se puede iniciar analytics');
+      }
+    } catch (e, stackTrace) {
+      print('❌ [USER-ID] ERROR en _loadUserId: $e');
+      print('❌ [USER-ID] Stack trace: $stackTrace');
+    }
   }
 
   @override
@@ -84,6 +139,8 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
 
   @override
   Widget build(BuildContext context) {
+    print('🔍 [SEARCH-VIEW] ✅ Construyendo vista de SearchVeterinarians...');
+    print('🔍 [SEARCH-VIEW] Current user ID: $_currentUserId');
     // PASO 3: El BlocProvider se ha ido de aquí. Ahora este widget es un hijo y puede acceder al Bloc.
     return Scaffold(
       body: Container(
@@ -640,20 +697,35 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
   }
 
   Widget _buildVeterinariansSection() {
-    return BlocBuilder<VeterinarianBloc, VeterinarianState>(
-      builder: (context, state) {
-        if (state is VeterinarianLoading) {
-          return const SizedBox(
-            height: 300,
-            child: Center(child: CircularProgressIndicator()),
-          );
+    return BlocListener<VeterinarianBloc, VeterinarianState>(
+      listener: (context, state) {
+        print('🎯 [BLOC-LISTENER] Nuevo estado recibido: ${state.runtimeType}');
+        
+        // Trackear resultados cuando llegue la respuesta de búsqueda
+        if (state is VeterinarianSearchSuccess && _isSearching) {
+          print('🎯 [BLOC-LISTENER] Búsqueda exitosa - actualizando conteo');
+          print('🎯 [BLOC-LISTENER] Cantidad de veterinarios: ${state.veterinarians.length}');
+          _updateSearchResultsCount(state.veterinarians.length);
+        } else if (state is VeterinarianError) {
+          print('🎯 [BLOC-LISTENER] Error en búsqueda: ${state.message}');
+        } else if (state is VeterinarianLoading) {
+          print('🎯 [BLOC-LISTENER] Estado de carga...');
         }
+      },
+      child: BlocBuilder<VeterinarianBloc, VeterinarianState>(
+        builder: (context, state) {
+          if (state is VeterinarianLoading) {
+            return const SizedBox(
+              height: 300,
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
 
-        if (state is VeterinarianSearchSuccess) {
-          final displayVets =
-              _isSearching
-                  ? state.veterinarians
-                  : state.veterinarians.take(3).toList();
+          if (state is VeterinarianSearchSuccess) {
+            final displayVets =
+                _isSearching
+                    ? state.veterinarians
+                    : state.veterinarians.take(3).toList();
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -732,7 +804,26 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
 
         return const SizedBox(height: 300);
       },
+      ),
     );
+  }
+
+  // Método para actualizar el conteo de resultados en el tracking
+  void _updateSearchResultsCount(int resultsCount) {
+    print('📊 [SEARCH-RESULTS] Actualizando conteo de resultados...');
+    print('📊 [SEARCH-RESULTS] Cantidad de resultados: $resultsCount');
+    print('📊 [SEARCH-RESULTS] Estado de búsqueda activa: $_isSearching');
+    print('📊 [SEARCH-RESULTS] Query actual: "${_searchController.text.trim()}"');
+    print('📊 [SEARCH-RESULTS] Filtros activos: ${_hasActiveFilters()}');
+    print('📊 [SEARCH-RESULTS] Ubicación seleccionada: ${_selectedLocation.displayName}');
+    print('📊 [SEARCH-RESULTS] Especialidad seleccionada: $_selectedSpecialty');
+    
+    // TODO: Aquí podrías implementar lógica adicional para actualizar 
+    // el registro de búsqueda con el número exacto de resultados
+    // Esto podría involucrar una llamada adicional al backend para actualizar
+    // el registro de búsqueda con los resultados reales
+    
+    print('📊 [SEARCH-RESULTS] Actualizacion completada');
   }
 
   Widget _buildSectionHeader(int totalCount, bool isSearching) {
@@ -1477,6 +1568,64 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
         limit: 100,
       ),
     );
+
+    // Trackear búsqueda por síntomas con IA
+    _trackSearch(
+      query: symptoms,
+      isAISearch: true,
+    );
+  }
+
+  // Método para trackear búsquedas
+  void _trackSearch({
+    required String query,
+    required bool isAISearch,
+    int? resultsCount,
+  }) {
+    print('🔍 [SEARCH-TRACKING] Iniciando tracking de búsqueda...');
+    print('🔍 [SEARCH-TRACKING] Query: "$query"');
+    print('🔍 [SEARCH-TRACKING] Is AI Search: $isAISearch');
+    print('🔍 [SEARCH-TRACKING] Results Count: $resultsCount');
+    
+    // Determinar el tipo de búsqueda
+    final searchType = AnalyticsConstants.getSearchType(
+      query,
+      _selectedSpecialty,
+      isAISearch,
+    );
+    
+    print('🔍 [SEARCH-TRACKING] Search Type: $searchType');
+
+    // Preparar filtros aplicados
+    final filtersApplied = <String, dynamic>{};
+    
+    if (_selectedLocation != VeterinaryConstants.chiapasLocations.first) {
+      filtersApplied['location'] = _selectedLocation.displayName;
+      filtersApplied['location_code'] = VeterinaryConstants.getLocationForApi(_selectedLocation);
+    }
+    
+    if (_selectedSpecialty != VeterinaryConstants.veterinarySpecialties.first) {
+      filtersApplied['specialty'] = _selectedSpecialty;
+      filtersApplied['specialty_code'] = VeterinaryConstants.getSpecialtyForApi(_selectedSpecialty);
+    }
+    
+    filtersApplied['is_ai_search'] = isAISearch;
+    filtersApplied['has_filters'] = _hasActiveFilters();
+    
+    print('🔍 [SEARCH-TRACKING] Filters Applied: $filtersApplied');
+
+    // Realizar el tracking
+    print('🔍 [SEARCH-TRACKING] Enviando tracking al servicio...');
+    AnalyticsService.trackSearch(
+      searchQuery: query,
+      searchType: searchType,
+      resultsCount: resultsCount ?? 0, // Se actualizará cuando lleguen los resultados
+      filtersApplied: filtersApplied.isNotEmpty ? filtersApplied : null,
+    ).then((success) {
+      print('🔍 [SEARCH-TRACKING] Resultado del tracking: $success');
+    }).catchError((error) {
+      print('🔍 [SEARCH-TRACKING] Error en tracking: $error');
+    });
   }
 
   void _startNewSearch() {
@@ -1540,15 +1689,34 @@ class _SearchVeterinariansViewState extends State<_SearchVeterinariansView>
       _isSearching = true;
     });
 
+    // Preparar datos para el tracking
+    final searchQuery = _searchController.text.trim();
+    final isEmptySearch = searchQuery.isEmpty;
+    final specialtyCode = VeterinaryConstants.getSpecialtyForApi(_selectedSpecialty);
+    
     // Búsqueda combinada: texto + filtros
     context.read<VeterinarianBloc>().add(
       SearchVeterinariansEvent(
-        search: _searchController.text.trim().isNotEmpty ? _searchController.text.trim() : null,
+        search: isEmptySearch ? null : searchQuery,
         location: VeterinaryConstants.getLocationForApi(_selectedLocation),
-        specialty: VeterinaryConstants.getSpecialtyForApi(_selectedSpecialty),
+        specialty: specialtyCode,
         limit: 100,
       ),
     );
+
+    // Trackear la búsqueda si hay una query o filtros activos
+    if (!isEmptySearch || _hasActiveFilters()) {
+      print('🔍 [MAIN-SEARCH] Búsqueda detectada - iniciando tracking');
+      print('🔍 [MAIN-SEARCH] Es búsqueda vacía: $isEmptySearch');
+      print('🔍 [MAIN-SEARCH] Filtros activos: ${_hasActiveFilters()}');
+      
+      _trackSearch(
+        query: isEmptySearch ? 'Búsqueda con filtros' : searchQuery,
+        isAISearch: false,
+      );
+    } else {
+      print('🔍 [MAIN-SEARCH] No se requiere tracking - búsqueda vacía sin filtros');
+    }
   }
 
   // ✨ NUEVO: Widget para mostrar información de predicción de IA

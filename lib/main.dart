@@ -342,6 +342,7 @@ class _MainScreenOwnerState extends State<MainScreenOwner> {
   @override
   void initState() {
     super.initState();
+    print('🏠 [MAIN-SCREEN] Inicializando MainScreenOwner...');
     petBloc = context.read<PetBloc>();
   }
 
@@ -361,6 +362,10 @@ class _MainScreenOwnerState extends State<MainScreenOwner> {
       bottomNavigationBar: CustomBottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
+          print('🏠 [MAIN-SCREEN] Navegando a tab $index');
+          if (index == 2) {
+            print('🏠 [MAIN-SCREEN] ⭐ Navegando a SearchVeterinariansPage');
+          }
           setState(() {
             _currentIndex = index;
           });
