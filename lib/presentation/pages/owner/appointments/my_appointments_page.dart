@@ -20,7 +20,7 @@ class MyAppointmentsPage extends StatefulWidget {
 }
 
 class _MyAppointmentsPageState extends State<MyAppointmentsPage>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -41,6 +41,10 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
     );
     _animationController.forward();
     _appointmentDataSource = sl<AppointmentRemoteDataSource>();
+    
+    // Registrar observer para detectar cuando la app vuelve a primer plano
+    WidgetsBinding.instance.addObserver(this);
+    
     _loadUserIdAndAppointments();
   }
 
@@ -59,9 +63,22 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Refrescar datos cuando la app vuelve a estar activa
+    if (state == AppLifecycleState.resumed && _userId != null) {
+      print('🔄 App resumed, refrescando datos de citas...');
+      context.read<AppointmentBloc>().add(
+        LoadAllAppointmentsEvent(userId: _userId!),
+      );
+    }
+  }
+
+  @override
   void dispose() {
     _tabController.dispose();
     _animationController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 

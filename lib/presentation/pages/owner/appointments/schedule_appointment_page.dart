@@ -284,7 +284,8 @@ class _ScheduleAppointmentPageState extends State<ScheduleAppointmentPage> {
             _isLoading = false;
           });
 
-          Navigator.pop(context, true);
+          // Redirigir a la página de mis citas después de crear exitosamente
+          Navigator.pushReplacementNamed(context, '/my-appointments');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text('Cita agendada exitosamente'),

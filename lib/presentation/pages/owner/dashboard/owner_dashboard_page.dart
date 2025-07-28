@@ -651,7 +651,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
               ),
             ),
             TextButton(
-              onPressed: () => Navigator.pushNamed(context, '/my-appointments'),
+              onPressed: _navigateToMyAppointments,
               child: Text(
                 'Ver todas',
                 style: TextStyle(
@@ -998,13 +998,21 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
     }
   }
 
-  Future<void> _navigateToScheduleAppointment() async {
-    final result = await Navigator.pushNamed(context, '/schedule-appointment');
+  Future<void> _navigateToMyAppointments() async {
+    await Navigator.pushNamed(context, '/my-appointments');
     
-    // Si se creó una cita exitosamente, refrescar los datos del dashboard
-    if (result == true) {
-      print('🟢 Cita creada exitosamente desde dashboard, refrescando datos...');
-      await _loadAppointments();
-    }
+    // Cuando el usuario regrese de la página de mis citas, refrescar los datos del dashboard
+    // por si creó, modificó o canceló alguna cita
+    print('🟢 Regresando de mis citas, refrescando datos del dashboard...');
+    await _loadAppointments();
+  }
+
+  Future<void> _navigateToScheduleAppointment() async {
+    await Navigator.pushNamed(context, '/schedule-appointment');
+    
+    // Como ahora la navegación va directamente a my-appointments, 
+    // refrescamos los datos del dashboard cuando regrese
+    print('🟢 Regresando de agendar cita, refrescando datos del dashboard...');
+    await _loadAppointments();
   }
 }

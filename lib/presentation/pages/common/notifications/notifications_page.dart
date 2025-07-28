@@ -451,7 +451,7 @@ class _NotificationsPageState extends State<NotificationsPage>
     );
   }
 
-  void _handleNotificationAction(String notificationId, Map<String, dynamic>? actionData) {
+  void _handleNotificationAction(String notificationId, Map<String, dynamic>? actionData) async {
     final notification = _allNotifications.firstWhere((n) => n['id'] == notificationId);
     final type = notification['type'] as NotificationType;
     
@@ -462,7 +462,9 @@ class _NotificationsPageState extends State<NotificationsPage>
         Navigator.pushNamed(context, '/appointment-detail');
         break;
       case NotificationType.reminder:
-        Navigator.pushNamed(context, '/schedule-appointment');
+        await Navigator.pushNamed(context, '/schedule-appointment');
+        // Como ahora la navegación va directamente a my-appointments,
+        // no necesitamos manejar un resultado aquí
         break;
       case NotificationType.medical:
         if (actionData?['consultationId'] != null) {
