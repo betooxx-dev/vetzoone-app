@@ -229,7 +229,6 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
                   child: Column(
                     children: [
                       _buildModernAppBar(),
-                      _buildPatientInfo(),
                       Expanded(child: _buildFormContent()),
                       _buildSaveButton(),
                     ],
@@ -471,6 +470,8 @@ class _CreateMedicalRecordPageState extends State<CreateMedicalRecordPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildPatientInfo(),
+          const SizedBox(height: AppSizes.spaceL),
           _buildFormSection(
             'Motivo Principal de Consulta',
             Icons.help_outline,

@@ -468,12 +468,13 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
                 child: Column(
                   children: [
                     _buildModernAppBar(),
-                    _buildPatientInfo(),
                     Expanded(
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.all(AppSizes.paddingL),
                         child: Column(
                           children: [
+                            _buildPatientInfo(),
+                            const SizedBox(height: AppSizes.spaceL),
                             _buildPrescriptionForm(),
                             const SizedBox(height: AppSizes.spaceL),
                             if (prescribedMedications.isNotEmpty) ...[
@@ -1434,14 +1435,20 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
 
     try {
       final token = await SharedPreferencesHelper.getToken();
+      final vetId = await SharedPreferencesHelper.getVetId();
 
       if (token == null) {
         throw Exception('No se encontró token de autenticación');
       }
 
+      if (vetId == null) {
+        throw Exception('No se encontró ID del veterinario');
+      }
+
       final treatmentData = {
         'pet_id': patientInfo['id'],
         'medical_record_id': selectedMedicalRecordId!,
+        'vet_id': vetId,
         'medication_name': _medicationNameController.text.trim(),
         'dosage': _dosageController.text.trim(),
         'frequency': _frequencyController.text.trim(),
@@ -1671,9 +1678,14 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
 
     try {
       final token = await SharedPreferencesHelper.getToken();
+      final vetId = await SharedPreferencesHelper.getVetId();
 
       if (token == null) {
         throw Exception('No se encontraron credenciales de autenticación');
+      }
+
+      if (vetId == null) {
+        throw Exception('No se encontró ID del veterinario');
       }
 
       for (int i = 0; i < prescribedMedications.length; i++) {
@@ -1682,6 +1694,7 @@ class _PrescribeTreatmentPageState extends State<PrescribeTreatmentPage>
         final treatmentData = {
           'pet_id': patientInfo['id'] ?? '',
           'medical_record_id': selectedMedicalRecordId ?? '',
+          'vet_id': vetId,
           'medication_name': medication['name'],
           'dosage': medication['dosage'] ?? '',
           'frequency': medication['frequency'],

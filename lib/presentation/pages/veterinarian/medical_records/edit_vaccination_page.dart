@@ -91,7 +91,6 @@ class _EditVaccinationPageState extends State<EditVaccinationPage>
                   child: Column(
                     children: [
                       _buildModernAppBar(),
-                      _buildVaccinationInfo(),
                       Expanded(child: _buildFormContent()),
                       _buildActionButtons(),
                     ],
@@ -300,6 +299,8 @@ class _EditVaccinationPageState extends State<EditVaccinationPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildVaccinationInfo(),
+          const SizedBox(height: AppSizes.spaceL),
           _buildFormSection(
             'Información de la Vacuna',
             Icons.vaccines,

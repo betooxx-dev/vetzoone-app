@@ -315,13 +315,15 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
                                 ),
                                 child: Column(
                                   children: [
+                                    _buildPatientInfoSection(),
+                                    const SizedBox(height: AppSizes.spaceL),
                                     _buildQuickActions(),
                                     const SizedBox(height: AppSizes.spaceL),
                                     _buildAppointmentDateTimeCard(),
                                     const SizedBox(height: AppSizes.spaceL),
                                     _buildMedicalActionsSection(),
                                     const SizedBox(height: AppSizes.spaceL),
-                                    _buildDetailsSections(),
+                                    _buildOwnerInfoSection(),
                                     const SizedBox(height: 100),
                                   ],
                                 ),
@@ -1221,16 +1223,6 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     );
   }
 
-  Widget _buildDetailsSections() {
-    return Column(
-      children: [
-        _buildPatientInfoSection(),
-        const SizedBox(height: AppSizes.spaceL),
-        _buildOwnerInfoSection(),
-      ],
-    );
-  }
-
   Widget _buildPatientInfoSection() {
     final petDetails = appointment['petDetails'] as Map<String, dynamic>? ?? {};
 
@@ -1241,22 +1233,22 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
       iconColor: AppColors.primary,
       children: [
         if (petDetails['name'] != null && petDetails['name']!.isNotEmpty)
-          _buildDetailRow('Nombre', petDetails['name']),
-        if (petDetails['type'] != null && petDetails['type']!.isNotEmpty)
-          _buildDetailRow('Tipo', petDetails['type']),
-        if (petDetails['breed'] != null && petDetails['breed']!.isNotEmpty)
-          _buildDetailRow('Raza', petDetails['breed']),
-        if (petDetails['age'] != null && petDetails['age']!.isNotEmpty)
-          _buildDetailRow('Edad', petDetails['age']),
-        if (petDetails['gender'] != null && petDetails['gender']!.isNotEmpty)
-          _buildDetailRow('Género', petDetails['gender']),
-        if (petDetails['status'] != null && petDetails['status']!.isNotEmpty)
-          _buildDetailRow('Estado', petDetails['status']),
-        if (petDetails['description'] != null &&
-            petDetails['description']!.isNotEmpty)
-          _buildDetailRow('Descripción', petDetails['description']),
-      ],
-    );
+            _buildDetailRow('Nombre', petDetails['name']),
+          if (petDetails['type'] != null && petDetails['type']!.isNotEmpty)
+            _buildDetailRow('Tipo', petDetails['type']),
+          if (petDetails['breed'] != null && petDetails['breed']!.isNotEmpty)
+            _buildDetailRow('Raza', petDetails['breed']),
+          if (petDetails['age'] != null && petDetails['age']!.isNotEmpty)
+            _buildDetailRow('Edad', petDetails['age']),
+          if (petDetails['gender'] != null && petDetails['gender']!.isNotEmpty)
+            _buildDetailRow('Género', petDetails['gender']),
+          if (petDetails['status'] != null && petDetails['status']!.isNotEmpty)
+            _buildDetailRow('Estado', petDetails['status']),
+          if (petDetails['description'] != null &&
+              petDetails['description']!.isNotEmpty)
+            _buildDetailRow('Descripción', petDetails['description']),
+        ],
+      );
   }
 
   Widget _buildOwnerInfoSection() {
@@ -1565,8 +1557,8 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
     }
   }
 
-  void _createMedicalRecord() {
-    Navigator.pushNamed(
+  Future<void> _createMedicalRecord() async {
+    await Navigator.pushNamed(
       context, 
       '/create-medical-record',
       arguments: {
@@ -1575,6 +1567,32 @@ class _AppointmentDetailVetPageState extends State<AppointmentDetailVetPage>
         'ownerInfo': appointment['ownerDetails'],
       },
     );
+
+    // SIEMPRE recargar la cita por ID después de volver de crear expediente médico
+    await _reloadAppointmentById();
+  }
+
+  Future<void> _reloadAppointmentById() async {
+    if (realAppointment?.id == null) return;
+
+    try {
+      print('🔄 Recargando cita por ID después de crear expediente médico...');
+      
+      final getAppointmentUseCase = sl<GetAppointmentByIdUseCase>();
+      final reloadedAppointment = await getAppointmentUseCase.call(realAppointment!.id);
+      
+      setState(() {
+        realAppointment = reloadedAppointment;
+      });
+      
+      print('✅ Cita recargada exitosamente');
+      print('🏥 Medical Records después de recargar: ${realAppointment?.pet?.medicalRecords?.length ?? 0}');
+      
+      // Mapear los datos actualizados
+      _mapAppointmentData();
+    } catch (e) {
+      print('❌ Error recargando cita por ID: $e');
+    }
   }
 
   Future<void> _rescheduleAppointment() async {

@@ -215,7 +215,6 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
                   child: Column(
                     children: [
                       _buildModernAppBar(),
-                      _buildPatientInfo(),
                       Expanded(child: _buildFormContent()),
                       _buildActionButtons(),
                     ],
@@ -462,6 +461,8 @@ class _RegisterVaccinationPageState extends State<RegisterVaccinationPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildPatientInfo(),
+          const SizedBox(height: AppSizes.spaceL),
           _buildFormSection(
             'Información de la Vacuna',
             Icons.vaccines,
