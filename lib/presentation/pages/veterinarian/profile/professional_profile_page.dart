@@ -182,12 +182,8 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
       return false;
     }
 
-    final licenseValidation = _validateLicense(_licenseController.text);
-    if (licenseValidation != null) {
-      _showValidationError(licenseValidation);
-      return false;
-    }
-
+    // Ya no validamos la cédula porque es un campo de solo lectura
+    
     final specialtiesValidation = _validateSpecialties(_specialties);
     if (specialtiesValidation != null) {
       _showValidationError(specialtiesValidation);
@@ -516,7 +512,7 @@ class _ProfessionalProfilePageState extends State<ProfessionalProfilePage> {
                 icon: Icons.badge_outlined,
                 label: 'Cédula profesional',
                 controller: _licenseController,
-                enabled: _isEditing,
+                enabled: false,
                 validator: _validateLicense,
               ),
               const SizedBox(height: AppSizes.spaceM),
